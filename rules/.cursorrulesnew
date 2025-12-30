@@ -1,0 +1,213 @@
+# .cursorrules
+
+# Mercedes-Benz Service Website — Cursor Rules (Tailwind CSS v4.0+ + SEO + Integrations)
+
+## Project Overview
+
+Official Mercedes-Benz partnered service center in Sofia, Bulgaria. Premium, modern website with multilingual support (Bulgarian/English), optimized for SEO and performance.
+
+## Tech Stack & Configuration
+
+### Core Technologies
+
+- Framework: Next.js 14 App Router
+- Styling: Tailwind CSS
+- Language: TypeScript (strict)
+- Export: Static Site Generation (SSG) via `next export`
+- i18n: next-intl for bg/en translations
+- UI Primitives: shadcn/ui where appropriate
+
+## Project Structure (guidance)
+
+(app directory structure may differ; follow repo conventions)
+
+- /app/[locale]/... routes
+- /components/... reusable components
+- /messages/en.json, /messages/bg.json
+- /public/images, /public/icons
+- /lib/utils.ts (shared helpers)
+- /types/index.ts (shared types)
+
+## Header & Navigation (REQUIREMENT)
+
+Header menus MUST be exactly:
+Home / About us / Services / Gallery / Career / Contacts
+
+- Keep routes consistent and i18n-aware.
+- The menu labels must come from next-intl translations.
+- Preserve the spelling “Gallery” exactly as written unless the user later asks to correct it.
+
+## Code Standards & Best Practices
+
+### TypeScript
+
+- Strict mode, no implicit any
+- Define interfaces/types for props and data
+- Shared types live in `/types/index.ts`
+
+### React Architecture
+
+- React Server Components by default
+- Add `"use client"` only when necessary (forms, interactive UI, search, hooks)
+- Keep components small and single-responsibility
+
+### DRY + Constants Rule (IMPORTANT)
+
+If using constants:
+
+- DO NOT declare constants inside components.
+- Create `constants.ts` inside the component folder that uses those constants.
+  Example:
+  /components/contact/constants.ts
+  /components/contact/ContactForm.tsx
+- Avoid bloating component files; keep them focused on rendering/logic, not long data arrays.
+
+### i18n
+
+- Never hardcode user-facing text
+- All copy comes from next-intl keys
+- Use nested keys and consistent namespaces
+
+## SEO (TOP PRIORITY)
+
+The website must rank highly and follow best practices.
+
+### Must-have SEO deliverables
+
+- robots.txt
+  - Allow indexing for public pages
+  - Block irrelevant routes if needed (e.g., internal build artifacts)
+- sitemap.xml
+  - Include all locale routes
+  - Keep canonical page variants consistent per locale strategy
+- Canonical URLs
+  - Add correct canonical tags in metadata for every page
+  - Avoid duplicate content across locales (define a clear canonical/alternate strategy)
+- OpenGraph + Twitter cards
+  - Provide OG image and per-page titles/descriptions
+- Structured data (JSON-LD)
+  - LocalBusiness / AutoRepair schema where appropriate
+  - Include name, address (Sofia), phone, opening hours, geo, sameAs social links (when available)
+- Clean URL structure
+  - Stable slugs, no parameter-based duplicates
+- Internal linking
+  - Logical section linking, breadcrumbs where helpful
+- Headings & content
+  - Exactly one H1 per page
+  - Semantic hierarchy H2/H3
+- Performance = SEO
+  - Optimize Core Web Vitals (LCP/INP/CLS)
+  - Avoid layout shifts (always size images)
+  - Keep JS minimal, avoid unnecessary client components
+
+### Performance engineering requirements
+
+- Optimize unused JS:
+  - Prefer Server Components
+  - Dynamic import heavy client components
+  - Avoid large dependencies in the client bundle
+- Images:
+  - Use Next/Image where possible
+  - Provide width/height
+  - Use `priority` only for above-the-fold hero images
+  - Preload critical images when needed (via Next metadata or <link rel="preload">)
+- Fonts:
+  - Use Next font optimization
+- Caching:
+  - Use long-cache headers for static assets when applicable (static export constraints apply)
+
+## Integrations & Pages
+
+### Booking System (Google Booking / Reserve with Google)
+
+The website must integrate booking for service hours/repairs via Google Booking:
+https://www.google.com/maps/reserve/
+Implementation rules:
+
+- Prefer linking users to the Reserve with Google / booking entry point that is actually configured for the business.
+- Provide a prominent “Book Service” CTA in header and/or sticky CTA.
+- If embedding is supported/available for the configured booking flow, embed it; otherwise use a reliable outbound link or Google-provided booking UI entry.
+- Keep it fast: booking integration should not add heavy client JS on every page (load only on booking page or on user interaction).
+
+### Contact Form (Formspree) — DETAILED FIELDS (REQUIREMENT)
+
+The contact form must use Formspree and include these fields:
+
+- First Name (required)
+- Last Name (required)
+- Email (required, validate)
+- Phone Number (required, validate)
+- Subject (required)
+- Car brand: dropdown with ONLY one option: “Mercedes-Benz” (still required)
+- Model: input (required)
+- Car Year: input (required; numeric constraints)
+- VIN Number (optional)
+- Inquiry (required; main question/details)
+
+Rules:
+
+- Use `react-hook-form` (or equivalent) with validation and accessible errors.
+- Include anti-spam measures suitable for static sites (e.g., honeypot field, Formspree features).
+- Send structured field names so service personnel can sort easily.
+- Confirm submit success/failure with clear UX.
+- All labels, placeholders, and errors must be translated via next-intl.
+- Keep the form as a client component; everything else around it should remain server-rendered.
+
+## Google Maps Location (REQUIREMENT)
+
+Include an iframe showing the service location in Google Maps.
+Rules:
+
+- Load the iframe lazily (below-the-fold or on interaction if appropriate).
+- Provide accessible title and fallback link to open in Google Maps.
+- Do not block page rendering with the iframe.
+
+## Future Feature: Massive Product Search (900k-row JSON) — PERFORMANCE CRITICAL
+
+At a later time, we will add a search input to browse a very large dataset (~900k rows, JSON).
+
+When implementing:
+
+- NEVER load 900k rows into the main bundle.
+- Use a dedicated search strategy:
+  - Prefer a prebuilt index (e.g., Web Worker + indexed search) or server-side search endpoint (if allowed).
+  - If static-only, use chunked data + lazy fetching + Web Worker.
+- Rendering must be virtualized:
+  - Use list virtualization (e.g., react-virtual / similar) to render only visible rows.
+- Implement:
+  - Debounced input
+  - Incremental results
+  - Pagination/infinite scroll with virtualization
+  - Memoization for row rendering
+- Avoid blocking the main thread:
+  - Offload searching/parsing to a Worker when possible
+  - Stream/chunk JSON parsing if needed
+- UI must remain smooth (60fps target).
+- The search UI should be client-only and loaded on-demand.
+
+## Styling & Design System (Mercedes premium feel)
+
+- Use Tailwind utility classes exclusively.
+- Prefer Tailwind v4 theme tokens via `@theme`.
+- Dark premium palette:
+  - Background: black/anthracite
+  - Text: white/silver
+  - Accent: Mercedes blue sparingly
+- Spacious layout, large section spacing, subtle motion, soft shadows, rounded corners (8–12px)
+- Mobile-first responsive design
+
+## Accessibility
+
+- Semantic HTML5
+- ARIA labels for inputs/buttons
+- Keyboard navigation
+- Alt text on images
+- WCAG AA contrast
+
+## Notes for the AI Assistant
+
+- Prefer clean, maintainable code over cleverness
+- Do not bloat components; move constants to `constants.ts` in the relevant folder
+- Use Tailwind v4 docs/patterns only
+- Keep SEO and performance as first-class requirements
+- Ask for clarification only when truly blocked; otherwise make best-effort, production-ready choices

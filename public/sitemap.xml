@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- English Pages -->
+  <url>
+    <loc>https://mbcenter.bg/en/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mbcenter.bg/en/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/en/about/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/about/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/about/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/en/services/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/services/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/services/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/en/gallery/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/gallery/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/gallery/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/en/career/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/career/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/career/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/en/contacts/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/contacts/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/contacts/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/en/booking/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/booking/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/booking/" />
+  </url>
+
+  <!-- Bulgarian Pages -->
+  <url>
+    <loc>https://mbcenter.bg/bg/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mbcenter.bg/en/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/bg/about/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/about/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/about/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/bg/services/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/services/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/services/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/bg/gallery/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/gallery/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/gallery/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/bg/career/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/career/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/career/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/bg/contacts/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/contacts/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/contacts/" />
+  </url>
+  <url>
+    <loc>https://mbcenter.bg/bg/booking/</loc>
+    <lastmod>2024-01-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/booking/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://mbcenter.bg/en/booking/" />
+  </url>
+</urlset>
+
+

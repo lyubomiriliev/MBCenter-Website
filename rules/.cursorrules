@@ -1,0 +1,411 @@
+# Mercedes-Benz Service Website - Cursor Rules
+
+## Project Overview
+
+Official Mercedes-Benz partnered service center in Sofia, Bulgaria. Premium, modern service website with multilingual support (Bulgarian/English).
+
+## Tech Stack & Configuration
+
+### Core Technologies
+
+- **Framework**: Next.js 14 App Router
+- **Styling**: TailwindCSS
+- **Language**: TypeScript (strict mode)
+- **Export**: Static Site Generation (SSG) via `next export`
+- **i18n**: next-intl for bg/en translations
+
+### Project Structure
+
+```
+/app
+  /[locale]
+    /layout.tsx
+    /page.tsx
+    /about/page.tsx
+    /services/page.tsx
+    /coding/page.tsx
+    /multimedia/page.tsx
+    /parts/page.tsx
+    /inspection/page.tsx
+    /gallery/page.tsx
+    /blog/page.tsx
+    /contact/page.tsx
+    /booking/page.tsx
+/components
+  /ui (shadcn/ui components)
+  /layout (Header, Footer, Navigation)
+  /sections (Hero, Services, Reviews)
+  /forms (ContactForm, BookingForm)
+/messages
+  /en.json
+  /bg.json
+/public
+  /images
+  /icons
+/lib
+  /utils.ts
+  /constants.ts
+/types
+  /index.ts
+```
+
+## Code Standards & Best Practices
+
+### TypeScript
+
+- Use strict TypeScript with no implicit any
+- Define interfaces for all props and data structures
+- Use type inference where possible
+- Create shared types in `/types/index.ts`
+
+```typescript
+// Example type definitions
+interface Service {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  slug: string;
+}
+
+interface CodingOption {
+  category: string;
+  features: string[];
+  modelSeries: string[];
+}
+```
+
+### Component Architecture
+
+- Use React Server Components by default
+- Add 'use client' only when necessary (forms, interactions, hooks)
+- Create reusable, composable components
+- Keep components small and single-responsibility
+- Use shadcn/ui components for UI primitives
+
+```typescript
+// Server Component (default)
+export default function ServicesPage() {
+  return <ServicesList />;
+}
+
+// Client Component (when needed)
+("use client");
+export function ContactForm() {
+  const [state, setState] = useState();
+  // ...
+}
+```
+
+### DRY Principles
+
+- Extract repeated logic into custom hooks
+- Create utility functions in `/lib/utils.ts`
+- Use component composition over duplication
+- Centralize constants in `/lib/constants.ts`
+
+```typescript
+// Constants example
+export const SERVICES = [
+  { id: "maintenance", titleKey: "services.maintenance", icon: "wrench" },
+  // ...
+] as const;
+
+export const SOCIAL_LINKS = {
+  instagram: "https://instagram.com/...",
+  facebook: "https://facebook.com/...",
+} as const;
+```
+
+### Internationalization (i18n)
+
+- Use next-intl for all text content
+- Never hardcode text strings
+- Structure translation files by page/section
+- Use nested keys for organization
+
+```typescript
+// Usage in components
+import { useTranslations } from "next-intl";
+
+export function Hero() {
+  const t = useTranslations("home");
+  return <h1>{t("hero.title")}</h1>;
+}
+```
+
+```json
+// messages/en.json structure
+{
+  "home": {
+    "hero": {
+      "title": "Specialized Mercedes-Benz Service & Coding",
+      "subtitle": "Official Partner in Sofia, Bulgaria"
+    }
+  },
+  "services": {
+    "maintenance": {
+      "title": "Regular Maintenance",
+      "description": "..."
+    }
+  }
+}
+```
+
+### Styling Guidelines
+
+- Use Tailwind utility classes exclusively
+- Create custom theme colors in `tailwind.config.ts`
+- Use CSS variables for dynamic theming
+- Follow mobile-first responsive design
+- Use Tailwind's built-in dark mode utilities
+
+```typescript
+// tailwind.config.ts
+export default {
+  theme: {
+    extend: {
+      colors: {
+        "mb-black": "#000000",
+        "mb-anthracite": "#1a1a1a",
+        "mb-silver": "#c0c0c0",
+        "mb-chrome": "#e8e8e8",
+      },
+      fontFamily: {
+        mercedes: ["var(--font-mercedes)"],
+      },
+    },
+  },
+};
+```
+
+### Design System Requirements
+
+#### Color Palette (Dark Theme)
+
+- Background: Black (#000) / Anthracite (#1a1a1a)
+- Text: White (#fff) / Silver (#c0c0c0)
+- Accent: Mercedes Blue (#00adef) sparingly
+- Border: Dark gray (#2a2a2a)
+
+#### Typography
+
+- Use Inter or similar clean sans-serif
+- Headings: Large, bold, plenty of whitespace
+- Body: 16px base, 1.5-1.6 line height
+- Premium feel: Generous letter spacing on headings
+
+#### Spacing
+
+- Large white space between sections (120px-160px)
+- Generous padding (80px-100px on desktop)
+- Consistent internal spacing system (8px base)
+
+#### Components Style
+
+- Minimal borders, use subtle shadows
+- Rounded corners (8px-12px)
+- Smooth transitions (300ms ease)
+- Hover states: Subtle scale (1.02) or opacity (0.9)
+
+```typescript
+// Example component styling
+<section className="bg-black py-32 px-6">
+  <div className="max-w-7xl mx-auto">
+    <h2 className="text-5xl font-bold text-white mb-16 tracking-tight">
+      {t("section.title")}
+    </h2>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+      {/* Content */}
+    </div>
+  </div>
+</section>
+```
+
+## Forms & Integrations
+
+### Contact Form (Formspree)
+
+```typescript
+"use client";
+import { useForm } from "react-hook-form";
+
+export function ContactForm() {
+  const { register, handleSubmit } = useForm();
+
+  const onSubmit = async (data: FormData) => {
+    await fetch("https://formspree.io/f/YOUR_FORM_ID", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  return <form onSubmit={handleSubmit(onSubmit)}>...</form>;
+}
+```
+
+### Google Calendar Booking Integration
+
+```typescript
+"use client";
+export function BookingForm() {
+  // Implement Google Calendar API integration
+  // Use @google-cloud/calendar or iframe embed
+  // Include service type, model, date/time selection
+}
+```
+
+## SEO & Performance
+
+### Metadata
+
+```typescript
+// app/[locale]/layout.tsx
+export async function generateMetadata({ params: { locale } }) {
+  return {
+    title:
+      locale === "en"
+        ? "Mercedes-Benz Service Sofia | Official Partner"
+        : "Сервиз Мерцедес София | Официален Партньор",
+    description: "...",
+    openGraph: {
+      images: ["/og-image.jpg"],
+    },
+  };
+}
+```
+
+### Image Optimization
+
+- Use Next.js Image component exclusively
+- Provide width/height to prevent layout shift
+- Use WebP format with JPEG fallback
+- Implement lazy loading for below-fold images
+
+```typescript
+import Image from "next/image";
+
+<Image
+  src="/workshop.jpg"
+  alt={t("gallery.workshop")}
+  width={1200}
+  height={800}
+  className="rounded-lg"
+  priority={isAboveFold}
+/>;
+```
+
+### Static Export Configuration
+
+```typescript
+// next.config.js
+module.exports = {
+  output: "export",
+  images: {
+    unoptimized: true, // Required for static export
+  },
+  trailingSlash: true,
+};
+```
+
+## Key Features Implementation
+
+### Sticky CTA Button
+
+```typescript
+"use client";
+export function StickyBookButton() {
+  return (
+    <div className="fixed bottom-8 right-8 z-50">
+      <Link
+        href="/booking"
+        className="bg-mb-blue text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-transform"
+      >
+        {t("cta.bookService")}
+      </Link>
+    </div>
+  );
+}
+```
+
+### Coding Model Filter
+
+```typescript
+"use client";
+export function CodingFilter() {
+  const [selectedSeries, setSelectedSeries] = useState("all");
+  // Filter coding options by model series
+  // Use URL params for shareable links
+}
+```
+
+### Instagram Feed Integration
+
+```typescript
+// Use Instagram Basic Display API or embed
+// Show latest 6-9 posts in grid layout
+// Link to full Instagram profile
+```
+
+## Content Guidelines
+
+### Images
+
+- Only use HIGH-QUALITY, REAL photos
+- No stock photos or generic images
+- Show actual workshop, equipment, projects
+- Consistent editing style (slightly desaturated, professional)
+
+### Copy Writing
+
+- Professional, confident tone
+- Technical accuracy (use correct Mercedes terminology)
+- Bilingual: Professional English, natural Bulgarian
+- Emphasize: Certification, OEM equipment, experience
+
+### CTAs
+
+- Primary: "Book Service" / "Запази Час"
+- Secondary: "Contact Us" / "Свържи се с нас"
+- Tertiary: "Learn More" / "Научи повече"
+
+## Performance Targets
+
+- Lighthouse Score: 95+ on all metrics
+- First Contentful Paint: < 1.5s
+- Time to Interactive: < 3s
+- No layout shift (CLS: 0)
+
+## Accessibility
+
+- Semantic HTML5 elements
+- ARIA labels on interactive elements
+- Keyboard navigation support
+- Alt text on all images
+- Sufficient color contrast (WCAG AA)
+
+## Git Workflow
+
+- Commit messages: `feat:`, `fix:`, `style:`, `refactor:`
+- One feature per branch
+- Test builds before committing
+
+## Testing Checklist
+
+- [ ] All pages render in both languages
+- [ ] Forms submit successfully
+- [ ] Images load and are optimized
+- [ ] Mobile responsive on all breakpoints
+- [ ] Links work (internal and external)
+- [ ] SEO metadata present on all pages
+- [ ] Static export builds without errors
+
+## Notes for AI Assistant
+
+- Prioritize clean, maintainable code over clever solutions
+- Always use translation keys, never hardcode text
+- Follow the established component patterns
+- Ask for clarification if design intent is unclear
+- Suggest improvements to structure if beneficial
+- Keep the premium, Mercedes-brand feeling in all UI decisions

@@ -1,0 +1,516 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About us",
+    "services": "Services",
+    "gallery": "Gallery",
+    "career": "Career",
+    "contacts": "Contacts",
+    "bookService": "Book Service"
+  },
+  "home": {
+    "hero": {
+      "title": "Specialized Mercedes-Benz Service & Coding",
+      "subtitle": "Official Partner in Sofia, Bulgaria",
+      "cta": "Book Service",
+      "ctaSecondary": "Contact Us"
+    },
+    "valueProps": {
+      "title": "Why Choose Us",
+      "oemTitle": "OEM Equipment",
+      "oemDesc": "Factory-certified tools and diagnostic equipment",
+      "partnerTitle": "Official Partner",
+      "partnerDesc": "Authorized Mercedes-Benz service center",
+      "experienceTitle": "Expert Team",
+      "experienceDesc": "Specialized technicians with years of experience"
+    },
+    "scrollVideo": {
+      "title": "Performance Meets Precision",
+      "subtitle": "Experience the power of Mercedes-AMG"
+    },
+    "services": {
+      "title": "Our Services",
+      "viewAll": "View All Services"
+    },
+    "trust": {
+      "title": "What Our Clients Say",
+      "placeholder": "Customer testimonials coming soon"
+    },
+    "location": {
+      "title": "Visit Us in Sofia",
+      "viewLocation": "View on Maps"
+    },
+    "cta": {
+      "title": "Ready to Service Your Mercedes?",
+      "book": "Book Appointment",
+      "contact": "Contact Us"
+    },
+    "ev": {
+      "badge": "Electric Vehicle Service",
+      "title": "Future-Ready EV Repair",
+      "subtitle": "Certified Mercedes-Benz EQ specialists with advanced electric vehicle diagnostics and repair capabilities",
+      "certified": "EQ Certified",
+      "features": {
+        "highVoltage": "High-Voltage Systems",
+        "highVoltageDesc": "Specialized diagnostics and repair for EV battery systems",
+        "battery": "Battery Health Analysis",
+        "batteryDesc": "Advanced testing and optimization for maximum range",
+        "drivetrain": "Electric Drivetrain",
+        "drivetrainDesc": "Expert maintenance for motors and power electronics",
+        "charging": "Charging Systems",
+        "chargingDesc": "Repair and upgrade for all charging standards"
+      },
+      "cta": "Explore EV Services"
+    }
+  },
+  "about": {
+    "title": "About MB Center Sofia",
+    "hero": {
+      "title": "Expert Mercedes-Benz Service",
+      "subtitle": "Your trusted partner in Sofia"
+    },
+    "story": {
+      "title": "Our Story",
+      "content": "MB Center Sofia is an official Mercedes-Benz partnered service center, providing premium automotive care with factory-certified equipment and expertise."
+    },
+    "equipment": {
+      "title": "Equipment & Certifications",
+      "oem": "Original Mercedes-Benz diagnostic tools",
+      "certified": "Factory-certified technicians",
+      "tools": "State-of-the-art workshop equipment"
+    },
+    "whyChoose": {
+      "title": "Why Choose MB Center",
+      "quality": "Uncompromising quality standards",
+      "expertise": "Specialized Mercedes knowledge",
+      "warranty": "Warranty-compliant service",
+      "pricing": "Transparent pricing"
+    },
+    "cta": "Book Your Service"
+  },
+  "services": {
+    "title": "Our Services",
+    "hero": {
+      "title": "Comprehensive Mercedes-Benz Services",
+      "subtitle": "From routine maintenance to advanced coding"
+    },
+    "maintenance": {
+      "title": "Regular Maintenance",
+      "desc": "Oil changes, inspections, brake service, and preventive care"
+    },
+    "diagnostics": {
+      "title": "Diagnostics & Repair",
+      "desc": "Advanced electronic diagnostics and mechanical repairs"
+    },
+    "coding": {
+      "title": "Coding & Programming",
+      "desc": "Vehicle coding, feature activation, and software updates"
+    },
+    "multimedia": {
+      "title": "Multimedia Systems",
+      "desc": "Navigation updates, COMAND retrofits, audio upgrades"
+    },
+    "parts": {
+      "title": "OEM Parts",
+      "desc": "Genuine Mercedes-Benz parts and accessories"
+    },
+    "inspection": {
+      "title": "Pre-Purchase Inspection",
+      "desc": "Comprehensive vehicle inspection before purchase"
+    },
+    "cta": "Schedule Service",
+    "ctaTitle": {
+      "title": "Ready to Service Your Mercedes?"
+    },
+    "specialized": {
+      "title": "Specialized Services",
+      "subtitle": "Advanced technical services using factory-certified equipment",
+      "xentry": {
+        "title": "Xentry Star Diagnostics",
+        "description": "Professional diagnostics using official Mercedes-Benz Xentry diagnostic system for accurate fault detection and analysis",
+        "feature1": "Complete vehicle system scan",
+        "feature2": "Real-time data monitoring",
+        "feature3": "Error code reading and clearing",
+        "feature4": "Service history verification"
+      },
+      "coding": {
+        "title": "SCN Online Coding",
+        "description": "Secure online coding and programming directly connected to Mercedes-Benz servers for authentic modifications",
+        "feature1": "Direct connection to MB servers",
+        "feature2": "Feature activation and customization",
+        "feature3": "Module coding and programming",
+        "feature4": "Software updates and patches"
+      },
+      "transmission": {
+        "title": "Transmission Services",
+        "description": "Specialized service for 7G-Tronic and 9G-Tronic transmissions including reset, adaptation, and ECU programming",
+        "feature1": "7G-Tronic & 9G-Tronic service",
+        "feature2": "TCU reset and adaptation",
+        "feature3": "ISM/DSM selector programming",
+        "feature4": "Engine ECU reset and training"
+      }
+    },
+    "codingGen": {
+      "title": "Coding by Model Generation",
+      "subtitle": "Customization options organized by vehicle generation and electronic architecture",
+      "latest": {
+        "name": "Latest Generation",
+        "models": "W206, S223, EQS, EQE, GLC X254",
+        "dashboard": {
+          "title": "Dashboard & Display",
+          "f1": "AMG SuperSport graphics with full emblem activation",
+          "f2": "Maybach conversion (white/pink graphics)",
+          "f3": "Custom speedometer scales (300/330/360 km/h)",
+          "f4": "Power display in HP",
+          "f5": "Permanent AdBlue level display"
+        },
+        "lights": {
+          "title": "Lights & Animations",
+          "f1": "Digital Light 'Star Wave' animation",
+          "f2": "Digital Light 'Meteor Shower' animation",
+          "f3": "Digital Light AMG Performance",
+          "f4": "100% illuminated door sills (Night Version)"
+        },
+        "modes": {
+          "title": "Drive Modes",
+          "f1": "Sport+ mode activation",
+          "f2": "Snow mode",
+          "f3": "Curve mode",
+          "f4": "Last Mode Dynamic Select memory"
+        },
+        "assist": {
+          "title": "Assist Systems",
+          "f1": "Enhanced traffic sign recognition",
+          "f2": "Overtaking recognition",
+          "f3": "Pedestrian crossing detection",
+          "f4": "Active Lane Change Assist K32"
+        }
+      },
+      "compact": {
+        "name": "MBUX Compact",
+        "models": "A, B, CLA, GLA, GLB, EQC, EQB (2021+)",
+        "dashboard": {
+          "title": "Dashboard & MBUX",
+          "f1": "AMG graphics and Supersport mode",
+          "f2": "AMG A45/A35 custom graphics",
+          "f3": "G-Force display",
+          "f4": "Permanent Augmented Reality"
+        },
+        "modes": {
+          "title": "Modes & Control",
+          "f1": "Last Mode Start/Stop memory",
+          "f2": "Vmax removal",
+          "f3": "Sport+ mode activation",
+          "f4": "Manual transmission mode"
+        },
+        "lights": {
+          "title": "Lighting",
+          "f1": "Ambient Light sync with drive modes",
+          "f2": "Enhanced Multibeam animation",
+          "f3": "100% illuminated door sills"
+        },
+        "comfort": {
+          "title": "Comfort & Multimedia",
+          "f1": "Seatbelt warning removal",
+          "f2": "Permanent AdBlue level",
+          "f3": "30W Wireless Charging activation"
+        }
+      },
+      "eCls": {
+        "name": "E/CLS/G Series",
+        "models": "W213, C257, W463, W205 FL",
+        "multimedia": {
+          "title": "Multimedia",
+          "f1": "CarPlay activation",
+          "f2": "Android Auto activation",
+          "f3": "DAB Digital Radio",
+          "f4": "Video in Motion (VIM)"
+        },
+        "display": {
+          "title": "Display & Dashboard",
+          "f1": "AMG Combined Instrument",
+          "f2": "Custom speedometer scales (280/330 km/h)",
+          "f3": "AMG Track Pace"
+        },
+        "lights": {
+          "title": "Lighting",
+          "f1": "Ambient Light Premium activation",
+          "f2": "Enhanced Multibeam animation",
+          "f3": "100% illuminated door sills"
+        },
+        "comfort": {
+          "title": "Comfort",
+          "f1": "Start/Stop memory",
+          "f2": "Vmax removal"
+        }
+      },
+      "older": {
+        "name": "Older Models",
+        "models": "A, C, GLC (<2018)",
+        "multimedia": {
+          "title": "Multimedia",
+          "f1": "AMG Logo activation",
+          "f2": "AMG dashboard graphics",
+          "f3": "Engineering Mode (Comand Online)"
+        },
+        "comfort": {
+          "title": "Comfort",
+          "f1": "Seatbelt buzzer deactivation",
+          "f2": "Auto-recirculation deactivation",
+          "f3": "Custom turn signal blinks",
+          "f4": "Custom lock/unlock sounds"
+        },
+        "lights": {
+          "title": "Lighting",
+          "f1": "Extended Blue Lightning",
+          "f2": "Low beam when unlocking"
+        },
+        "control": {
+          "title": "Control",
+          "f1": "Start/Stop memory",
+          "f2": "Vmax removal"
+        }
+      }
+    },
+    "detailed": {
+      "title": "Complete Service List",
+      "subtitle": "All available services organized by category",
+      "diagnostic": {
+        "title": "Diagnostic Services",
+        "s1": {
+          "title": "Pre-Purchase Inspection",
+          "desc": "Comprehensive vehicle inspection before purchase with detailed report"
+        },
+        "s2": {
+          "title": "Service History Check",
+          "desc": "Verification of service history and maintenance records"
+        },
+        "s3": {
+          "title": "Odometer Verification",
+          "desc": "Establishing the real mileage of your Mercedes-Benz"
+        }
+      },
+      "coding": {
+        "title": "Coding & Programming",
+        "s1": {
+          "title": "Feature Activation",
+          "desc": "Activate additional features and options in your vehicle"
+        },
+        "s2": {
+          "title": "Navigation Unlock",
+          "desc": "Unlock navigation after Anti Theft protection activation"
+        },
+        "s3": {
+          "title": "ECO Start/Stop Memory",
+          "desc": "Remember last ECO Start/Stop system mode"
+        },
+        "s4": {
+          "title": "AdBlue System Reset",
+          "desc": "Reset AdBlue system after counter activation"
+        },
+        "s5": {
+          "title": "Navigation Map Updates",
+          "desc": "Update navigation maps to latest version"
+        },
+        "s6": {
+          "title": "Multimedia Functions",
+          "desc": "Unlock multimedia features (video in motion, etc.)"
+        }
+      },
+      "transmission": {
+        "title": "Transmission Services",
+        "s1": {
+          "title": "9G-Tronic Service",
+          "desc": "Specialized service and maintenance for 9G-Tronic transmissions"
+        },
+        "s2": {
+          "title": "TCU Reset & Adaptation",
+          "desc": "Reset and training of 7G-Tronic transmission control units"
+        },
+        "s3": {
+          "title": "Selector Programming",
+          "desc": "Reset and training of ISM/DSM selectors and engine ECUs"
+        }
+      },
+      "universal": {
+        "title": "Universal Services",
+        "s1": {
+          "title": "Regional Conversion",
+          "desc": "Convert from USA/Japan to ECE/Europe specifications"
+        },
+        "s2": {
+          "title": "Unit Conversion",
+          "desc": "Convert units (F°→C°, mph→km/h, PSI→Bar)"
+        },
+        "s3": {
+          "title": "Language Conversion",
+          "desc": "Convert languages (MercedesMe, SOS, MBUX/Radio)"
+        }
+      }
+    }
+  },
+  "gallery": {
+    "title": "Our Work",
+    "hero": {
+      "title": "Gallery",
+      "subtitle": "See our workshop and recent projects"
+    },
+    "workshop": "Workshop",
+    "projects": "Projects",
+    "equipment": "Equipment"
+  },
+  "career": {
+    "title": "Career Opportunities",
+    "hero": {
+      "title": "Join Our Team",
+      "subtitle": "Work with the best in Mercedes-Benz service"
+    },
+    "positions": {
+      "title": "Open Positions",
+      "technician": "Mercedes-Benz Technician",
+      "advisor": "Service Advisor",
+      "apply": "Apply Now"
+    },
+    "benefits": {
+      "title": "Why Work With Us",
+      "training": "Continuous training",
+      "environment": "Professional environment",
+      "growth": "Career growth opportunities"
+    },
+    "form": {
+      "title": "Apply Now",
+      "subtitle": "Fill out the form below to submit your application. We'll review it and get back to you soon."
+    }
+  },
+  "contacts": {
+    "title": "Contact Us",
+    "hero": {
+      "title": "Get in Touch",
+      "subtitle": "We're here to help with your Mercedes"
+    },
+    "info": {
+      "title": "Contact Information",
+      "address": "Sofia, Bulgaria",
+      "phone": "+359 XX XXX XXXX",
+      "email": "info@mbcenter.bg",
+      "hours": "Mon-Fri: 9:00 - 18:00"
+    },
+    "form": {
+      "title": "Send Us a Message"
+    },
+    "map": {
+      "title": "Our Location",
+      "viewOnMaps": "Open in Google Maps"
+    }
+  },
+  "booking": {
+    "title": "Book Service",
+    "hero": {
+      "title": "Schedule Your Appointment",
+      "subtitle": "Choose a convenient time for your service"
+    },
+    "info": {
+      "title": "What to Expect",
+      "step1": "Select your service type",
+      "step2": "Choose date and time",
+      "step3": "Confirm your booking",
+      "step4": "Receive confirmation"
+    },
+    "cta": "Reserve with Google",
+    "or": "or",
+    "callUs": "Call us at",
+    "hours": {
+      "title": "Working Hours",
+      "description": "Our team will confirm your appointment and provide any additional information you may need."
+    }
+  },
+  "forms": {
+    "contact": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "subject": "Subject",
+      "carBrand": "Car Brand",
+      "model": "Model",
+      "year": "Car Year",
+      "vin": "VIN Number",
+      "inquiry": "Your Message",
+      "submit": "Send Message",
+      "submitting": "Sending...",
+      "success": "Message sent successfully! We'll get back to you soon.",
+      "error": "Failed to send message. Please try again.",
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email",
+      "invalidPhone": "Please enter a valid phone number",
+      "invalidYear": "Please enter a valid year"
+    },
+    "career": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "position": "Position",
+      "experience": "Work Experience",
+      "coverLetter": "Cover Letter",
+      "profilePicture": "Profile Picture",
+      "uploadPicture": "Upload Photo",
+      "removePicture": "Remove Photo",
+      "profilePicturePreview": "Profile picture preview",
+      "fileRequirements": "JPG, PNG or GIF (max 5MB)",
+      "selectPosition": "Select a position...",
+      "technician": "Mercedes-Benz Technician",
+      "advisor": "Service Advisor",
+      "experiencePlaceholder": "Please describe your relevant work experience, skills, and qualifications...",
+      "coverLetterPlaceholder": "Tell us why you're interested in joining our team and what you can bring to MB Center Sofia...",
+      "submit": "Submit Application",
+      "submitting": "Submitting...",
+      "success": "Application submitted successfully! We'll review your application and get back to you soon.",
+      "error": "Failed to submit application. Please try again.",
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email",
+      "invalidPhone": "Please enter a valid phone number",
+      "invalidFileType": "Please upload an image file",
+      "fileTooLarge": "File size must be less than 5MB"
+    }
+  },
+  "footer": {
+    "about": "MB Center Sofia - Official Mercedes-Benz partnered service center",
+    "quickLinks": "Quick Links",
+    "contact": "Contact",
+    "hours": "Opening Hours",
+    "social": "Follow Us",
+    "rights": "All rights reserved"
+  },
+  "seo": {
+    "home": {
+      "title": "Mercedes-Benz Service Sofia | Official Partner MB Center",
+      "description": "Official Mercedes-Benz service center in Sofia, Bulgaria. Expert maintenance, diagnostics, coding, and repairs with OEM equipment."
+    },
+    "about": {
+      "title": "About Us | MB Center Sofia - Mercedes Service",
+      "description": "Learn about MB Center Sofia, your trusted Mercedes-Benz service partner with factory-certified technicians and OEM equipment."
+    },
+    "services": {
+      "title": "Mercedes Services | Maintenance, Coding & Repair | Sofia",
+      "description": "Comprehensive Mercedes-Benz services: maintenance, diagnostics, coding, multimedia, parts, and inspections. Official partner in Sofia."
+    },
+    "gallery": {
+      "title": "Gallery | MB Center Workshop & Projects | Sofia",
+      "description": "View our professional workshop, equipment, and completed Mercedes-Benz service projects at MB Center Sofia."
+    },
+    "career": {
+      "title": "Careers | Join MB Center Sofia Team",
+      "description": "Career opportunities at MB Center Sofia. Join our team of Mercedes-Benz specialists and grow your automotive career."
+    },
+    "contacts": {
+      "title": "Contact MB Center Sofia | Mercedes Service Location",
+      "description": "Contact MB Center Sofia for Mercedes-Benz service. Find our location, hours, and get in touch with our team."
+    },
+    "booking": {
+      "title": "Book Service | Mercedes Appointment | MB Center Sofia",
+      "description": "Schedule your Mercedes-Benz service appointment online. Quick and easy booking for maintenance, repair, and coding services."
+    }
+  }
+}
+
