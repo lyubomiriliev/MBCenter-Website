@@ -78,10 +78,10 @@ export default function ContactsPage({ params: { locale } }: Props) {
                       <p className="text-white font-semibold text-lg mb-2">
                         {t("info.address")}
                       </p>
-                      <p className="text-mb-silver mb-1">
+                      <p className="text-mb-blue mb-1">
                         {SITE_CONFIG.address.street}
                       </p>
-                      <p className="text-mb-silver">
+                      <p className="text-mb-blue">
                         {SITE_CONFIG.address.city},{" "}
                         {SITE_CONFIG.address.country}
                       </p>
@@ -166,7 +166,7 @@ export default function ContactsPage({ params: { locale } }: Props) {
                       <p className="text-white font-semibold text-lg mb-2">
                         {t("info.hours")}
                       </p>
-                      <p className="text-mb-silver text-lg">
+                      <p className="text-mb-blue text-lg">
                         {SITE_CONFIG.hours.weekdays}
                       </p>
                     </div>

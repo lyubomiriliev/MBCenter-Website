@@ -10,7 +10,7 @@ export const SITE_CONFIG = {
     postalCode: "1700",
   },
   hours: {
-    weekdays: "10:30–19:00 Понеделник - Петък",
+    weekdays: "10:30–19:00ч. Понеделник - Петък",
     weekend: "Closed",
   },
   social: {

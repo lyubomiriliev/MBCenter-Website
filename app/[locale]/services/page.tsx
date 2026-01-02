@@ -390,6 +390,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
         services={services}
         getServiceTitle={(key) => t(`${key}.title`)}
         getServiceDescription={(key) => t(`${key}.desc`)}
+        locale={locale}
       />
 
       <SpecializedServicesSection

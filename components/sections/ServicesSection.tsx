@@ -57,6 +57,7 @@ export function ServicesSection({ locale }: ServicesSectionProps) {
               description={t(`services.${service.key}.desc`)}
               image={service.image}
               index={index}
+              locale={locale}
             />
           ))}
         </div>

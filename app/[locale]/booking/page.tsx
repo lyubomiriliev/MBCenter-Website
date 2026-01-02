@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { Hero } from "@/components/sections/Hero";
+import { VideoHero } from "@/components/sections/VideoHero";
 import { BookingInfoSection } from "@/components/sections/BookingInfoSection";
 import { HoursSection } from "@/components/sections/HoursSection";
 import { generateAlternateLinks } from "@/lib/seo";
@@ -34,7 +34,11 @@ export default function BookingPage({ params: { locale } }: Props) {
 
   return (
     <>
-      <Hero title={t("hero.title")} subtitle={t("hero.subtitle")} fullHeight={false} />
+      <VideoHero
+        title={t("hero.title")}
+        subtitle={t("hero.subtitle")}
+        videoSrc="/assets/videos/glc-video.mp4"
+      />
 
       <BookingInfoSection
         title={t("info.title")}

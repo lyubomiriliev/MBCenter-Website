@@ -12,6 +12,7 @@ type ServicesGridSectionProps = {
   services: Service[];
   getServiceTitle: (key: string) => string;
   getServiceDescription: (key: string) => string;
+  locale: string;
 };
 
 export function ServicesGridSection({
@@ -19,6 +20,7 @@ export function ServicesGridSection({
   services,
   getServiceTitle,
   getServiceDescription,
+  locale,
 }: ServicesGridSectionProps) {
   return (
     <PatternBackground className="py-32 bg-mb-black">
@@ -38,6 +40,7 @@ export function ServicesGridSection({
               description={getServiceDescription(service.key)}
               image={service.image}
               index={index}
+              locale={locale}
             />
           ))}
         </div>
