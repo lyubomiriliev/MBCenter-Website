@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { gsap } from 'gsap';
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { gsap } from "gsap";
 
 type VideoHeroProps = {
   title: string;
@@ -12,7 +12,13 @@ type VideoHeroProps = {
   ctaSecondary?: { text: string; href: string };
 };
 
-export function VideoHero({ title, subtitle, videoSrc, ctaPrimary, ctaSecondary }: VideoHeroProps) {
+export function VideoHero({
+  title,
+  subtitle,
+  videoSrc,
+  ctaPrimary,
+  ctaSecondary,
+}: VideoHeroProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
@@ -20,25 +26,33 @@ export function VideoHero({ title, subtitle, videoSrc, ctaPrimary, ctaSecondary 
   useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ delay: 0.3 });
-      
+
       tl.from(titleRef.current, {
         y: 80,
         opacity: 0,
         duration: 1.2,
-        ease: 'power4.out',
+        ease: "power4.out",
       })
-      .from(subtitleRef.current, {
-        y: 60,
-        opacity: 0,
-        duration: 1,
-        ease: 'power3.out',
-      }, '-=0.6')
-      .from(ctaRef.current, {
-        y: 40,
-        opacity: 0,
-        duration: 0.8,
-        ease: 'power2.out',
-      }, '-=0.4');
+        .from(
+          subtitleRef.current,
+          {
+            y: 60,
+            opacity: 0,
+            duration: 1,
+            ease: "power3.out",
+          },
+          "-=0.6"
+        )
+        .from(
+          ctaRef.current,
+          {
+            y: 40,
+            opacity: 0,
+            duration: 0.8,
+            ease: "power2.out",
+          },
+          "-=0.4"
+        );
     });
 
     return () => ctx.revert();
@@ -61,36 +75,41 @@ export function VideoHero({ title, subtitle, videoSrc, ctaPrimary, ctaSecondary 
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-6xl mx-auto text-center px-6">
-        <h1 
+      <div className="relative z-10 max-w-6xl mx-auto text-center px-4 sm:px-6">
+        <h1
           ref={titleRef}
-          className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 tracking-tight leading-tight"
+          className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-white mb-4 sm:mb-6 tracking-tight leading-[1.1] sm:leading-tight"
         >
           {title}
         </h1>
-        <p 
+        <p
           ref={subtitleRef}
-          className="text-xl md:text-2xl lg:text-3xl text-mb-chrome mb-12 max-w-3xl mx-auto leading-relaxed font-light"
+          className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-mb-chrome mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed font-light px-2"
         >
           {subtitle}
         </p>
         {(ctaPrimary || ctaSecondary) && (
-          <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div
+            ref={ctaRef}
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center w-auto mx-auto"
+          >
             {ctaPrimary && (
               <Link
                 href={ctaPrimary.href}
-                className="group relative inline-flex items-center gap-2 bg-mb-blue text-white px-6 py-3 rounded-button hover:bg-mb-blue/90 transition-all duration-300 text-sm font-medium uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden"
+                className="group relative flex items-center justify-center gap-2 bg-mb-blue text-white px-6 py-2.5 sm:px-6 sm:py-3 rounded-button hover:bg-mb-blue/90 transition-all duration-300 text-xs sm:text-sm font-medium uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden w-48 sm:w-auto"
               >
-                <span className="relative z-10">{ctaPrimary.text}</span>
+                <span className="relative z-10 whitespace-nowrap">
+                  {ctaPrimary.text}
+                </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-mb-blue via-blue-600 to-mb-blue opacity-100 transition-opacity duration-300" />
               </Link>
             )}
             {ctaSecondary && (
               <Link
                 href={ctaSecondary.href}
-                className="border border-white/80 text-white px-6 py-3 rounded-button hover:bg-white/10 transition-all duration-300 text-sm font-medium uppercase tracking-wide backdrop-blur-sm"
+                className="flex items-center justify-center border border-white/80 text-white px-6 py-2.5 sm:px-6 sm:py-3 rounded-button hover:bg-white/10 transition-all duration-300 text-xs sm:text-sm font-medium uppercase tracking-wide backdrop-blur-sm w-48 sm:w-auto"
               >
-                {ctaSecondary.text}
+                <span className="whitespace-nowrap">{ctaSecondary.text}</span>
               </Link>
             )}
           </div>
@@ -99,7 +118,15 @@ export function VideoHero({ title, subtitle, videoSrc, ctaPrimary, ctaSecondary 
 
       {/* Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-        <svg className="w-6 h-6 text-white" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          className="w-6 h-6 text-white"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
           <path d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </div>

@@ -1,12 +1,12 @@
 export const SITE_CONFIG = {
   name: "MB Center Sofia",
   baseUrl: "https://mbcenter.bg",
-  phone: "088 378 8873",
+  phone: "+359 883 788 873",
   email: "info@mbcenter.bg",
   address: {
-    street: "Софийски околовръстен път",
+    street: "ул. Околовръстен път 155",
     city: "София",
-    country: "Bulgaria",
+    country: "България",
     postalCode: "1700",
   },
   hours: {
@@ -32,6 +32,6 @@ export const NAV_ITEMS = [
   { href: "/about", labelKey: "nav.about" },
   { href: "/services", labelKey: "nav.services" },
   { href: "/gallery", labelKey: "nav.gallery" },
-  { href: "/career", labelKey: "nav.career" },
+  // { href: "/career", labelKey: "nav.career" }, // Commented out - can be re-enabled later
   { href: "/contacts", labelKey: "nav.contacts" },
 ] as const;

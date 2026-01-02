@@ -5,7 +5,6 @@ import { VideoHero } from "@/components/sections/VideoHero";
 import { AboutStory } from "@/components/sections/AboutStory";
 import { EquipmentSection } from "@/components/sections/EquipmentSection";
 import { ParallaxDivider } from "@/components/sections/ParallaxDivider";
-import { WhyChooseSection } from "@/components/sections/WhyChooseSection";
 import { AboutCTA } from "@/components/sections/AboutCTA";
 import { generateAlternateLinks } from "@/lib/seo";
 import { useTranslations } from "next-intl";
@@ -46,8 +45,6 @@ export default function AboutPage({ params: { locale } }: Props) {
 
       <AboutStory />
 
-      <EquipmentSection />
-
       <ParallaxDivider
         imageSrc="/assets/images/glc-white.webp"
         imageAlt="Mercedes GLC"
@@ -63,7 +60,7 @@ export default function AboutPage({ params: { locale } }: Props) {
         }
       />
 
-      <WhyChooseSection />
+      <EquipmentSection />
 
       <AboutCTA locale={locale} />
     </>

@@ -8,7 +8,7 @@ type SpecializedService = {
   description: string;
   features: string[];
   image: string;
-  icon: string;
+  icon?: string;
 };
 
 type SpecializedServicesSectionProps = {
@@ -71,14 +71,9 @@ export function SpecializedServicesSection({
                 </div>
 
                 <div className={index % 2 === 1 ? "lg:order-1" : ""}>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-mb-blue/20 rounded-2xl flex items-center justify-center">
-                      <span className="text-4xl">{service.icon}</span>
-                    </div>
-                    <h3 className="text-3xl md:text-4xl font-bold text-white">
-                      {service.title}
-                    </h3>
-                  </div>
+                  <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                    {service.title}
+                  </h3>
 
                   <p className="text-lg text-mb-silver mb-6 leading-relaxed">
                     {service.description}

@@ -11,7 +11,7 @@ export function WhyChooseUs() {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <Image
-          src="/assets/images/wallpaper.avif"
+          src="/assets/images/mb-pattern.webp"
           alt=""
           fill
           className="object-cover"

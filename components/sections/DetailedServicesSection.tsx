@@ -24,6 +24,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
   const icons = [
     // Diagnostic icons
     <svg
+      key="icon-0"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -35,6 +36,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>,
     <svg
+      key="icon-1"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -46,6 +48,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
     </svg>,
     <svg
+      key="icon-2"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -58,6 +61,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
     </svg>,
     // Coding icons
     <svg
+      key="icon-3"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -69,6 +73,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
     </svg>,
     <svg
+      key="icon-4"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -80,6 +85,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
     </svg>,
     <svg
+      key="icon-5"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -91,6 +97,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
     </svg>,
     <svg
+      key="icon-6"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -102,6 +109,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>,
     <svg
+      key="icon-7"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -113,6 +121,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>,
     <svg
+      key="icon-8"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -125,6 +134,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
     </svg>,
     // Transmission icons
     <svg
+      key="icon-9"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -137,6 +147,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>,
     <svg
+      key="icon-10"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -148,6 +159,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>,
     <svg
+      key="icon-11"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -160,6 +172,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
     </svg>,
     // Universal icons
     <svg
+      key="icon-12"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -171,6 +184,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>,
     <svg
+      key="icon-13"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"
@@ -182,6 +196,7 @@ const ServiceIcon = ({ index }: { index: number }) => {
       <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
     </svg>,
     <svg
+      key="icon-14"
       className="w-6 h-6"
       fill="none"
       strokeLinecap="round"

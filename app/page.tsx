@@ -1,28 +1,46 @@
-import Link from "next/link";
+import {
+  getTranslations,
+  setRequestLocale,
+  getMessages,
+} from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import type { Metadata } from "next";
+import { HomePageContent } from "./HomePageContent";
+import { generateAlternateLinks } from "@/lib/seo";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { StickyBookingCTA } from "@/components/layout/StickyBookingCTA";
+import { SmoothScroll } from "@/components/layout/SmoothScroll";
 
-export default function RootPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations({ locale: "bg", namespace: "seo.home" });
+  const alternateLinks = generateAlternateLinks("bg");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates: alternateLinks,
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      url: alternateLinks.canonical,
+    },
+  };
+}
+
+export default async function RootPage() {
+  setRequestLocale("bg");
+  const messages = await getMessages({ locale: "bg" });
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <div className="text-center">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4">MB Center Sofia</h1>
-        <p className="text-xl text-mb-silver mb-12">
-          Mercedes-Benz Service Center
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/bg"
-            className="bg-mb-blue text-white px-8 py-4 rounded-lg hover:opacity-90 transition-opacity font-medium text-lg"
-          >
-            Български
-          </Link>
-          <Link
-            href="/en"
-            className="bg-mb-blue text-white px-8 py-4 rounded-lg hover:opacity-90 transition-opacity font-medium text-lg"
-          >
-            English
-          </Link>
-        </div>
-      </div>
-    </div>
+    <NextIntlClientProvider messages={messages} locale="bg">
+      <SmoothScroll />
+      <Header />
+      <main className="min-h-screen">
+        <HomePageContent />
+      </main>
+      <Footer />
+      <StickyBookingCTA />
+    </NextIntlClientProvider>
   );
 }

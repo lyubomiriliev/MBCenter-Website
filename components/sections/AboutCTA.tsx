@@ -43,10 +43,10 @@ export function AboutCTA({ locale }: AboutCTAProps) {
             />
           </div>
           <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
-            {t("title")}
+            {t("cta.title")}
           </h2>
           <p className="text-xl text-mb-silver max-w-2xl mx-auto mb-12">
-            {t("story.content")}
+            {t("cta.description")}
           </p>
         </AnimatedText>
 
@@ -56,7 +56,7 @@ export function AboutCTA({ locale }: AboutCTAProps) {
               href={`/${locale}/booking`}
               className="group relative inline-flex items-center gap-3 bg-mb-blue text-white px-8 py-4 rounded-button hover:bg-mb-blue/90 transition-all duration-300 text-base font-medium uppercase tracking-wide shadow-xl hover:shadow-2xl hover:scale-105 overflow-hidden"
             >
-              <span className="relative z-10">{t("cta")}</span>
+              <span className="relative z-10">{t("ctaButton")}</span>
               <svg
                 className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform translate-x-1"
                 fill="none"
@@ -75,7 +75,7 @@ export function AboutCTA({ locale }: AboutCTAProps) {
               href={`/${locale}/services`}
               className="inline-flex items-center gap-3 bg-transparent text-white px-8 py-4 rounded-button border-2 border-white/30 hover:border-white hover:bg-white/10 transition-all duration-300 text-base font-medium uppercase tracking-wide backdrop-blur-sm"
             >
-              <span>{t("equipment.oem")}</span>
+              <span>{t("cta.viewServices")}</span>
               <svg
                 className="w-5 h-5"
                 fill="none"

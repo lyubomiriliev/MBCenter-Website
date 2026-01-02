@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import type { Metadata } from "next";
 import { VideoHero } from "@/components/sections/VideoHero";
+import { WhereToFindUs } from "@/components/sections/WhereToFindUs";
 import { WhyChooseUs } from "@/components/sections/WhyChooseUs";
 import { ScrollVideoSection } from "@/components/sections/ScrollVideoSection";
 import { ParallaxDivider } from "@/components/sections/ParallaxDivider";
@@ -48,9 +49,12 @@ export default function HomePage({ params: { locale } }: Props) {
           href: `/${locale}/contacts`,
         }}
       />
+
+      <WhereToFindUs />
+
       <ServicesSection locale={locale} />
 
-      <ScrollVideoSection videoSrc="/assets/videos/gt53-video.mp4" />
+      {/* <ScrollVideoSection videoSrc="/assets/videos/gt53-video.mp4" /> */}
 
       <WhyChooseUs />
 

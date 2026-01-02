@@ -13,10 +13,8 @@ type ScrollVideoSectionProps = {
 };
 
 export function ScrollVideoSection({ videoSrc }: ScrollVideoSectionProps) {
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const scrollTriggerInstanceRef = useRef<ScrollTrigger | null>(null);
-  const handleLoadedMetadataRef = useRef<(() => void) | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   // Detect mobile devices
@@ -37,137 +35,112 @@ export function ScrollVideoSection({ videoSrc }: ScrollVideoSectionProps) {
     // Don't initialize on mobile
     if (isMobile) return;
 
+    const container = containerRef.current;
     const video = videoRef.current;
-    const section = sectionRef.current;
 
-    if (!video || !section) return;
+    if (!container || !video) return;
 
-    // Use gsap.context for proper cleanup
-    const ctx = gsap.context(() => {
-      const setupScrollTrigger = () => {
-        // Clean up any existing ScrollTrigger instance
-        if (scrollTriggerInstanceRef.current) {
-          scrollTriggerInstanceRef.current.kill(true); // Kill immediately and revert
-          scrollTriggerInstanceRef.current = null;
-        }
+    let scrollTrigger: ScrollTrigger | null = null;
+    let ctx: gsap.Context | null = null;
 
-        // Ensure video is at start
-        video.currentTime = 0;
-        video.pause();
+    const setupScrollTrigger = () => {
+      // Ensure video is at start
+      video.currentTime = 0;
+      video.pause();
 
-        // Calculate scroll distance based on video duration
-        // More scroll distance = slower video playback = smoother experience
-        const scrollDistance = window.innerHeight * 4; // Increased to 4x viewport height
+      // Calculate scroll distance based on video duration
+      const scrollDistance = window.innerHeight * 4;
 
-        // Create the scroll trigger
-        scrollTriggerInstanceRef.current = ScrollTrigger.create({
-          trigger: section,
-          start: "top top",
-          end: `+=${scrollDistance}`,
-          scrub: 1, // 1 second lag for smooth scrubbing
-          pin: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            // Update video time based on scroll progress
-            // Ensure progress is clamped between 0 and 1
-            const progress = Math.max(0, Math.min(1, self.progress));
+      // Create the scroll trigger
+      scrollTrigger = ScrollTrigger.create({
+        trigger: container,
+        start: "top top",
+        end: `+=${scrollDistance}`,
+        scrub: 1,
+        pin: true,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const progress = Math.max(0, Math.min(1, self.progress));
 
-            if (
-              video.duration &&
-              video.readyState >= 2 &&
-              !isNaN(video.duration)
-            ) {
-              // Calculate target time - when progress is 1, we want full duration
-              let targetTime = video.duration * progress;
+          if (
+            video.duration &&
+            video.readyState >= 2 &&
+            !isNaN(video.duration) &&
+            video.seekable.length > 0
+          ) {
+            let targetTime = video.duration * progress;
 
-              // When at 100% progress, ensure we reach the actual end
-              if (progress >= 0.99) {
-                targetTime = video.duration;
-              }
-
-              // Clamp to valid range
-              targetTime = Math.max(0, Math.min(targetTime, video.duration));
-
-              // Update video time
-              if (Math.abs(video.currentTime - targetTime) > 0.05) {
-                video.currentTime = targetTime;
-              }
+            if (progress >= 0.99) {
+              targetTime = video.duration;
             }
-          },
-          onEnter: () => {
-            if (video.duration) {
-              video.currentTime = 0;
-            }
-          },
-          onLeave: () => {
-            // Ensure video reaches the end when leaving
-            if (video.duration && !isNaN(video.duration)) {
-              video.currentTime = video.duration;
-            }
-          },
-          onEnterBack: () => {
-            // When scrolling back from below, start at end
-            if (video.duration && !isNaN(video.duration)) {
-              video.currentTime = video.duration;
-            }
-          },
-          onLeaveBack: () => {
-            // When scrolling back past the start, reset to beginning
-            if (video.duration) {
-              video.currentTime = 0;
-            }
-          },
-        });
 
-        // Refresh ScrollTrigger after setup
-        ScrollTrigger.refresh();
-      };
+            targetTime = Math.max(0, Math.min(targetTime, video.duration));
 
-      // Wait for video metadata
-      handleLoadedMetadataRef.current = () => {
-        setupScrollTrigger();
-      };
-
-      if (video.readyState >= 2) {
-        // Metadata already loaded
-        handleLoadedMetadataRef.current();
-      } else {
-        // Wait for metadata
-        video.addEventListener(
-          "loadedmetadata",
-          handleLoadedMetadataRef.current,
-          {
-            once: true,
+            if (Math.abs(video.currentTime - targetTime) > 0.05) {
+              video.currentTime = targetTime;
+            }
           }
-        );
-        // Force load to ensure metadata loads
+        },
+        onEnter: () => {
+          if (video.duration) video.currentTime = 0;
+        },
+        onLeave: () => {
+          if (video.duration && !isNaN(video.duration)) {
+            video.currentTime = video.duration;
+          }
+        },
+        onEnterBack: () => {
+          if (video.duration && !isNaN(video.duration)) {
+            video.currentTime = video.duration;
+          }
+        },
+        onLeaveBack: () => {
+          if (video.duration) video.currentTime = 0;
+        },
+      });
+    };
+
+    const handleLoadedMetadata = () => {
+      setupScrollTrigger();
+      ScrollTrigger.refresh();
+    };
+
+    // Initialize with gsap.context
+    ctx = gsap.context(() => {
+      if (video.readyState >= 2) {
+        handleLoadedMetadata();
+      } else {
+        video.addEventListener("loadedmetadata", handleLoadedMetadata, {
+          once: true,
+        });
         video.load();
       }
-    }, section);
+    }, container);
 
-    // Cleanup - this runs BEFORE React removes the DOM nodes
+    // Cleanup function
     return () => {
-      // Kill ScrollTrigger instance FIRST before reverting context
-      if (scrollTriggerInstanceRef.current) {
-        scrollTriggerInstanceRef.current.kill(true); // Kill and revert immediately
-        scrollTriggerInstanceRef.current = null;
+      // Remove event listener immediately
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+
+      // Kill ScrollTrigger FIRST - this reverts all DOM changes synchronously
+      if (scrollTrigger) {
+        scrollTrigger.kill(true);
+        scrollTrigger = null;
       }
 
       // Then revert gsap context
-      ctx.revert();
-
-      // Remove event listener if video still exists
-      if (handleLoadedMetadataRef.current) {
-        const videoElement = videoRef.current;
-        if (videoElement) {
-          videoElement.removeEventListener(
-            "loadedmetadata",
-            handleLoadedMetadataRef.current
-          );
-        }
-        handleLoadedMetadataRef.current = null;
+      if (ctx) {
+        ctx.revert();
+        ctx = null;
       }
+
+      // Force ScrollTrigger to update and clear any remaining pins
+      ScrollTrigger.getAll().forEach((st) => {
+        if (st.vars.trigger === container) {
+          st.kill(true);
+        }
+      });
     };
   }, [videoSrc, isMobile]);
 
@@ -177,8 +150,8 @@ export function ScrollVideoSection({ videoSrc }: ScrollVideoSectionProps) {
   }
 
   return (
-    <section
-      ref={sectionRef}
+    <div
+      ref={containerRef}
       className="relative w-full h-screen overflow-hidden bg-mb-black"
     >
       {/* Video Container */}
@@ -207,6 +180,6 @@ export function ScrollVideoSection({ videoSrc }: ScrollVideoSectionProps) {
           <path d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </div>
-    </section>
+    </div>
   );
 }

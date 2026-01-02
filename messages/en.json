@@ -6,13 +6,14 @@
     "gallery": "Gallery",
     "career": "Career",
     "contacts": "Contacts",
-    "bookService": "Book Service"
+    "bookService": "Book Appointment",
+    "viewOnMap": "View on Map"
   },
   "home": {
     "hero": {
       "title": "Specialized Mercedes-Benz Service & Coding",
-      "subtitle": "Official Partner in Sofia, Bulgaria",
-      "cta": "Book Service",
+      "subtitle": "Independent Service Center in Sofia, Bulgaria",
+      "cta": "Book Appointment",
       "ctaSecondary": "Contact Us"
     },
     "valueProps": {
@@ -23,6 +24,16 @@
       "partnerDesc": "Authorized Mercedes-Benz service center",
       "experienceTitle": "Expert Team",
       "experienceDesc": "Specialized technicians with years of experience"
+    },
+    "whereToFind": {
+      "title": "Where to Find Us",
+      "subtitle": "Visit us or get in touch for a consultation",
+      "addressTitle": "Service Address",
+      "viewMap": "View on Map",
+      "phoneTitle": "Phone",
+      "hoursLabel": "Working Hours",
+      "emailTitle": "Email",
+      "followUs": "Follow Us"
     },
     "scrollVideo": {
       "title": "Performance Meets Precision",
@@ -69,24 +80,42 @@
       "title": "Expert Mercedes-Benz Service",
       "subtitle": "Your trusted partner in Sofia"
     },
-    "story": {
-      "title": "Our Story",
-      "content": "MB Center Sofia is an official Mercedes-Benz partnered service center, providing premium automotive care with factory-certified equipment and expertise."
+    "welcome": {
+      "title": "Welcome to MB Center"
+    },
+    "mission": {
+      "title": "Our Mission",
+      "content": "At \"MB Center\" specialized Mercedes-Benz service, we strive to provide the highest quality service to our customers, constantly improving our services and products. Our main goal is to create long-lasting and trusting relationships with each client, providing them with reliable and innovative solutions for their vehicles."
+    },
+    "whyChoose": {
+      "title": "Why Choose \"MB Center\"?",
+      "content": "We are proud to specialize in the Mercedes-Benz brand and offer a wide variety of new auto parts, original accessories, and high-quality consumables for your vehicles. Our products are carefully selected to meet the requirements of the most demanding customers who seek uncompromising quality and reliability."
+    },
+    "expertService": {
+      "title": "Expert Service",
+      "content": "Our qualified technicians are available to help you with service and maintenance of your vehicles. With years of experience and knowledge in the industry, we ensure professional treatment and individual approach to every Mercedes-Benz vehicle."
+    },
+    "carsForSale": {
+      "title": "Cars for Sale",
+      "content": "In addition, we offer a wide range of Mercedes-Benz vehicles for sale. Our consultants will be happy to help you choose the perfect vehicle that meets your needs and preferences."
+    },
+    "allClients": {
+      "title": "We Serve All Clients",
+      "content": "At \"MB Center\" we value diversity and work with both private individuals and business clients. Whether you are an individual vehicle owner or represent a company with its own fleet, you will receive professional and individual service that meets your needs."
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "description": "Contact us today and find out why so many customers trust our products and services. Our team is ready to help you with everything you need.",
+      "content": "Together with MB Center, we will turn the care of your Mercedes-Benz into a real pleasure. Contact us today and find out why so many customers trust our products and services.",
+      "viewServices": "View Services"
     },
     "equipment": {
       "title": "Equipment & Certifications",
       "oem": "Original Mercedes-Benz diagnostic tools",
-      "certified": "Factory-certified technicians",
-      "tools": "State-of-the-art workshop equipment"
+      "certified": "Highly qualified technicians",
+      "tools": "Modern and original service equipment"
     },
-    "whyChoose": {
-      "title": "Why Choose MB Center",
-      "quality": "Uncompromising quality standards",
-      "expertise": "Specialized Mercedes knowledge",
-      "warranty": "Warranty-compliant service",
-      "pricing": "Transparent pricing"
-    },
-    "cta": "Book Your Service"
+    "ctaButton": "Book Your Service"
   },
   "services": {
     "title": "Our Services",
@@ -390,9 +419,10 @@
     },
     "info": {
       "title": "Contact Information",
-      "address": "Sofia, Bulgaria",
-      "phone": "+359 XX XXX XXXX",
-      "email": "info@mbcenter.bg",
+      "address": "Service Address",
+      "serviceAddress": "This is the address of our service center",
+      "phone": "Phone",
+      "email": "Email",
       "hours": "Mon-Fri: 9:00 - 18:00"
     },
     "form": {
@@ -404,7 +434,7 @@
     }
   },
   "booking": {
-    "title": "Book Service",
+    "title": "Book Appointment",
     "hero": {
       "title": "Schedule Your Appointment",
       "subtitle": "Choose a convenient time for your service"
@@ -432,7 +462,9 @@
       "phone": "Phone Number",
       "subject": "Subject",
       "carBrand": "Car Brand",
+      "select": "Select...",
       "model": "Model",
+      "modelPlaceholder": "e.g., C-Class, E-Class, S-Class",
       "year": "Car Year",
       "vin": "VIN Number",
       "inquiry": "Your Message",
@@ -480,7 +512,9 @@
     "contact": "Contact",
     "hours": "Opening Hours",
     "social": "Follow Us",
-    "rights": "All rights reserved"
+    "rights": "All rights reserved",
+    "terms": "Terms and Conditions",
+    "disclaimer": "Mercedes, Smart, Maybach are registered trademarks of Mercedes-Benz AG. MB Center is not part of the Mercedes-Benz Official Dealer Network. MB Center is an independent workshop. The brands and logos that are named and appear on this website are registered trademarks of their respective owners and are used for illustrative purposes only."
   },
   "seo": {
     "home": {
@@ -508,9 +542,15 @@
       "description": "Contact MB Center Sofia for Mercedes-Benz service. Find our location, hours, and get in touch with our team."
     },
     "booking": {
-      "title": "Book Service | Mercedes Appointment | MB Center Sofia",
+      "title": "Book an appointment | Mercedes Appointment | MB Center Sofia",
       "description": "Schedule your Mercedes-Benz service appointment online. Quick and easy booking for maintenance, repair, and coding services."
+    },
+    "terms": {
+      "title": "Terms and Conditions | MB Center Sofia",
+      "description": "Read the terms and conditions for service at MB Center Sofia. Service regulations, warranty policy, and customer rights."
     }
+  },
+  "terms": {
+    "title": "Terms and Conditions"
   }
 }
-

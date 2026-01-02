@@ -8,6 +8,7 @@ import { CodingByGenerationSection } from "@/components/sections/CodingByGenerat
 import { DetailedServicesSection } from "@/components/sections/DetailedServicesSection";
 import { ServicesCTASection } from "@/components/sections/ServicesCTASection";
 import { generateAlternateLinks } from "@/lib/seo";
+import { CTABand } from "@/components/sections/CTABand";
 
 type Props = {
   params: { locale: string };
@@ -73,8 +74,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
         t("specialized.xentry.feature3"),
         t("specialized.xentry.feature4"),
       ],
-      image: "/assets/images/diagnosis1.png",
-      icon: "🔧",
+      image: "/assets/images/xentry.jpg",
     },
     {
       title: t("specialized.coding.title"),
@@ -86,7 +86,6 @@ export default function ServicesPage({ params: { locale } }: Props) {
         t("specialized.coding.feature4"),
       ],
       image: "/assets/images/coding3.webp",
-      icon: "💻",
     },
     {
       title: t("specialized.transmission.title"),
@@ -97,8 +96,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
         t("specialized.transmission.feature3"),
         t("specialized.transmission.feature4"),
       ],
-      image: "/assets/images/engine.png",
-      icon: "⚙️",
+      image: "/assets/images/gearbox.jpg",
     },
   ];
 
@@ -155,7 +153,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
       name: t("codingGen.compact.name"),
       models: t("codingGen.compact.models"),
       system: "MBUX NTG 6",
-      image: "/assets/images/glc-white.webp",
+      image: "/assets/images/eqc2021.avif",
       categories: [
         {
           title: t("codingGen.compact.dashboard.title"),
@@ -239,7 +237,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
       name: t("codingGen.older.name"),
       models: t("codingGen.older.models"),
       system: "NTG 5.0 / 5.1",
-      image: "/assets/images/glc1.avif",
+      image: "/assets/images/glc2018.avif",
       categories: [
         {
           title: t("codingGen.older.multimedia.title"),
@@ -280,7 +278,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
   const detailedCategories = [
     {
       title: t("detailed.diagnostic.title"),
-      image: "/assets/images/diagnosis2.png",
+      image: "/assets/images/coding.webp",
       services: [
         {
           icon: "🔍",
@@ -414,11 +412,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
         categories={detailedCategories}
       />
 
-      <ServicesCTASection
-        title={t("ctaTitle.title")}
-        ctaText={t("cta")}
-        ctaHref={`/${locale}/booking`}
-      />
+      <CTABand locale={locale} />
     </>
   );
 }

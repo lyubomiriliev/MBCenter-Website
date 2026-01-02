@@ -242,7 +242,7 @@ export function ContactForm() {
           aria-invalid={errors.carBrand ? "true" : "false"}
           aria-describedby={errors.carBrand ? "carBrand-error" : undefined}
         >
-          <option value="">Select...</option>
+          <option value="">{t("select")}</option>
           <option value="Mercedes-Benz">Mercedes-Benz</option>
         </select>
         {errors.carBrand && (
@@ -267,7 +267,7 @@ export function ContactForm() {
             type="text"
             {...register("model", { required: t("required") })}
             className="w-full px-4 py-3 bg-mb-anthracite border border-mb-border rounded-button text-white placeholder-mb-silver focus:outline-none focus:border-mb-blue transition-colors"
-            placeholder="e.g., C-Class, E-Class, S-Class"
+            placeholder={t("modelPlaceholder")}
             aria-invalid={errors.model ? "true" : "false"}
             aria-describedby={errors.model ? "model-error" : undefined}
           />
@@ -298,7 +298,6 @@ export function ContactForm() {
               },
             })}
             className="w-full px-4 py-3 bg-mb-anthracite border border-mb-border rounded-button text-white placeholder-mb-silver focus:outline-none focus:border-mb-blue transition-colors"
-            placeholder="2020"
             aria-invalid={errors.year ? "true" : "false"}
             aria-describedby={errors.year ? "year-error" : undefined}
           />
@@ -377,10 +376,11 @@ export function ContactForm() {
         disabled={isSubmitting}
         className="group relative w-full bg-mb-blue text-white px-8 py-4 rounded-button hover:opacity-90 transition-opacity font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
       >
-        <span className="relative z-10">{isSubmitting ? t("submitting") : t("submit")}</span>
+        <span className="relative z-10">
+          {isSubmitting ? t("submitting") : t("submit")}
+        </span>
         <div className="absolute inset-0 bg-gradient-to-r from-mb-blue via-blue-600 to-mb-blue opacity-100 transition-opacity duration-300 disabled:opacity-50" />
       </button>
     </form>
   );
 }
-

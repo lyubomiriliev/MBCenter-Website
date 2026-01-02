@@ -119,7 +119,7 @@ export default function GalleryPage({ params: { locale } }: Props) {
       <VideoHero
         title={t("hero.title")}
         subtitle={t("hero.subtitle")}
-        videoSrc="/assets/videos/glc-video.mp4"
+        videoSrc="/assets/videos/w223-video.mp4"
       />
 
       <GallerySection

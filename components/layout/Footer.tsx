@@ -193,11 +193,26 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Disclaimer */}
+        <div className="border-t border-mb-blue/10 pt-8 mb-8">
+          <p className="text-mb-silver text-xs leading-relaxed max-w-4xl">
+            {t("footer.disclaimer")}
+          </p>
+        </div>
+
         {/* Bottom Bar */}
         <div className="border-t border-mb-blue/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-mb-silver text-sm">
-            © {currentYear} {SITE_CONFIG.name}. {t("footer.rights")}.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <p className="text-mb-silver text-sm">
+              © {currentYear} {SITE_CONFIG.name}. {t("footer.rights")}.
+            </p>
+            <Link
+              href={`/${locale}/terms`}
+              className="text-mb-silver hover:text-mb-blue transition-colors text-sm underline"
+            >
+              {t("footer.terms")}
+            </Link>
+          </div>
           <div className="flex items-center gap-2 text-mb-silver text-xs">
             <p>
               Website created by{" "}

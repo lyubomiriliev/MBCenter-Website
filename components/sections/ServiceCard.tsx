@@ -43,23 +43,25 @@ export function ServiceCard({
       // Image hover effect
       if (imageRef.current && cardRef.current) {
         const card = cardRef.current;
-        const img = imageRef.current;
+        const img = imageRef.current.querySelector("img");
 
-        card.addEventListener("mouseenter", () => {
-          gsap.to(img, {
-            scale: 1.1,
-            duration: 0.6,
-            ease: "power2.out",
+        if (img) {
+          card.addEventListener("mouseenter", () => {
+            gsap.to(img, {
+              scale: 1.1,
+              duration: 0.6,
+              ease: "power2.out",
+            });
           });
-        });
 
-        card.addEventListener("mouseleave", () => {
-          gsap.to(img, {
-            scale: 1,
-            duration: 0.6,
-            ease: "power2.out",
+          card.addEventListener("mouseleave", () => {
+            gsap.to(img, {
+              scale: 1,
+              duration: 0.6,
+              ease: "power2.out",
+            });
           });
-        });
+        }
       }
     });
 
@@ -73,8 +75,14 @@ export function ServiceCard({
     >
       {/* Image */}
       <div ref={imageRef} className="relative h-64 overflow-hidden">
-        <Image src={image} alt={title} fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-mb-anthracite via-mb-anthracite/50 to-transparent"></div>
+        <Image
+          src={image}
+          alt={title}
+          fill
+          className="object-cover"
+          style={{ transform: "scale(1)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-mb-anthracite via-mb-anthracite/50 to-transparent pointer-events-none"></div>
       </div>
 
       {/* Content */}

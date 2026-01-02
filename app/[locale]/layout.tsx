@@ -45,9 +45,16 @@ export async function generateMetadata({
     description: t("description"),
     alternates: alternateLinks,
     icons: {
-      icon: "/favicon.ico",
-      shortcut: "/favicon.ico",
-      apple: "/favicon.ico",
+      icon: [
+        {
+          url: "/assets/favicon-32x32.webp",
+          type: "image/webp",
+          sizes: "32x32",
+        },
+        { url: "/assets/favicon.ico", sizes: "any" },
+      ],
+      shortcut: "/assets/favicon-32x32.webp",
+      apple: "/assets/favicon-32x32.webp",
     },
     openGraph: {
       type: "website",

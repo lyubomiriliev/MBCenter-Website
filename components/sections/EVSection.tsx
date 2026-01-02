@@ -128,10 +128,10 @@ export function EVSection({ locale }: EVSectionProps) {
         </AnimatedText>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 mb-12 md:mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2  md:gap-12 mb-12 md:mb-16">
           {/* Left Side - Images */}
           <AnimatedSection from="left" delay={0.2}>
-            <div className="relative h-full min-h-[400px] md:min-h-[500px]">
+            <div className="relative h-full min-h-[300px] md:min-h-[500px]">
               {/* Main Image */}
               <div className="relative h-[350px] md:h-[400px] rounded-2xl overflow-hidden border border-mb-blue/30 shadow-2xl shadow-mb-blue/20">
                 <Image

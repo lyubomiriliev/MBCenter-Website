@@ -1,3 +1,7 @@
+// Career page - Commented out but kept for future use
+// To re-enable: Uncomment this file and add { href: "/career", labelKey: "nav.career" } to NAV_ITEMS in lib/constants.ts
+
+/*
 import { useTranslations } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
@@ -62,5 +66,16 @@ export default function CareerPage({ params: { locale } }: Props) {
         subtitle={t("form.subtitle")}
       />
     </>
+  );
+}
+*/
+
+// Temporary placeholder to prevent route errors
+// This route is disabled - uncomment the code above to re-enable
+export default function CareerPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-mb-black">
+      <p className="text-mb-silver">Career page is currently disabled.</p>
+    </div>
   );
 }
