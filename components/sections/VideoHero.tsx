@@ -67,7 +67,20 @@ export function VideoHero({
           loop
           muted
           playsInline
+          preload="none"
           className="w-full h-full object-cover"
+          onError={(e) => {
+            // Silently handle video loading errors
+            const target = e.target as HTMLVideoElement;
+            target.style.display = "none";
+          }}
+          onLoadedData={(e) => {
+            // Start playing once loaded
+            const target = e.target as HTMLVideoElement;
+            target.play().catch(() => {
+              // Ignore play errors
+            });
+          }}
         >
           <source src={videoSrc} type="video/mp4" />
         </video>
@@ -100,6 +113,7 @@ export function VideoHero({
             {ctaPrimary && (
               <Link
                 href={ctaPrimary.href}
+                aria-label={ctaPrimary.text}
                 className="group relative flex items-center justify-center gap-2 bg-mb-blue text-white px-8 py-3.5 sm:px-10 sm:py-4 rounded-button hover:bg-mb-blue/90 transition-all duration-300 text-sm sm:text-base font-medium uppercase tracking-wide shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden w-56 sm:w-auto min-w-[200px] sm:min-w-0"
               >
                 <span className="relative z-10 whitespace-nowrap">
@@ -111,6 +125,7 @@ export function VideoHero({
             {ctaSecondary && (
               <Link
                 href={ctaSecondary.href}
+                aria-label={ctaSecondary.text}
                 className="flex items-center justify-center border border-white/80 text-white px-8 py-3.5 sm:px-10 sm:py-4 rounded-button hover:bg-white/10 transition-all duration-300 text-sm sm:text-base font-medium uppercase tracking-wide backdrop-blur-sm w-56 sm:w-auto min-w-[200px] sm:min-w-0"
               >
                 <span className="whitespace-nowrap">{ctaSecondary.text}</span>

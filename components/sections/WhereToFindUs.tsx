@@ -1,18 +1,20 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { AnimatedText } from "@/components/animations/AnimatedText";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getSiteConfig } from "@/lib/constants";
 
 export function WhereToFindUs() {
   const t = useTranslations();
+  const locale = useLocale();
+  const config = getSiteConfig(locale);
 
   return (
     <section className="py-20 sm:pt-20 bg-mb-black relative overflow-hidden">
       {/* Background Pattern with Overlay */}
       <div className="absolute inset-0 opacity-5">
         <Image
-          src="/assets/star-pattern-bg.svg"
+          src="/assets/images/star-pattern-bg.png"
           alt=""
           fill
           className="object-cover"
@@ -61,15 +63,15 @@ export function WhereToFindUs() {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3 text-center">
                   {t("home.whereToFind.addressTitle")}
-                </h3>
+                </div>
                 <div className="text-mb-silver leading-relaxed text-center space-y-0.5">
                   <p className="text-sm sm:text-base">
-                    {SITE_CONFIG.address.street}
+                    {config.address.street}
                   </p>
                   <p className="text-sm sm:text-base">
-                    {SITE_CONFIG.address.city}, {SITE_CONFIG.address.country}
+                    {config.address.city}, {config.address.country}
                   </p>
                 </div>
 
@@ -77,10 +79,11 @@ export function WhereToFindUs() {
                 <div className="mt-4 text-center">
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      `${SITE_CONFIG.address.street}, ${SITE_CONFIG.address.city}, ${SITE_CONFIG.address.country}`
+                      `${config.address.street}, ${config.address.city}, ${config.address.country}`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={t("home.whereToFind.viewMap")}
                     className="inline-flex items-center gap-2 text-mb-blue hover:text-white transition-colors text-sm font-medium group/link"
                   >
                     {t("home.whereToFind.viewMap")}
@@ -126,15 +129,18 @@ export function WhereToFindUs() {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3 text-center">
                   {t("home.whereToFind.phoneTitle")}
-                </h3>
+                </div>
                 <div className="text-center">
                   <a
-                    href={`tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`}
+                    href={`tel:${config.phone.replace(/\s/g, "")}`}
+                    aria-label={`${t("home.whereToFind.phoneTitle")}: ${
+                      config.phone
+                    }`}
                     className="text-base sm:text-lg text-mb-blue hover:text-white transition-colors font-medium inline-block"
                   >
-                    {SITE_CONFIG.phone}
+                    {config.phone}
                   </a>
                 </div>
 
@@ -144,7 +150,7 @@ export function WhereToFindUs() {
                     {t("home.whereToFind.hoursLabel")}
                   </p>
                   <p className="text-xs sm:text-sm text-mb-silver">
-                    {SITE_CONFIG.hours.weekdays}
+                    {config.hours.weekdays}
                   </p>
                 </div>
               </div>
@@ -176,15 +182,18 @@ export function WhereToFindUs() {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3 text-center">
+                <div className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3 text-center">
                   {t("home.whereToFind.emailTitle")}
-                </h3>
+                </div>
                 <div className="text-center">
                   <a
-                    href={`mailto:${SITE_CONFIG.email}`}
+                    href={`mailto:${config.email}`}
+                    aria-label={`${t("home.whereToFind.emailTitle")}: ${
+                      config.email
+                    }`}
                     className="text-sm sm:text-base text-mb-blue hover:text-white transition-colors font-medium inline-block break-all"
                   >
-                    {SITE_CONFIG.email}
+                    {config.email}
                   </a>
                 </div>
 
@@ -195,9 +204,10 @@ export function WhereToFindUs() {
                   </p>
                   <div className="flex justify-center gap-3">
                     <a
-                      href={SITE_CONFIG.social.facebook}
+                      href={config.social.facebook}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label="Facebook"
                       className="w-10 h-10 rounded-full bg-mb-blue/10 border border-mb-blue/30 flex items-center justify-center hover:bg-mb-blue hover:border-mb-blue transition-all duration-300 group/social"
                     >
                       <svg
@@ -209,9 +219,10 @@ export function WhereToFindUs() {
                       </svg>
                     </a>
                     <a
-                      href={SITE_CONFIG.social.instagram}
+                      href={config.social.instagram}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label="Instagram"
                       className="w-10 h-10 rounded-full bg-mb-blue/10 border border-mb-blue/30 flex items-center justify-center hover:bg-mb-blue hover:border-mb-blue transition-all duration-300 group/social"
                     >
                       <svg

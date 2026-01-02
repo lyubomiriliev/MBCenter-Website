@@ -85,7 +85,11 @@ export function Header() {
               className="relative z-10 transition-transform hover:scale-105 duration-300"
             >
               <Image
-                src="/assets/logos/mbc-logo-white.png"
+                src={
+                  locale === "en"
+                    ? "/assets/logos/mbc-logo-en.png"
+                    : "/assets/logos/mbc-logo-white.png"
+                }
                 alt="MB Center Sofia"
                 width={240}
                 height={80}

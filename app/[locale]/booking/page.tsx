@@ -5,6 +5,7 @@ import { VideoHero } from "@/components/sections/VideoHero";
 import { BookingInfoSection } from "@/components/sections/BookingInfoSection";
 import { HoursSection } from "@/components/sections/HoursSection";
 import { generateAlternateLinks } from "@/lib/seo";
+import { ImageHero } from "@/components/sections/ImageHero";
 
 type Props = {
   params: { locale: string };
@@ -34,15 +35,15 @@ export default function BookingPage({ params: { locale } }: Props) {
 
   return (
     <>
-      <VideoHero
+      <ImageHero
         title={t("hero.title")}
         subtitle={t("hero.subtitle")}
-        videoSrc="/assets/videos/glc-video.mp4"
+        imageSrc="/assets/images/skilled-technicians.png"
       />
 
       <BookingInfoSection
         title={t("info.title")}
-        steps={["step1", "step2", "step3", "step4"]}
+        steps={["step1", "step2", "step3"]}
         getStepText={(key) => t(`info.${key}`)}
         ctaText={t("cta")}
         orText={t("or")}

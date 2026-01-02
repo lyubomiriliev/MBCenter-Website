@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import { AnimatedSection } from '@/components/animations/AnimatedSection';
-import { AnimatedText } from '@/components/animations/AnimatedText';
-import { PatternBackground } from '@/components/sections/PatternBackground';
+import { useState } from "react";
+import Image from "next/image";
+import { useTranslations } from "next-intl";
+import { AnimatedSection } from "@/components/animations/AnimatedSection";
+import { AnimatedText } from "@/components/animations/AnimatedText";
+import { PatternBackground } from "@/components/sections/PatternBackground";
 
 type CodingFeature = {
   title: string;
@@ -31,6 +32,7 @@ export function CodingByGenerationSection({
   subtitle,
   generations,
 }: CodingByGenerationSectionProps) {
+  const t = useTranslations("services.codingGen");
   const [selectedGen, setSelectedGen] = useState(0);
 
   return (
@@ -41,9 +43,7 @@ export function CodingByGenerationSection({
             {title}
           </h2>
           <div className="w-24 h-1 bg-mb-blue mx-auto mb-8"></div>
-          <p className="text-xl text-mb-silver max-w-3xl mx-auto">
-            {subtitle}
-          </p>
+          <p className="text-xl text-mb-silver max-w-3xl mx-auto">{subtitle}</p>
         </AnimatedText>
 
         {/* Generation Tabs */}
@@ -55,8 +55,8 @@ export function CodingByGenerationSection({
                 onClick={() => setSelectedGen(index)}
                 className={`px-6 py-3 rounded-button font-medium transition-all duration-300 ${
                   selectedGen === index
-                    ? 'bg-mb-blue text-white shadow-lg scale-105'
-                    : 'bg-mb-anthracite text-mb-silver hover:bg-mb-anthracite/70 border border-mb-border'
+                    ? "bg-mb-blue text-white shadow-lg scale-105"
+                    : "bg-mb-anthracite text-mb-silver hover:bg-mb-anthracite/70 border border-mb-border"
                 }`}
               >
                 <div className="text-sm font-bold">{gen.name}</div>
@@ -72,9 +72,7 @@ export function CodingByGenerationSection({
             <div
               key={gen.id}
               className={`transition-all duration-500 ${
-                selectedGen === index
-                  ? 'opacity-100 block'
-                  : 'opacity-0 hidden'
+                selectedGen === index ? "opacity-100 block" : "opacity-0 hidden"
               }`}
             >
               {selectedGen === index && (
@@ -99,13 +97,19 @@ export function CodingByGenerationSection({
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-2 bg-mb-blue rounded-full"></div>
                               <span className="text-mb-silver">
-                                <span className="text-white font-semibold">Models:</span> {gen.models}
+                                <span className="text-white font-semibold">
+                                  {t("models")}:
+                                </span>{" "}
+                                {gen.models}
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-2 bg-mb-blue rounded-full"></div>
                               <span className="text-mb-silver">
-                                <span className="text-white font-semibold">System:</span> {gen.system}
+                                <span className="text-white font-semibold">
+                                  {t("system")}:
+                                </span>{" "}
+                                {gen.system}
                               </span>
                             </div>
                           </div>
@@ -117,7 +121,11 @@ export function CodingByGenerationSection({
                   {/* Features Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {gen.categories.map((category, catIndex) => (
-                      <AnimatedSection key={catIndex} from="bottom" delay={catIndex * 0.05}>
+                      <AnimatedSection
+                        key={catIndex}
+                        from="bottom"
+                        delay={catIndex * 0.05}
+                      >
                         <div className="bg-mb-anthracite rounded-card border border-mb-border p-6 h-full hover:border-mb-blue transition-colors">
                           <h4 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
                             <span className="w-8 h-8 bg-mb-blue/20 rounded-lg flex items-center justify-center text-mb-blue">
@@ -142,7 +150,9 @@ export function CodingByGenerationSection({
                                 >
                                   <path d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span className="text-sm leading-relaxed">{feature}</span>
+                                <span className="text-sm leading-relaxed">
+                                  {feature}
+                                </span>
                               </li>
                             ))}
                           </ul>
@@ -159,4 +169,3 @@ export function CodingByGenerationSection({
     </PatternBackground>
   );
 }
-

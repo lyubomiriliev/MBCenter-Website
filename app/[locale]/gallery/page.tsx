@@ -27,90 +27,129 @@ export async function generateMetadata({
   };
 }
 
+type GalleryProject = {
+  id: string;
+  title: string;
+  description: {
+    bg: string;
+    en: string;
+  };
+  images: string[];
+};
+
 export default function GalleryPage({ params: { locale } }: Props) {
   setRequestLocale(locale);
   const t = useTranslations("gallery");
 
-  const galleryImages = [
+  const projects: GalleryProject[] = [
     {
-      src: "/assets/images/gallery/w223.jpg",
-      alt: "Mercedes-Benz S-Class W223",
-      category: "projects",
+      id: "eqs580",
+      title: "EQS 580 SUV X296",
+      description: {
+        bg: "Смяна на електродвигател",
+        en: "Electric motor replacement",
+      },
+      images: [
+        "/assets/images/gallery/work/eqs1.jpg",
+        "/assets/images/gallery/work/eqs2.jpg",
+      ],
     },
     {
-      src: "/assets/images/gallery/w223-1.jpg",
-      alt: "Mercedes-Benz S-Class Interior",
-      category: "projects",
+      id: "g63",
+      title: "G63 AMG W463r",
+      description: {
+        bg: "Сервизно обслужване тип Service А",
+        en: "Service A maintenance",
+      },
+      images: [
+        "/assets/images/gallery/work/g63.jpg",
+        "/assets/images/gallery/work/g63-1.jpg",
+        "/assets/images/gallery/work/g63-2.jpg",
+      ],
     },
     {
-      src: "/assets/images/gallery/w223-2.jpg",
-      alt: "Mercedes-Benz S-Class Detail",
-      category: "projects",
+      id: "s400d",
+      title: "S400d W223",
+      description: {
+        bg: "Програмиране и адаптация на фар. Star Diagnosis and SCN coding. ZenZefi certificate",
+        en: "Headlight programming and adaptation. Star Diagnosis and SCN coding. ZenZefi certificate",
+      },
+      images: [
+        "/assets/images/gallery/work/w223.jpg",
+        "/assets/images/gallery/work/w223-1.jpg",
+        "/assets/images/gallery/work/w223-2.jpg",
+      ],
     },
     {
-      src: "/assets/images/gallery/w223x.jpg",
-      alt: "Mercedes-Benz S-Class Workshop",
-      category: "workshop",
+      id: "s580",
+      title: "S580 W223",
+      description: {
+        bg: "Diagnostics and SCN coding. ZenZefi certificate",
+        en: "Diagnostics and SCN coding. ZenZefi certificate",
+      },
+      images: ["/assets/images/gallery/work/w223-3.jpg"],
     },
     {
-      src: "/assets/images/gallery/gle-1.jpg",
-      alt: "Mercedes-Benz GLE",
-      category: "projects",
+      id: "gle350-service",
+      title: "GLE350 W167",
+      description: {
+        bg: "Сервизно обслужване тип Service А с вписване на официална сервизна история + Maps update Europe 2025",
+        en: "Service A maintenance with official service history entry + Maps update Europe 2025",
+      },
+      images: [
+        "/assets/images/gallery/work/gle.jpg",
+        "/assets/images/gallery/work/gle-1.jpg",
+        "/assets/images/gallery/work/gle-2.jpg",
+      ],
     },
     {
-      src: "/assets/images/gallery/gle-w167.jpg",
-      alt: "Mercedes-Benz GLE W167",
-      category: "projects",
+      id: "g800",
+      title: "G800 BRABUS W463",
+      description: {
+        bg: "Programming and coding. Start/Stop memory, Belts warning off, USA to ECE.",
+        en: "Programming and coding. Start/Stop memory, Belts warning off, USA to ECE.",
+      },
+      images: [
+        "/assets/images/gallery/work/brabus.jpg",
+        "/assets/images/gallery/work/brabus-1.jpg",
+        "/assets/images/gallery/work/brabus-2.jpg",
+      ],
     },
     {
-      src: "/assets/images/glc-white.webp",
-      alt: "Mercedes-Benz GLC White",
-      category: "projects",
+      id: "s63",
+      title: "S63 AMG W217",
+      description: {
+        bg: "Star диагностика и сервизна инспекция",
+        en: "Star Diagnosis and service inspection",
+      },
+      images: ["/assets/images/gallery/work/w217.jpg"],
     },
     {
-      src: "/assets/images/g-class.jpg",
-      alt: "Mercedes-Benz G-Class",
-      category: "projects",
+      id: "gle350-2",
+      title: "GLE350 W167",
+      description: {
+        bg: "Техническо обслужване - бобини и свещи. Сменена допълнителна ел. водна помпа ниско температурен кръг.",
+        en: "Service - ignition coils and spark plugs. Changed aux. water pump.",
+      },
+      images: [
+        "/assets/images/gallery/work/gle350.jpg",
+        "/assets/images/gallery/work/gle350-1.jpg",
+        "/assets/images/gallery/work/gle350-2.jpg",
+        "/assets/images/gallery/work/gle350-3.jpg",
+        "/assets/images/gallery/work/gle350-4.jpg",
+      ],
     },
     {
-      src: "/assets/images/servicing.jpg",
-      alt: "Mercedes Service",
-      category: "workshop",
-    },
-    {
-      src: "/assets/images/servicing-2.jpg",
-      alt: "Mercedes Workshop",
-      category: "workshop",
-    },
-    {
-      src: "/assets/images/diagnosis1.png",
-      alt: "Diagnostic Equipment",
-      category: "equipment",
-    },
-    {
-      src: "/assets/images/diagnosis2.png",
-      alt: "Advanced Diagnostics",
-      category: "equipment",
-    },
-    {
-      src: "/assets/images/coding.webp",
-      alt: "Mercedes Coding",
-      category: "equipment",
-    },
-    {
-      src: "/assets/images/coding3.webp",
-      alt: "Vehicle Programming",
-      category: "equipment",
-    },
-    {
-      src: "/assets/images/ev1.avif",
-      alt: "Mercedes EV Service",
-      category: "projects",
-    },
-    {
-      src: "/assets/images/glb-ev2.jpg",
-      alt: "Mercedes GLB EV",
-      category: "projects",
+      id: "s500",
+      title: "S500 W222",
+      description: {
+        bg: "Programming and coding AMG menu",
+        en: "Programming and coding AMG menu",
+      },
+      images: [
+        "/assets/images/gallery/work/w222.jpg",
+        "/assets/images/gallery/work/w222-1.jpg",
+      ],
     },
   ];
 
@@ -122,11 +161,7 @@ export default function GalleryPage({ params: { locale } }: Props) {
         videoSrc="/assets/videos/w223-video.mp4"
       />
 
-      <GallerySection
-        title={t("title")}
-        subtitle={t("hero.subtitle")}
-        images={galleryImages}
-      />
+      <GallerySection title={t("title")} projects={projects} locale={locale} />
     </>
   );
 }

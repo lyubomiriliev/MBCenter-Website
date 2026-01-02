@@ -1,23 +1,27 @@
-import { PatternBackground } from '@/components/sections/PatternBackground';
-import { AnimatedText } from '@/components/animations/AnimatedText';
-import { GalleryGrid } from '@/components/sections/GalleryGrid';
+import { PatternBackground } from "@/components/sections/PatternBackground";
+import { AnimatedText } from "@/components/animations/AnimatedText";
+import { GalleryGrid } from "@/components/sections/GalleryGrid";
 
-type GalleryImage = {
-  src: string;
-  alt: string;
-  category?: string;
+type GalleryProject = {
+  id: string;
+  title: string;
+  description: {
+    bg: string;
+    en: string;
+  };
+  images: string[];
 };
 
 type GallerySectionProps = {
   title: string;
-  subtitle: string;
-  images: GalleryImage[];
+  projects: GalleryProject[];
+  locale: string;
 };
 
 export function GallerySection({
   title,
-  subtitle,
-  images,
+  projects,
+  locale,
 }: GallerySectionProps) {
   return (
     <PatternBackground className="py-32 bg-mb-black">
@@ -27,14 +31,10 @@ export function GallerySection({
             {title}
           </h2>
           <div className="w-24 h-1 bg-mb-blue mx-auto mb-8"></div>
-          <p className="text-xl text-mb-silver max-w-3xl mx-auto">
-            {subtitle}
-          </p>
         </AnimatedText>
 
-        <GalleryGrid images={images} />
+        <GalleryGrid projects={projects} locale={locale} />
       </div>
     </PatternBackground>
   );
 }
-

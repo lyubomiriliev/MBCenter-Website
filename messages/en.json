@@ -18,12 +18,13 @@
     },
     "valueProps": {
       "title": "Why Choose Us",
-      "oemTitle": "OEM Equipment",
-      "oemDesc": "Factory-certified tools and diagnostic equipment",
-      "partnerTitle": "Official Partner",
-      "partnerDesc": "Authorized Mercedes-Benz service center",
-      "experienceTitle": "Expert Team",
-      "experienceDesc": "Specialized technicians with years of experience"
+      "oemTitle": "Original OEM Parts",
+      "oemDesc": "We understand the importance of maintaining the performance and reliability of your Mercedes-Benz. That's why we offer original OEM parts, delivered directly from the manufacturer. With us, you can trust that every component is designed to meet the highest quality standards, ensuring perfect fit and optimal functionality.",
+      "partnerTitle": "Customer Satisfaction",
+      "partnerDesc": "Our customers are at the heart of everything we do. We are committed to ensuring your satisfaction at every step of the journey. From the moment you visit our website to the successful installation of parts, we strive to provide a seamless and enjoyable experience.",
+      "experienceTitle": "Wide Selection",
+      "whyChooseDesc": "Specialized Mercedes-Benz Service Center",
+      "experienceDesc": "We pride ourselves on an extensive catalog of Mercedes-Benz OEM parts, serving a diverse range of models and years. Whether you drive a classic luxury sedan or the latest SUV, we have the parts you need to maintain and enhance your vehicle."
     },
     "whereToFind": {
       "title": "Where to Find Us",
@@ -182,6 +183,8 @@
     "codingGen": {
       "title": "Coding by Model Generation",
       "subtitle": "Customization options organized by vehicle generation and electronic architecture",
+      "models": "Models",
+      "system": "System",
       "latest": {
         "name": "Latest Generation",
         "models": "W206, S223, EQS, EQE, GLC X254",
@@ -415,7 +418,7 @@
     "title": "Contact Us",
     "hero": {
       "title": "Get in Touch",
-      "subtitle": "We're here to help with your Mercedes"
+      "subtitle": "We're here to help with your Mercedes-Benz"
     },
     "info": {
       "title": "Contact Information",
@@ -423,6 +426,7 @@
       "serviceAddress": "This is the address of our service center",
       "phone": "Phone",
       "email": "Email",
+      "workingHours": "Working Hours",
       "hours": "Mon-Fri: 9:00 - 18:00"
     },
     "form": {
@@ -551,6 +555,429 @@
     }
   },
   "terms": {
-    "title": "Terms and Conditions"
+    "title": "Terms and Conditions",
+    "header": {
+      "title": "SERVICE TERMS AND CONDITIONS",
+      "subtitle": "of \"MB Center\" Ltd.",
+      "uic": "UIC: BG207901533",
+      "address": "Registered office and management address: Sofia, Lozenets District,\nOkolovrasten Pat (Ring Road) No. 155"
+    },
+    "chapters": {
+      "i": {
+        "title": "Chapter I. General Provisions",
+        "art1": {
+          "title": "Art. 1.",
+          "content": "These Terms and Conditions constitute an internal normative act governing the relations between \"MB Center\" Ltd. (hereinafter referred to as the \"Contractor\" or the \"Service Center\") and its customers (hereinafter referred to as the \"Clients\") in connection with the provision of service activities, repairs, and technical maintenance of Mercedes-Benz vehicles."
+        },
+        "art2": {
+          "title": "Art. 2.",
+          "p1": "(1) These Terms and Conditions are binding and apply to every service card, report, or repair contract.",
+          "p2": "(2) By signing the service card, the Client declares consent with all clauses, paragraphs, items, and sub-items contained in this document."
+        }
+      },
+      "ii": {
+        "title": "Chapter II. Personal Data Protection Policy",
+        "art3": {
+          "title": "Art. 3. General provisions and categories of data",
+          "p1": "(1) This policy regulates the order, conditions, principles, and procedures under which \"MB Center\" Ltd. collects, processes, stores, uses, and protects personal data of its customers, clients, representatives, employees, and third parties.",
+          "p2": "(2) The policy is drafted in accordance with applicable legislation, including the General Data Protection Regulation (Regulation (EU) 2016/679 – GDPR), the Personal Data Protection Act, and all secondary regulations.",
+          "p3": "(3) The Service Center may process the following categories of personal data:",
+          "dataCategories": {
+            "1": "Item 1. Identification data: full name, Personal Identification Number (EGN), UIC, ID card number, address;",
+            "2": "Item 2. Contact data: phone number, email, postal address;",
+            "3": "Item 3. Vehicle data: registration number, VIN, model, technical characteristics;",
+            "4": "Item 4. Financial data: information on payments, invoices, bank accounts;",
+            "5": "Item 5. Data voluntarily provided by the customer in communication with the Service Center."
+          },
+          "p4": "(4) The purposes of processing include:",
+          "purposes": {
+            "1": "Item 1. Customer identification upon vehicle acceptance;",
+            "2": "Item 2. Preparation of service cards, reports, and invoices;",
+            "3": "Item 3. Performance of contractual obligations;",
+            "4": "Item 4. Communication with the customer regarding repair, timelines, and payments;",
+            "5": "Item 5. Compliance with legal obligations (accounting, tax, regulatory);",
+            "6": "Item 6. Protection of the rights and legitimate interests of the Service Center."
+          },
+          "p5": "(5) The Client agrees that every paragraph, item, and sub-item of this article is binding, regardless of its length, complexity, or repetitiveness."
+        },
+        "art4": {
+          "title": "Art. 4. Retention, rights, and liability",
+          "p1": "(1) Personal data is stored for periods determined by law, including tax and accounting requirements.",
+          "p2": "(2) After the relevant periods expire, the data is destroyed or anonymized.",
+          "p3": "(3) Each customer has the right:",
+          "rights": {
+            "1": "Item 1. To access their data;",
+            "2": "Item 2. To rectify inaccurate data;",
+            "3": "Item 3. To erasure (\"right to be forgotten\");",
+            "4": "Item 4. To restriction of processing;",
+            "5": "Item 5. To data portability;",
+            "6": "Item 6. To object to processing."
+          },
+          "p4": "(4) The Service Center is responsible for lawful processing of personal data and applies technical and organizational measures for protection, including encryption, access restriction, and archiving.",
+          "p5": "(5) The Client is responsible for providing false or incomplete data.",
+          "p6": "(6) Violations of this policy may lead to refusal of service or claims for compensation.",
+          "p7": "(7) This chapter may be amended and supplemented at any time by the Service Center, and the amendment enters into force upon publication on the website.",
+          "p8": "(8) The Client agrees that reading this chapter is mandatory, regardless of its volume, complexity, or repetitiveness."
+        }
+      },
+      "iii": {
+        "title": "Chapter III. Warranty Services Policy",
+        "art5": {
+          "title": "Art. 5. Granting, scope, and limitations of the warranty",
+          "p1": "(1) The Contractor provides a warranty for the repair work performed and spare parts installed, and the warranty constitutes a contractual obligation with the force of law between the parties.",
+          "p2": "(2) The warranty period is as follows:",
+          "warrantyPeriods": {
+            "1": "Item 1. For vehicles owned by legal entities (company vehicles) – 1 (one) year from the date of issuance of the service card;",
+            "2": "Item 2. For vehicles owned by individuals (private customers) – 2 (two) years from the date of issuance of the service card."
+          },
+          "p3": "(3) The warranty covers only the specific repair activities and spare parts described in the service card and may not be extended by interpretation or analogy to other vehicle elements.",
+          "p4": "(4) The warranty is non-transferable and may not be assigned, pledged, or otherwise disposed of by the Client.",
+          "p5": "(5) The warranty is automatically void, without the need for additional notice, in the following cases:",
+          "voidConditions": {
+            "1": "Item 1. The vehicle has been serviced, repaired, or modified in a service center other than the Contractor;",
+            "2": "Item 2. External intervention, modification, or tuning exists that directly or indirectly affects the repairs performed;",
+            "3": "Item 3. The Client has not complied with the operating, maintenance, and service recommendations provided;",
+            "4": "Item 4. The vehicle has been used under conditions incompatible with the manufacturer's technical instructions (including racing, off-road use, overloading beyond permissible parameters);",
+            "5": "Item 5. The Client has used non-original oils, fluids, or consumables that have caused damage."
+          },
+          "p6": "(6) The Client bears the burden of proof to establish that the warranty conditions have been met by presenting the service card, invoice, and other relevant documents.",
+          "p7": "(7) The warranty does not cover:",
+          "exclusions": {
+            "1": "Item 1. Cosmetic defects, external remarks, and minor non-conformities that do not affect the functionality of the repair;",
+            "2": "Item 2. Damage caused by traffic accidents, natural disasters, vandalism, or other force majeure circumstances;",
+            "3": "Item 3. Hidden factory defects of the vehicle that were not the subject of the repair;",
+            "4": "Item 4. Wear and tear resulting from normal use."
+          },
+          "p8": "(8) The warranty may not be interpreted as insurance coverage or as assumption of liability for all future vehicle defects."
+        },
+        "art6": {
+          "title": "Art. 6. Procedure, termination, and disputes",
+          "p1": "(1) When making a warranty claim, the Client must present the vehicle at the Contractor's service center for inspection and diagnostics.",
+          "p2": "(2) The Contractor may refuse warranty service if it finds that the conditions under Art. 5 have not been met.",
+          "p3": "(3) If the claim is justified, the repair is performed free of charge using parts and materials that meet the manufacturer's standards.",
+          "p4": "(4) If the claim is unjustified, the Client owes payment for the incurred diagnostics and inspection costs.",
+          "p5": "(5) The warranty terminates automatically upon expiry of the relevant period under Art. 5(2).",
+          "p6": "(6) The warranty may not be extended or renewed unless explicitly agreed in writing between the parties.",
+          "p7": "(7) All disputes arising in connection with warranty services are resolved by mutual agreement; failing that, under the applicable laws of the Republic of Bulgaria.",
+          "p8": "(8) This clause aims to protect the Service Center from claims arising from external interventions and to ensure the warranty applies only under conditions where the repair was performed and controlled by the Service Center."
+        }
+      },
+      "iv": {
+        "title": "Chapter IV. Vehicle Handover and Objections Policy",
+        "art7": {
+          "title": "Art. 7.",
+          "p1": "(1) Upon handover of the vehicle after repair, the Client must perform an immediate inspection of the vehicle.",
+          "p2": "(2) Any objections regarding performed work or cosmetic remarks must be stated immediately at handover.",
+          "p3": "(3) After the vehicle is handed over and the respective documents are signed, the Client has no right to raise objections regarding cosmetic defects, external remarks, or other minor non-conformities."
+        }
+      },
+      "v": {
+        "title": "Chapter V. Storage and Parking Policy",
+        "art8": {
+          "title": "Art. 8.",
+          "p1": "(1) Vehicles left at the Service Center are stored with due care within the indoor premises of the Contractor.",
+          "p2": "(2) The Contractor is not liable for damage, loss, or missing items occurring to vehicles left on the outdoor parking area outside the guarded and controlled areas of the Service Center.",
+          "p3": "(3) The Client accepts that leaving a vehicle on the outdoor parking area is at the Client's own risk and responsibility."
+        }
+      },
+      "vi": {
+        "title": "Chapter VI. Spare Parts and Materials Policy",
+        "art9": {
+          "title": "Art. 9.",
+          "p1": "(1) The Contractor uses original or certified spare parts in accordance with the manufacturer's standards.",
+          "p2": "(2) Alternative parts may be used only with the Client's explicit written consent."
+        },
+        "art10": {
+          "title": "Art. 10.",
+          "content": "All spare parts installed in the repair are invoiced separately and are subject to warranty under Art. 5."
+        }
+      },
+      "vii": {
+        "title": "Chapter VII. Liability Policy",
+        "art11": {
+          "title": "Art. 11.",
+          "p1": "(1) The Contractor is liable for the quality of the repairs performed within the warranty period.",
+          "p2": "(2) The Contractor is not liable for:",
+          "exclusions": {
+            "1": "Item 1. Defects arising from improper use;",
+            "2": "Item 2. Damage caused by external factors (accidents, natural disasters, vandalism, etc.);",
+            "3": "Item 3. Hidden factory defects of the vehicle;",
+            "4": "Item 4. Malfunctions arising from the use of non-original parts, oils, or consumables."
+          }
+        }
+      },
+      "viii": {
+        "title": "Chapter VIII. Payments and Financial Terms",
+        "art12": {
+          "title": "Art. 12.",
+          "p1": "(1) The Client must pay the cost of the repair according to the issued invoice.",
+          "p2": "(2) Payment may be made in cash, by bank transfer, or via other methods approved by the Contractor."
+        },
+        "art13": {
+          "title": "Art. 13.",
+          "content": "In case of delayed payment, statutory interest is charged for each overdue day in accordance with Art. 86 of the Obligations and Contracts Act."
+        }
+      },
+      "ix": {
+        "title": "Chapter IX. Policy on Refusal of Services",
+        "art14": {
+          "title": "Art. 14.",
+          "p1": "(1) The Client may refuse performance of the repair until work has commenced.",
+          "p2": "(2) In the event of refusal after the repair has started, the Client owes payment for the work already performed and parts used."
+        }
+      },
+      "x": {
+        "title": "Chapter X. Complaints Policy",
+        "art15": {
+          "title": "Art. 15.",
+          "p1": "(1) Complaints are accepted only in written form, accompanied by the service card and invoice.",
+          "p2": "(2) The Contractor must review the complaint within 14 days.",
+          "p3": "(3) If the complaint is justified, the repair is performed free of charge under warranty.",
+          "p4": "(4) If the complaint is unjustified, the Client owes payment for the diagnostics costs incurred."
+        }
+      },
+      "xi": {
+        "title": "Chapter XI. Storage and Test Drive Policy",
+        "art16": {
+          "title": "Art. 16.",
+          "p1": "(1) Vehicles left at the Service Center are stored with due care and supervision within the indoor premises of the Contractor.",
+          "p2": "(2) The Contractor is not liable for damage, loss, or missing items resulting from force majeure, natural disasters, vandalism, or other external factors beyond its control.",
+          "p3": "(3) Vehicles left on the outdoor parking area are entirely at the Client's risk and responsibility, and the Contractor bears no property or contractual liability for their condition."
+        },
+        "art17": {
+          "title": "Art. 17.",
+          "p1": "(1) For the purpose of verifying repairs performed and diagnosing the vehicle's technical condition, the Contractor may perform a test drive of the vehicle.",
+          "p2": "(2) By signing the service card, the Client gives explicit consent for the test drive, which is carried out in compliance with all traffic rules.",
+          "p3": "(3) The Contractor is not liable for damage resulting from hidden factory defects or malfunctions manifested during the test drive."
+        }
+      },
+      "xii": {
+        "title": "Chapter XII. Deposits and Parts Ordering Policy",
+        "art18": {
+          "title": "Art. 18.",
+          "p1": "(1) When requesting a repair involving delivery and installation of spare parts, the Client may be required to pay a deposit representing partial or full advance payment for the parts.",
+          "p2": "(2) The deposit serves as security for performance of the order and is non-refundable in the event of a unilateral refusal by the Client, regardless of the reason.",
+          "p3": "(3) Refund of the deposit is permitted only if the Contractor is objectively unable to fulfill the order due to lack of availability, discontinuation of the part, or other circumstances beyond its control.",
+          "p4": "(4) In case of refund, the Contractor must return the amount within 30 (thirty) calendar days from the occurrence of the respective circumstance, via the same method as paid, unless otherwise agreed in writing.",
+          "p5": "(5) The Contractor may set off the refundable amount against any due and liquid obligations of the Client arising from other agreements, repairs, parts deliveries, or services.",
+          "p6": "(6) The set-off is deemed completed from the moment the Client is notified in writing, and mutual obligations are extinguished up to the amount of the smaller sum.",
+          "p7": "(7) By signing the service card or repair contract, the Client declares they are aware of and agree to this policy on deposits, refunds, and set-off."
+        }
+      },
+      "xiii": {
+        "title": "Chapter XIII. Policy on Price Changes",
+        "art19": {
+          "title": "Art. 19.",
+          "p1": "(1) If additional necessary activities are identified during the repair, the Service Center may propose an adjustment to the initially agreed price.",
+          "p2": "(2) If the Client refuses the additional activities, the Client declares they are aware of and accept the risk of subsequent damage that will not be covered by warranty."
+        }
+      },
+      "xiv": {
+        "title": "Chapter XIV. Policy on Refused Repair",
+        "art20": {
+          "title": "Art. 20.",
+          "p1": "(1) If the Client insists on a partial repair, replacement of only one part of a set, or refuses a repair recommended by the Service Center, the warranty on the performed work is void.",
+          "p2": "(2) The Client bears full responsibility for any subsequent damage resulting from an incomplete or refused repair."
+        }
+      },
+      "xv": {
+        "title": "Chapter XV. Policy on Risk in Software Interventions",
+        "art21": {
+          "title": "Art. 21.",
+          "p1": "(1) When performing updates, reprogramming, or adaptation of electronic modules (including SBC, 7G-Tronic, 9G, ECU, TCU, ESP, Airbag, Gateway, and others), there is a risk of failure of already compromised components.",
+          "p2": "(2) The Client accepts and declares that modules may fail due to age, corrosion, internal factory defects, or other objective reasons for which the Service Center bears no liability."
+        }
+      },
+      "xvi": {
+        "title": "Chapter XVI. Service Center's Right to Refuse Service",
+        "art22": {
+          "title": "Art. 22.",
+          "p1": "(1) The Service Center may refuse to perform repair or maintenance in the following cases:",
+          "cases": {
+            "1": "Item 1. Unauthorized tuning or modifications compromising safety;",
+            "2": "Item 2. Dangerous technical condition of the vehicle that may endanger the life and health of employees or third parties;",
+            "3": "Item 3. Aggressive, disrespectful, or humiliating behavior by the Client toward staff;",
+            "4": "Item 4. Suspicion of illegal modifications or activities contrary to the law."
+          }
+        }
+      },
+      "xvii": {
+        "title": "Chapter XVII. Installation of Parts Provided by the Client",
+        "art23": {
+          "title": "Art. 23.",
+          "p1": "(1) When installing spare parts provided by the Client, the Service Center is not liable for defects caused by the quality or origin of those parts.",
+          "p2": "(2) In such cases, no warranty is provided for the labor performed, and the Client assumes the risk of subsequent damage."
+        }
+      },
+      "xviii": {
+        "title": "Chapter XVIII. Video Surveillance Policy",
+        "art24": {
+          "title": "Art. 24.",
+          "p1": "(1) The Service Center premises are under continuous video surveillance (24/7).",
+          "p2": "(2) By being present on the premises, the Client is considered informed of and consenting to the video surveillance, which aims to protect property and security."
+        }
+      },
+      "xix": {
+        "title": "Chapter XIX. Risk Policy in Forced Disassembly",
+        "art25": {
+          "title": "Art. 25.",
+          "p1": "(1) If disassembly of seized, stuck, or corroded components results in breakage, deformation, or other damage, the Client assumes the risk and may not bring claims against the Service Center.",
+          "p2": "(2) The Service Center must inform the Client of the risk prior to performing the disassembly."
+        }
+      },
+      "xx": {
+        "title": "Chapter XX. Policy on Termination of Relations",
+        "art26": {
+          "title": "Art. 26.",
+          "p1": "(1) The Service Center may terminate servicing a Client for operational, ethical, or legal reasons, including but not limited to:",
+          "reasons": {
+            "1": "Item 1. Systematic non-payment of financial obligations;",
+            "2": "Item 2. Behavior that violates good morals or endangers employees;",
+            "3": "Item 3. Illegal modifications or activities related to the vehicle;",
+            "4": "Item 4. Other circumstances that objectively prevent normal performance of service activities."
+          },
+          "p2": "(2) Termination is effected by written notice; from that moment the Service Center bears no obligations for future repairs or servicing."
+        }
+      },
+      "xxi": {
+        "title": "Chapter XXI. Access to the Service Area",
+        "art27": {
+          "title": "Art. 27.",
+          "p1": "(1) Access by customers and third parties to the service area is strictly restricted.",
+          "p2": "(2) The Client may not be present during repair activities unless expressly invited by the Service Center.",
+          "p3": "(3) The restriction aims to:",
+          "purposes": {
+            "1": "Item 1. Ensure the safety of employees and customers;",
+            "2": "Item 2. Protect equipment and tools;",
+            "3": "Item 3. Prevent unauthorized interference in the repair process."
+          }
+        }
+      },
+      "xxii": {
+        "title": "Chapter XXII. Test Driving Policy",
+        "art28": {
+          "title": "Art. 28. General provisions",
+          "p1": "(1) The Service Center may test drive a vehicle to verify performed repair work and diagnose the technical condition.",
+          "p2": "(2) Test drives are performed only by authorized Service Center employees."
+        },
+        "art29": {
+          "title": "Art. 29. Conditions for performance",
+          "p1": "(1) Test driving is carried out within a reasonable mileage necessary for verification.",
+          "p2": "(2) All test drives are performed in compliance with traffic rules and internal safety rules.",
+          "p3": "(3) The Client gives explicit consent for test driving upon acceptance of the vehicle at the Service Center."
+        },
+        "art30": {
+          "title": "Art. 30. Liability",
+          "p1": "(1) The Service Center is liable for the vehicle during the test drive, except in force majeure circumstances.",
+          "p2": "(2) The Client accepts that if hidden defects or compromised components manifest during the test drive, the Service Center is not liable for their occurrence.",
+          "p3": "(3) The Service Center will not test drive a vehicle if its condition poses a danger to traffic or employees.",
+          "p4": "(4) The Client bears full responsibility for the availability and validity of mandatory documents and insurance, including:",
+          "documents": {
+            "1": "Item 1. Valid third-party liability insurance;",
+            "2": "Item 2. Valid annual technical inspection;",
+            "3": "Item 3. Any other documents required by law."
+          },
+          "p5": "(5) If during a test drive the vehicle is stopped by authorities and missing/irregular documents are found, all fines, costs, or administrative sanctions (including temporary suspension of the employee's driving license) are at the Client's expense."
+        }
+      },
+      "xxiii": {
+        "title": "Chapter XXIII. Deadlines and Delays Policy",
+        "art31": {
+          "title": "Art. 31. General provisions",
+          "p1": "(1) Repair timelines stated by the Service Center are indicative.",
+          "p2": "(2) They are determined based on information available at vehicle acceptance and may be changed due to objective circumstances."
+        },
+        "art32": {
+          "title": "Art. 32. Reasons for delay",
+          "p1": "(1) Delays may occur due to:",
+          "reasons": {
+            "1": "Item 1. Delayed spare parts deliveries;",
+            "2": "Item 2. Discovery of additional technical issues;",
+            "3": "Item 3. Need for unforeseen activities;",
+            "4": "Item 4. Force majeure circumstances."
+          },
+          "p2": "(2) In such cases, the Service Center may extend the repair timeline without liability for indirect damages or lost profits."
+        },
+        "art33": {
+          "title": "Art. 33. Liability",
+          "p1": "(1) The Service Center is not liable for delays caused by reasons beyond its control.",
+          "p2": "(2) The Client accepts that an extension does not constitute non-performance by the Service Center.",
+          "p3": "(3) The Service Center owes no compensation for delay."
+        }
+      },
+      "xxiv": {
+        "title": "Chapter XXIV. Vehicle Diagnostics Policy",
+        "art34": {
+          "title": "Art. 34. General provisions",
+          "p1": "(1) Vehicles are complex technical systems consisting of many interconnected mechanical, electrical, and electronic components.",
+          "p2": "(2) Diagnostics is a staged and systematic process, and each step may reveal new data that changes initial conclusions.",
+          "p3": "(3) The Client accepts that diagnostics is not a one-time conclusion but a dynamic process of establishing the vehicle's actual technical condition."
+        },
+        "art35": {
+          "title": "Art. 35. Diagnostics process",
+          "p1": "(1) Diagnostics is performed through a combination of:",
+          "methods": {
+            "1": "Item 1. Electronic tests and software checks;",
+            "2": "Item 2. Visual inspections and mechanical measurements;",
+            "3": "Item 3. Road tests and functional checks."
+          },
+          "p2": "(2) Each stage may lead to correction or supplementation of earlier conclusions.",
+          "p3": "(3) The Service Center may update the repair quote depending on subsequent diagnostic results."
+        },
+        "art36": {
+          "title": "Art. 36. Liability and limitations",
+          "p1": "(1) The Service Center is not liable for changes in initial conclusions after additional checks—this is a natural part of the work process.",
+          "p2": "(2) The Client accepts that a change in diagnosis does not constitute an \"error\" but a normal development of the diagnostic process.",
+          "p3": "(3) All costs for additional checks and corrections are borne by the Client unless gross negligence by the Service Center is proven.",
+          "p4": "(4) The Service Center is not liable for indirect damages or lost profits arising from a change in diagnosis."
+        },
+        "art37": {
+          "title": "Art. 37. Additional provisions",
+          "p1": "(1) This policy aims to ensure transparency and clarity, emphasizing that diagnostics is a process, not a final conclusion.",
+          "p2": "(2) The Client agrees that each diagnostic step is necessary to properly establish the vehicle's technical condition.",
+          "p3": "(3) This chapter may be amended and supplemented at any time by the Service Center, and the amendment enters into force upon publication on the website."
+        }
+      },
+      "xxv": {
+        "title": "Chapter XXV. Deadlines for Preparing a Quote",
+        "art38": {
+          "title": "Art. 38. General provisions",
+          "p1": "(1) After inspection and diagnostics, the Service Center prepares a repair quote describing required activities, parts, timelines, and costs.",
+          "p2": "(2) Preparing the quote is a process requiring time, attention, and consideration of the vehicle's technical complexity and interdependent systems.",
+          "p3": "(3) The Client accepts that the quote cannot be provided immediately and that the preparation period may be up to fourteen (14) calendar days from the date of vehicle inspection."
+        },
+        "art39": {
+          "title": "Art. 39. Reasons for up to 14 days",
+          "p1": "(1) The quote preparation period is determined by:",
+          "reasons": {
+            "1": "Item 1. The need for staged diagnostics and checks of interconnected systems;",
+            "2": "Item 2. The complexity of technical problems and need for additional tests;",
+            "3": "Item 3. Processing of already submitted and pending quotes from other customers;",
+            "4": "Item 4. Parts and consumables availability;",
+            "5": "Item 5. Internal control and approval procedures."
+          },
+          "p2": "(2) The Client accepts these factors are objective and do not constitute delay or non-performance, but part of the normal work process."
+        },
+        "art40": {
+          "title": "Art. 40. Liability and limitations",
+          "p1": "(1) The Service Center is responsible for providing the quote within the stated period, except in force majeure circumstances.",
+          "p2": "(2) The Client may not claim compensation for the waiting period, as it is part of the normal work process.",
+          "p3": "(3) If the Client refuses to wait for the quote, the Service Center is released from any obligation to perform the repair."
+        },
+        "art41": {
+          "title": "Art. 41. Additional provisions",
+          "p1": "(1) This policy aims to provide transparency and clarity regarding quote preparation timelines.",
+          "p2": "(2) The Client agrees that the quote preparation process is staged and depends on the vehicle's technical complexity and the Service Center's workload.",
+          "p3": "(3) This chapter may be amended and supplemented at any time by the Service Center, and the amendment enters into force upon publication on the website."
+        }
+      }
+    },
+    "footer": {
+      "company": "MB Center Auto Service / MB Center",
+      "phone": "Tel.: +359 883 788 873",
+      "email": "contact@mbcenter.bg",
+      "website": "www.mbcenter.bg",
+      "effectiveDate": "These General Terms and Conditions were approved by the Managing Director of \"MB Center\" Ltd. and are effective as of 23.11.2025."
+    }
   }
 }

@@ -153,7 +153,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
       name: t("codingGen.compact.name"),
       models: t("codingGen.compact.models"),
       system: "MBUX NTG 6",
-      image: "/assets/images/eqc2021.avif",
+      image: "/assets/images/eqb2021.webp",
       categories: [
         {
           title: t("codingGen.compact.dashboard.title"),

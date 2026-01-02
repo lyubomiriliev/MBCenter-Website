@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { VideoHero } from "@/components/sections/VideoHero";
 import { WhereToFindUs } from "@/components/sections/WhereToFindUs";
 import { WhyChooseUs } from "@/components/sections/WhyChooseUs";
-import { ScrollVideoSection } from "@/components/sections/ScrollVideoSection";
 import { ParallaxDivider } from "@/components/sections/ParallaxDivider";
 import { ServicesSection } from "@/components/sections/ServicesSection";
 import { EVSection } from "@/components/sections/EVSection";
@@ -61,7 +60,7 @@ export default function HomePage({ params: { locale } }: Props) {
       <ParallaxDivider
         imageSrc="/assets/images/g-class.jpg"
         imageAlt="Mercedes G-Class"
-        text={t("home.valueProps.partnerDesc")}
+        text={t("home.valueProps.whyChooseDesc")}
       />
 
       <EVSection locale={locale} />

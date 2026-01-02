@@ -8,7 +8,7 @@ import { PatternBackground } from "@/components/sections/PatternBackground";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { AnimatedText } from "@/components/animations/AnimatedText";
 import { generateAlternateLinks } from "@/lib/seo";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getSiteConfig } from "@/lib/constants";
 import { ContactForm } from "@/components/forms/ContactForm";
 
 type Props = {
@@ -36,6 +36,7 @@ export async function generateMetadata({
 export default function ContactsPage({ params: { locale } }: Props) {
   setRequestLocale(locale);
   const t = useTranslations("contacts");
+  const config = getSiteConfig(locale);
 
   return (
     <>
@@ -79,11 +80,10 @@ export default function ContactsPage({ params: { locale } }: Props) {
                         {t("info.address")}
                       </p>
                       <p className="text-mb-blue mb-1">
-                        {SITE_CONFIG.address.street}
+                        {config.address.street}
                       </p>
                       <p className="text-mb-blue">
-                        {SITE_CONFIG.address.city},{" "}
-                        {SITE_CONFIG.address.country}
+                        {config.address.city}, {config.address.country}
                       </p>
                     </div>
                   </div>
@@ -109,10 +109,10 @@ export default function ContactsPage({ params: { locale } }: Props) {
                         {t("info.phone")}
                       </p>
                       <a
-                        href={`tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`}
+                        href={`tel:${config.phone.replace(/\s/g, "")}`}
                         className="text-mb-blue hover:text-white transition-colors text-lg"
                       >
-                        {SITE_CONFIG.phone}
+                        {config.phone}
                       </a>
                     </div>
                   </div>
@@ -138,10 +138,10 @@ export default function ContactsPage({ params: { locale } }: Props) {
                         {t("info.email")}
                       </p>
                       <a
-                        href={`mailto:${SITE_CONFIG.email}`}
+                        href={`mailto:${config.email}`}
                         className="text-mb-blue hover:text-white transition-colors text-lg"
                       >
-                        {SITE_CONFIG.email}
+                        {config.email}
                       </a>
                     </div>
                   </div>
@@ -164,18 +164,20 @@ export default function ContactsPage({ params: { locale } }: Props) {
                     </div>
                     <div>
                       <p className="text-white font-semibold text-lg mb-2">
-                        {t("info.hours")}
+                        {t("info.workingHours")}
                       </p>
-                      <p className="text-mb-blue text-lg">
-                        {SITE_CONFIG.hours.weekdays}
-                      </p>
+                      <p className="text-mb-blue text-lg">{t("info.hours")}</p>
                     </div>
                   </div>
 
                   {/* MB Center Logo */}
                   <div className="mt-8 flex justify-center">
                     <Image
-                      src="/assets/logos/mbc-logo-white.png"
+                      src={
+                        locale === "en"
+                          ? "/assets/logos/mbc-logo-en.png"
+                          : "/assets/logos/mbc-logo-white.png"
+                      }
                       alt="MB Center Sofia"
                       width={240}
                       height={80}
@@ -202,14 +204,6 @@ export default function ContactsPage({ params: { locale } }: Props) {
 
       {/* Map Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <Image
-            src="/assets/star-pattern-bg.svg"
-            alt=""
-            fill
-            className="object-cover"
-          />
-        </div>
         <div className="max-w-7xl mx-auto px-6 py-32 relative z-10">
           <AnimatedText className="text-center mb-12">
             <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">

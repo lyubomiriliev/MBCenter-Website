@@ -67,7 +67,7 @@ export function EquipmentSection() {
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <Image
-          src="/assets/star-pattern-bg.svg"
+          src="/assets/images/star-pattern-bg.png"
           alt=""
           fill
           className="object-cover"

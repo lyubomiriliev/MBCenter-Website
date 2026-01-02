@@ -1,5 +1,5 @@
-import Image from 'next/image';
-import { AnimatedSection } from '@/components/animations/AnimatedSection';
+import Image from "next/image";
+import { AnimatedSection } from "@/components/animations/AnimatedSection";
 
 type EVServicesSectionProps = {
   diagnosticsTitle: string;
@@ -16,7 +16,7 @@ export function EVServicesSection({
     <section className="py-32 bg-mb-anthracite relative overflow-hidden">
       <div className="absolute inset-0 opacity-5">
         <Image
-          src="/assets/star-pattern-bg.svg"
+          src="/assets/images/star-pattern-bg.png"
           alt=""
           fill
           className="object-cover"
@@ -55,4 +55,3 @@ export function EVServicesSection({
     </section>
   );
 }
-

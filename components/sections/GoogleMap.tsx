@@ -12,7 +12,6 @@ export function GoogleMap({ embedUrl, fallbackUrl }: GoogleMapProps) {
   const t = useTranslations("contacts.map");
 
   // Construct embed URL for MB Center Sofia location
-  // Address: ул. Околовръстен път 155, София, България
   const address = encodeURIComponent(
     `${SITE_CONFIG.address.street}, ${SITE_CONFIG.address.city}, ${SITE_CONFIG.address.country}`
   );

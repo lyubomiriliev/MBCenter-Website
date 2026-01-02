@@ -16,8 +16,7 @@ type BookingInfoSectionProps = {
 const stepImages = [
   "/assets/images/servicing.jpg",
   "/assets/images/coding.webp",
-  "/assets/images/diagnosis3.webp",
-  "/assets/images/oem-parts.jpg",
+  "/assets/images/service1.jpg",
 ];
 
 export function BookingInfoSection({
@@ -39,7 +38,7 @@ export function BookingInfoSection({
         </AnimatedText>
 
         {/* Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-20">
           {steps.map((step, index) => (
             <AnimatedSection key={step} delay={index * 0.1} from="bottom">
               <div className="group relative h-full overflow-hidden rounded-2xl border border-mb-border hover:border-mb-blue transition-all duration-500 hover:shadow-2xl hover:shadow-mb-blue/30">
@@ -53,21 +52,23 @@ export function BookingInfoSection({
                   />
                   {/* Black Overlay */}
                   <div className="absolute inset-0 bg-black/70 group-hover:bg-black/60 transition-colors duration-500"></div>
-                  
+
                   {/* Step Number Badge */}
                   <div className="absolute top-4 left-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-mb-blue to-blue-600 flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                      <span className="text-white font-bold text-lg">{index + 1}</span>
+                      <span className="text-white font-bold text-lg">
+                        {index + 1}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="relative bg-mb-anthracite p-6 border-t border-mb-border/50">
+                <div className="relative bg-mb-anthracite h-full text-center p-6 border-t border-mb-border/50">
                   <p className="text-lg text-white leading-relaxed font-medium group-hover:text-mb-chrome transition-colors duration-300">
                     {getStepText(step)}
                   </p>
-                  
+
                   {/* Bottom Accent Line */}
                   <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-mb-blue via-blue-500 to-mb-blue transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
                 </div>
@@ -112,11 +113,12 @@ export function BookingInfoSection({
                       <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
+                  <div className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
                     {ctaText}
-                  </h3>
+                  </div>
                   <p className="text-lg text-mb-silver leading-relaxed mb-8">
-                    Изберете удобно време за вашата услуга чрез нашата система за резервации.
+                    Изберете удобно време за вашата услуга чрез нашата система
+                    за резервации.
                   </p>
                 </div>
                 <a
@@ -146,7 +148,9 @@ export function BookingInfoSection({
           {/* Divider */}
           <div className="lg:hidden flex items-center gap-4 my-4">
             <div className="flex-1 h-px bg-mb-border"></div>
-            <p className="text-mb-silver uppercase text-sm tracking-wider">{orText}</p>
+            <p className="text-mb-silver uppercase text-sm tracking-wider">
+              {orText}
+            </p>
             <div className="flex-1 h-px bg-mb-border"></div>
           </div>
 
@@ -181,11 +185,12 @@ export function BookingInfoSection({
                       <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                   </div>
-                  <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
+                  <div className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
                     {callUsText}
-                  </h3>
+                  </div>
                   <p className="text-lg text-mb-silver leading-relaxed mb-8">
-                    Свържете се с нас директно за бърза резервация и персонализирано обслужване.
+                    Свържете се с нас директно за бърза резервация и
+                    персонализирано обслужване.
                   </p>
                 </div>
                 <a
@@ -213,4 +218,3 @@ export function BookingInfoSection({
     </PatternBackground>
   );
 }
-

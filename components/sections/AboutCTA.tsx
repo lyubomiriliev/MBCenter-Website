@@ -16,10 +16,10 @@ export function AboutCTA({ locale }: AboutCTAProps) {
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
-          src="/assets/images/gallery/w223.jpg"
+          src="/assets/images/glc-wallpaper.webp"
           alt=""
           fill
-          className="object-cover"
+          className="object-cover object-[center_65%]"
           priority={false}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/95" />

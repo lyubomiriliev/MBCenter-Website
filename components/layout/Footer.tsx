@@ -3,12 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
-import { NAV_ITEMS, SITE_CONFIG } from "@/lib/constants";
+import { getSiteConfig, NAV_ITEMS } from "@/lib/constants";
 
 export function Footer() {
   const t = useTranslations();
   const locale = useLocale();
   const currentYear = new Date().getFullYear();
+  const config = getSiteConfig(locale);
 
   return (
     <footer className="bg-gradient-to-b from-mb-black via-mb-anthracite to-mb-black relative overflow-hidden">
@@ -38,7 +39,11 @@ export function Footer() {
           <div className="lg:col-span-2">
             <div className="group">
               <Image
-                src="/assets/logos/mbc-logo-white.png"
+                src={
+                  locale === "en"
+                    ? "/assets/logos/mbc-logo-en.png"
+                    : "/assets/logos/mbc-logo-white.png"
+                }
                 alt="MB Center Sofia"
                 width={200}
                 height={67}
@@ -52,7 +57,7 @@ export function Footer() {
             {/* Social Links */}
             <div className="flex gap-4">
               <a
-                href={SITE_CONFIG.social.facebook}
+                href={config.social.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative"
@@ -69,7 +74,7 @@ export function Footer() {
                 </div>
               </a>
               <a
-                href={SITE_CONFIG.social.instagram}
+                href={config.social.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group relative"
@@ -118,7 +123,7 @@ export function Footer() {
             <ul className="space-y-4 text-mb-silver text-sm">
               <li className="group">
                 <a
-                  href={`tel:${SITE_CONFIG.phone}`}
+                  href={`tel:${config.phone}`}
                   className="flex items-start gap-3 hover:text-mb-blue transition-colors"
                 >
                   <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mb-blue/10 flex items-center justify-center group-hover:bg-mb-blue/20 transition-colors">
@@ -134,12 +139,12 @@ export function Footer() {
                       <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                   </div>
-                  <span>{SITE_CONFIG.phone}</span>
+                  <span>{config.phone}</span>
                 </a>
               </li>
               <li className="group">
                 <a
-                  href={`mailto:${SITE_CONFIG.email}`}
+                  href={`mailto:${config.email}`}
                   className="flex items-start gap-3 hover:text-mb-blue transition-colors"
                 >
                   <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mb-blue/10 flex items-center justify-center group-hover:bg-mb-blue/20 transition-colors">
@@ -155,7 +160,7 @@ export function Footer() {
                       <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <span>{SITE_CONFIG.email}</span>
+                  <span>{config.email}</span>
                 </a>
               </li>
               <li className="group">
@@ -175,10 +180,9 @@ export function Footer() {
                     </svg>
                   </div>
                   <div>
-                    <p>{SITE_CONFIG.address.street}</p>
+                    <p>{config.address.street}</p>
                     <p>
-                      {SITE_CONFIG.address.postalCode}{" "}
-                      {SITE_CONFIG.address.city}
+                      {config.address.postalCode} {config.address.city}
                     </p>
                   </div>
                 </div>
@@ -187,7 +191,7 @@ export function Footer() {
                 <div className="font-semibold text-white mb-2 uppercase text-xs tracking-wider">
                   {t("footer.hours")}
                 </div>
-                <div>{SITE_CONFIG.hours.weekdays}</div>
+                <div>{config.hours.weekdays}</div>
               </li>
             </ul>
           </div>
@@ -204,7 +208,7 @@ export function Footer() {
         <div className="border-t border-mb-blue/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col md:flex-row items-center gap-4">
             <p className="text-mb-silver text-sm">
-              © {currentYear} {SITE_CONFIG.name}. {t("footer.rights")}.
+              © {currentYear} {config.name}. {t("footer.rights")}.
             </p>
             <Link
               href={`/${locale}/terms`}
@@ -213,7 +217,7 @@ export function Footer() {
               {t("footer.terms")}
             </Link>
           </div>
-          <div className="flex items-center gap-2 text-mb-silver text-xs">
+          <div className="flex items-center gap-2 mb-5 text-mb-silver text-xs">
             <p>
               Website created by{" "}
               <span className="text-mb-blue cursor-pointer font-bold">
