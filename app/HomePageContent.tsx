@@ -37,7 +37,7 @@ export function HomePageContent() {
       <ParallaxDivider
         imageSrc="/assets/images/g-class.jpg"
         imageAlt="Mercedes G-Class"
-        text={t("home.valueProps.partnerDesc")}
+        text={t("home.valueProps.whyChooseDesc")}
       />
 
       <EVSection locale="bg" />
@@ -46,4 +46,3 @@ export function HomePageContent() {
     </>
   );
 }
-
