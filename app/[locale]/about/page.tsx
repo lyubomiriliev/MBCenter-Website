@@ -49,6 +49,7 @@ export default function AboutPage({ params: { locale } }: Props) {
         imageSrc="/assets/images/glc-white.webp"
         imageAlt="Mercedes GLC"
         text={t("equipment.oem")}
+        locale={locale}
         icon={
           <Image
             src="/assets/mb-star-white.svg"

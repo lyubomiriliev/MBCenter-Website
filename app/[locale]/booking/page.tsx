@@ -41,14 +41,7 @@ export default function BookingPage({ params: { locale } }: Props) {
         imageSrc="/assets/images/skilled-technicians.png"
       />
 
-      <BookingInfoSection
-        title={t("info.title")}
-        steps={["step1", "step2", "step3"]}
-        getStepText={(key) => t(`info.${key}`)}
-        ctaText={t("cta")}
-        orText={t("or")}
-        callUsText={t("callUs")}
-      />
+      <BookingInfoSection locale={locale} />
 
       <HoursSection
         title={t("hours.title")}

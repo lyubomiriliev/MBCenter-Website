@@ -3,18 +3,26 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { NAV_ITEMS, SITE_CONFIG } from "@/lib/constants";
 
 export function Header() {
   const t = useTranslations();
   const locale = useLocale();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
 
   const otherLocale = locale === "en" ? "bg" : "en";
+  
+  // Get the path with the other locale, preserving the current page
+  const getLocalizedPath = () => {
+    // Replace the current locale in the pathname with the other locale
+    return pathname.replace(`/${locale}`, `/${otherLocale}`);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -116,7 +124,7 @@ export function Header() {
             {/* Desktop CTA & Language Switcher */}
             <div className="hidden lg:flex items-center gap-4">
               <Link
-                href={`/${otherLocale}`}
+                href={getLocalizedPath()}
                 className="text-mb-silver hover:text-white transition-colors text-sm uppercase font-medium px-3 py-2 rounded-button hover:bg-mb-anthracite"
               >
                 {otherLocale}
@@ -266,7 +274,7 @@ export function Header() {
 
                 {/* Language Switcher */}
                 <Link
-                  href={`/${otherLocale}`}
+                  href={getLocalizedPath()}
                   className="flex items-center gap-3 text-mb-silver hover:text-white transition-all duration-300 uppercase text-sm font-medium py-3 px-4 rounded-lg hover:bg-mb-anthracite/50 animate-in slide-in-from-bottom"
                   style={{
                     animationDelay: "700ms",

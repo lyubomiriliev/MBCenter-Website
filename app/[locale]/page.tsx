@@ -61,6 +61,7 @@ export default function HomePage({ params: { locale } }: Props) {
         imageSrc="/assets/images/g-class.jpg"
         imageAlt="Mercedes G-Class"
         text={t("home.valueProps.whyChooseDesc")}
+        locale={locale}
       />
 
       <EVSection locale={locale} />

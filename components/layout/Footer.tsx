@@ -220,9 +220,14 @@ export function Footer() {
           <div className="flex items-center gap-2 mb-5 text-mb-silver text-xs">
             <p>
               Website created by{" "}
-              <span className="text-mb-blue cursor-pointer font-bold">
+              <a
+                href="https://lyubomir-iliev.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-mb-blue cursor-pointer font-bold"
+              >
                 Lyubomir.Dev
-              </span>
+              </a>
             </p>
           </div>
         </div>

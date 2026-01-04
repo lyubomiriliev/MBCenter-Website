@@ -1,16 +1,12 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { SITE_CONFIG } from "@/lib/constants";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { AnimatedText } from "@/components/animations/AnimatedText";
 import { PatternBackground } from "./PatternBackground";
 
 type BookingInfoSectionProps = {
-  title: string;
-  steps: string[];
-  getStepText: (key: string) => string;
-  ctaText: string;
-  orText: string;
-  callUsText: string;
+  locale: string;
 };
 
 const stepImages = [
@@ -19,20 +15,17 @@ const stepImages = [
   "/assets/images/service1.jpg",
 ];
 
-export function BookingInfoSection({
-  title,
-  steps,
-  getStepText,
-  ctaText,
-  orText,
-  callUsText,
-}: BookingInfoSectionProps) {
+export function BookingInfoSection({ locale }: BookingInfoSectionProps) {
+  const t = useTranslations("bookingInfo");
+
+  const steps = ["step1", "step2", "step3"];
+
   return (
     <PatternBackground className="py-32 bg-mb-black">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <AnimatedText className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
-            {title}
+            {t("title")}
           </h2>
           <div className="w-24 h-1 bg-mb-blue mx-auto"></div>
         </AnimatedText>
@@ -46,7 +39,7 @@ export function BookingInfoSection({
                 <div className="relative h-48 overflow-hidden">
                   <Image
                     src={stepImages[index] || stepImages[0]}
-                    alt={getStepText(step)}
+                    alt={t(`${step}.title`)}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
@@ -66,7 +59,7 @@ export function BookingInfoSection({
                 {/* Content */}
                 <div className="relative bg-mb-anthracite h-full text-center p-6 border-t border-mb-border/50">
                   <p className="text-lg text-white leading-relaxed font-medium group-hover:text-mb-chrome transition-colors duration-300">
-                    {getStepText(step)}
+                    {t(`${step}.text`)}
                   </p>
 
                   {/* Bottom Accent Line */}
@@ -114,11 +107,10 @@ export function BookingInfoSection({
                     </svg>
                   </div>
                   <div className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
-                    {ctaText}
+                    {t("googleBooking.title")}
                   </div>
                   <p className="text-lg text-mb-silver leading-relaxed mb-8">
-                    Изберете удобно време за вашата услуга чрез нашата система
-                    за резервации.
+                    {t("googleBooking.description")}
                   </p>
                 </div>
                 <a
@@ -127,7 +119,9 @@ export function BookingInfoSection({
                   rel="noopener noreferrer"
                   className="group/btn relative inline-flex items-center justify-center gap-2 bg-mb-blue text-white px-8 py-4 rounded-button hover:bg-mb-blue/90 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden w-full sm:w-auto"
                 >
-                  <span className="relative z-10">Резервирай с Google</span>
+                  <span className="relative z-10">
+                    {t("googleBooking.cta")}
+                  </span>
                   <svg
                     className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform"
                     fill="none"
@@ -149,7 +143,7 @@ export function BookingInfoSection({
           <div className="lg:hidden flex items-center gap-4 my-4">
             <div className="flex-1 h-px bg-mb-border"></div>
             <p className="text-mb-silver uppercase text-sm tracking-wider">
-              {orText}
+              {t("or")}
             </p>
             <div className="flex-1 h-px bg-mb-border"></div>
           </div>
@@ -186,11 +180,10 @@ export function BookingInfoSection({
                     </svg>
                   </div>
                   <div className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
-                    {callUsText}
+                    {t("phoneBooking.title")}
                   </div>
                   <p className="text-lg text-mb-silver leading-relaxed mb-8">
-                    Свържете се с нас директно за бърза резервация и
-                    персонализирано обслужване.
+                    {t("phoneBooking.description")}
                   </p>
                 </div>
                 <a

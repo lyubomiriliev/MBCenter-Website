@@ -7,6 +7,10 @@ import { SpecializedServicesSection } from "@/components/sections/SpecializedSer
 import { CodingByGenerationSection } from "@/components/sections/CodingByGenerationSection";
 import { DetailedServicesSection } from "@/components/sections/DetailedServicesSection";
 import { ServicesCTASection } from "@/components/sections/ServicesCTASection";
+import { RemoteDiagnosisSection } from "@/components/sections/RemoteDiagnosisSection";
+import { DigitalServiceBookletSection } from "@/components/sections/DigitalServiceBookletSection";
+import { PeriodicMaintenanceSection } from "@/components/sections/PeriodicMaintenanceSection";
+import { RepairServicesSection } from "@/components/sections/RepairServicesSection";
 import { generateAlternateLinks } from "@/lib/seo";
 import { CTABand } from "@/components/sections/CTABand";
 
@@ -412,6 +416,14 @@ export default function ServicesPage({ params: { locale } }: Props) {
         subtitle={t("detailed.subtitle")}
         categories={detailedCategories}
       />
+
+      <RemoteDiagnosisSection locale={locale} />
+
+      <DigitalServiceBookletSection locale={locale} />
+
+      <PeriodicMaintenanceSection locale={locale} />
+
+      <RepairServicesSection locale={locale} />
 
       <CTABand locale={locale} />
     </>

@@ -10,7 +10,6 @@ type FormData = {
   lastName: string;
   email: string;
   phone: string;
-  subject: string;
   carBrand: string;
   model: string;
   year: string;
@@ -55,7 +54,6 @@ export function ContactForm() {
             lastName: data.lastName,
             email: data.email,
             phone: data.phone,
-            subject: data.subject,
             carBrand: data.carBrand,
             model: data.model,
             year: data.year,
@@ -206,58 +204,36 @@ export function ContactForm() {
         </div>
       </div>
 
-      {/* Subject */}
-      <div>
-        <label htmlFor="subject" className="block text-white font-medium mb-2">
-          {t("subject")} <span className="text-mb-blue">*</span>
-        </label>
-        <input
-          id="subject"
-          type="text"
-          {...register("subject", { required: t("required") })}
-          className="w-full px-4 py-3 bg-mb-anthracite border border-mb-border rounded-button text-white placeholder-mb-silver focus:outline-none focus:border-mb-blue transition-colors"
-          aria-invalid={errors.subject ? "true" : "false"}
-          aria-describedby={errors.subject ? "subject-error" : undefined}
-        />
-        {errors.subject && (
-          <p
-            id="subject-error"
-            className="mt-2 text-sm text-red-400"
-            role="alert"
+      {/* Car Brand, Model & Year - 3 columns */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label
+            htmlFor="carBrand"
+            className="block text-white font-medium mb-2"
           >
-            {errors.subject.message}
-          </p>
-        )}
-      </div>
-
-      {/* Car Brand (dropdown with only Mercedes-Benz) */}
-      <div>
-        <label htmlFor="carBrand" className="block text-white font-medium mb-2">
-          {t("carBrand")} <span className="text-mb-blue">*</span>
-        </label>
-        <select
-          id="carBrand"
-          {...register("carBrand", { required: t("required") })}
-          className="w-full px-4 py-3 bg-mb-anthracite border border-mb-border rounded-button text-white focus:outline-none focus:border-mb-blue transition-colors"
-          aria-invalid={errors.carBrand ? "true" : "false"}
-          aria-describedby={errors.carBrand ? "carBrand-error" : undefined}
-        >
-          <option value="">{t("select")}</option>
-          <option value="Mercedes-Benz">Mercedes-Benz</option>
-        </select>
-        {errors.carBrand && (
-          <p
-            id="carBrand-error"
-            className="mt-2 text-sm text-red-400"
-            role="alert"
+            {t("carBrand")} <span className="text-mb-blue">*</span>
+          </label>
+          <select
+            id="carBrand"
+            {...register("carBrand", { required: t("required") })}
+            className="w-full px-4 py-3 bg-mb-anthracite border border-mb-border rounded-button text-white focus:outline-none focus:border-mb-blue transition-colors"
+            aria-invalid={errors.carBrand ? "true" : "false"}
+            aria-describedby={errors.carBrand ? "carBrand-error" : undefined}
           >
-            {errors.carBrand.message}
-          </p>
-        )}
-      </div>
+            <option value="">{t("select")}</option>
+            <option value="Mercedes-Benz">Mercedes-Benz</option>
+          </select>
+          {errors.carBrand && (
+            <p
+              id="carBrand-error"
+              className="mt-2 text-sm text-red-400"
+              role="alert"
+            >
+              {errors.carBrand.message}
+            </p>
+          )}
+        </div>
 
-      {/* Model & Year */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label htmlFor="model" className="block text-white font-medium mb-2">
             {t("model")} <span className="text-mb-blue">*</span>

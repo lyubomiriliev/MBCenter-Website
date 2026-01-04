@@ -94,9 +94,9 @@ export const SITE_CONFIG = SITE_CONFIG_BG;
 
 export const NAV_ITEMS = [
   { href: "/", labelKey: "nav.home" },
-  { href: "/about", labelKey: "nav.about" },
   { href: "/services", labelKey: "nav.services" },
   { href: "/gallery", labelKey: "nav.gallery" },
+  { href: "/about", labelKey: "nav.about" },
   // { href: "/career", labelKey: "nav.career" }, // Commented out - can be re-enabled later
   { href: "/contacts", labelKey: "nav.contacts" },
 ] as const;

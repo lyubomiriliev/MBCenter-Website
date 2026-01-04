@@ -38,6 +38,7 @@ export function HomePageContent() {
         imageSrc="/assets/images/g-class.jpg"
         imageAlt="Mercedes G-Class"
         text={t("home.valueProps.whyChooseDesc")}
+        locale="bg"
       />
 
       <EVSection locale="bg" />

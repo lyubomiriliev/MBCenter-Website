@@ -381,6 +381,192 @@
       }
     }
   },
+  "remoteDiagnosis": {
+    "badge": "Innovative Technology",
+    "title": "XENTRY Remote Diagnosis",
+    "subtitle": "Advanced remote diagnostic service for Mercedes-Benz vehicles with telematic systems",
+    "imageCaption": "Connected Diagnostics",
+    "imageDescription": "Real-time vehicle monitoring and diagnostics",
+    "what": {
+      "title": "What is XENTRY Remote Diagnosis?",
+      "description": "XENTRY Remote Diagnosis is a digital platform developed by Mercedes-Benz that enables precise real-time diagnostics through the vehicle's telematic connectivity. The system provides direct access to main modules and electronic systems of the vehicle.",
+      "capability1": "Receive detailed information about the vehicle's condition",
+      "capability2": "Monitor system data like fluid levels, tire pressure, battery status and more",
+      "capability3": "Provide recommendations for necessary repairs or service activities"
+    },
+    "advantages": {
+      "title": "Advantages for Customers",
+      "subtitle": "Experience the benefits of modern connected vehicle diagnostics",
+      "adv1": {
+        "title": "Remote Diagnostics",
+        "description": "No need to drive to the service center for initial checks - we can perform diagnostics remotely through the vehicle's internet connectivity."
+      },
+      "adv2": {
+        "title": "Speed & Convenience",
+        "description": "When deeper inspection is needed, it can be done on-site at the service center, but preliminary information allows us to prepare and reduce service time."
+      },
+      "adv3": {
+        "title": "Precise Information",
+        "description": "Thanks to the system, we receive the most current and accurate information directly from the vehicle, improving repair accuracy."
+      },
+      "adv4": {
+        "title": "Time Optimization",
+        "description": "Reduced downtime at the service center and faster service delivery. Take care of your vehicle without worrying about time and difficulties."
+      },
+      "adv5": {
+        "title": "Modern Customer Experience",
+        "description": "High-tech approach provides customers with greater peace of mind and control over their vehicle's condition."
+      }
+    },
+    "models": {
+      "title": "Supported Models",
+      "description": "XENTRY Remote Diagnosis is available for newer Mercedes-Benz models supporting telematic functions, primarily from series produced after 2020 and equipped with Mercedes me services."
+    }
+  },
+  "digitalServiceBooklet": {
+    "badge": "Official Mercedes-Benz",
+    "title": "Digital Service Booklet (DSB)",
+    "subtitle": "Your electronic service history in the Mercedes-Benz system",
+    "imageCaption": "Official Service History",
+    "what": {
+      "title": "What is DSB?",
+      "description": "Since 2008, all Mercedes-Benz vehicles have a Digital Service Booklet (DSB) - an official manufacturer database storing all information about service and repairs performed on the vehicle.",
+      "point1": "All data is stored directly in the Mercedes-Benz system",
+      "point2": "Information is accessible to any authorized service center or employee with system access",
+      "point3": "Complete service history of the vehicle can be tracked at any time",
+      "point4": "Service is visible for future diagnostics or repairs at other service centers domestically or abroad"
+    },
+    "requirements": {
+      "title": "Requirements",
+      "req1": "Real mileage - no odometer manipulation",
+      "req2": "Technical condition allowing system access and module identification"
+    },
+    "benefits": {
+      "title": "Why This Matters?",
+      "benefit1": {
+        "title": "Transparent History",
+        "description": "Guarantees transparent vehicle history and documentation"
+      },
+      "benefit2": {
+        "title": "Better Resale Value",
+        "description": "Improves vehicle value when selling"
+      },
+      "benefit3": {
+        "title": "Proven Maintenance",
+        "description": "Facilitates proving real mileage and service maintenance"
+      },
+      "benefit4": {
+        "title": "Extended Vehicle Life",
+        "description": "Extends vehicle life through precise service interval compliance"
+      }
+    }
+  },
+  "periodicMaintenance": {
+    "badge": "Certified Service",
+    "title": "Periodic Maintenance Services",
+    "subtitle": "Complete and certified service for your Mercedes according to all manufacturer standards",
+    "intro": {
+      "title": "Professional Service According to Mercedes-Benz Standards",
+      "p1": "We perform all types of periodic and recommended services, as well as in-depth inspections and service activities, in accordance with the highest Mercedes-Benz standards. We don't just service your vehicle - we maintain it exactly as intended by the manufacturer.",
+      "p2": "We fully comply with the vehicle dashboard indications, including service codes and current mileage, which indicate necessary service. Based on the service code and actual mileage, we determine mandatory activities that must be performed according to the manufacturer's technical documentation. All recommendations and actions are based on Mercedes-Benz's WIS (Workshop Information System).",
+      "p3": "For newer vehicles with activated telematics and connectivity, we can remotely extract service information directly from the manufacturer's online system to offer the most accurate and timely service."
+    },
+    "categories": {
+      "periodic": {
+        "title": "Periodic Services",
+        "s1": "Engine oil and oil filter replacement",
+        "s2": "Air, fuel, and cabin filter replacement",
+        "s3": "Spark plug replacement and ignition system check (for gasoline engines)",
+        "s4": "Cooling system, antifreeze, and thermostat check",
+        "s5": "Check and top-up of all working fluids (brake, steering, transmission, etc.)",
+        "s6": "Brake, suspension, tire, headlight, and light check",
+        "s7": "Wiper blade replacement, nozzle and air conditioning check",
+        "s8": "Diagnostics of all electronic systems"
+      },
+      "automatic": {
+        "title": "Automatic Transmission Service (7G and 9G-Tronic)",
+        "s1": "Oil replacement with specialized equipment",
+        "s2": "Filter, seal, and gasket replacement",
+        "s3": "Transmission adaptation and diagnostic checks"
+      },
+      "manual": {
+        "title": "Manual Transmission Service",
+        "s1": "Oil replacement, clutch and shift mechanism check"
+      },
+      "differential": {
+        "title": "Differential, Transfer Case, and Final Drive Service",
+        "s1": "Scheduled oil replacement",
+        "s2": "Wear, noise, and play check",
+        "s3": "Sensor and actuator check"
+      },
+      "seasonal": {
+        "title": "Seasonal Services",
+        "s1": "Spring and autumn inspection",
+        "s2": "Seasonal fluid check and replacement",
+        "s3": "Tire, battery, air conditioning/heating, and wiper check"
+      }
+    },
+    "guarantee": {
+      "title": "Guaranteed Quality & Certified Materials",
+      "p1": "All repair and service activities are performed according to technical documentation and procedures specified in Mercedes-Benz's official platform - Workshop Information System (WIS). Every step - from diagnostics to final test - is performed strictly according to manufacturer standards.",
+      "p2": "We use only high-quality oils, consumables, and auto parts meeting all Mercedes-Benz requirements and certifications. This guarantees not only flawless system operation but also warranty preservation and long-term vehicle reliability."
+    }
+  },
+  "repairServices": {
+    "badge": "Expert Repairs",
+    "title": "Repair Services",
+    "subtitle": "High-quality repair services according to Mercedes-Benz requirements and standards",
+    "categories": {
+      "suspension": {
+        "title": "Suspension & Air Suspension (AIRMATIC)",
+        "s1": "Diagnostics and troubleshooting of suspension issues",
+        "s2": "Shock absorber, spring, and air cushion replacement",
+        "s3": "Steering system component repair and replacement",
+        "s4": "Air suspension system adjustment and calibration"
+      },
+      "engine": {
+        "title": "Partial Engine Repairs",
+        "s1": "Gasket and seal replacement",
+        "s2": "Fuel system repair",
+        "s3": "EGR valve and DPF filter cleaning and replacement",
+        "s4": "Cooling system repair",
+        "note": "Note: We do not perform major engine repairs, including timing chain replacement and engine opening."
+      },
+      "transmission": {
+        "title": "Partial Transmission Repairs (Automatic & Manual)",
+        "s1": "Oil and filter replacement",
+        "s2": "Hydraulic block and mechatronic repair",
+        "s3": "Transmission adaptation and calibration",
+        "note": "Note: We do not perform complete major transmission overhauls."
+      },
+      "electronics": {
+        "title": "Electronic Control Unit & Electronics Repair",
+        "s1": "ECU (Electronic Control Unit) diagnostics and repair",
+        "s2": "Module programming and coding",
+        "s3": "Electrical system troubleshooting"
+      },
+      "brakes": {
+        "title": "Brake System Repair",
+        "s1": "Brake disc and pad replacement",
+        "s2": "ABS and ESP system repair",
+        "s3": "Brake hose and fluid check and replacement"
+      }
+    },
+    "additional": {
+      "title": "Additional Services",
+      "add1": "Exhaust system check and maintenance",
+      "add2": "Cooling system preventive maintenance and cleaning"
+    },
+    "exclusions": {
+      "title": "Important Notice",
+      "description": "Note: We do not perform body repairs, including panel beating, dent removal, and painting."
+    },
+    "quality": {
+      "title": "Quality & Factory Standards",
+      "p1": "All repair activities are performed strictly according to procedural requirements and documentation of Mercedes-Benz WIS (Workshop Information System), guaranteeing quality and compliance with factory standards.",
+      "p2": "We use only certified oils and original spare parts with proven origin to ensure reliability and longevity of your vehicle."
+    }
+  },
   "gallery": {
     "title": "Our Work",
     "hero": {
@@ -404,7 +590,7 @@
       "apply": "Apply Now"
     },
     "benefits": {
-      "title": "Why Work With Us",
+      "title": "Why Work With Us?",
       "training": "Continuous training",
       "environment": "Professional environment",
       "growth": "Career growth opportunities"
@@ -455,8 +641,34 @@
     "callUs": "Call us at",
     "hours": {
       "title": "Working Hours",
-      "description": "Our team will confirm your appointment and provide any additional information you may need."
+      "description": "Our team will confirm your appointment and provide any additional information you may need.",
+      "hours": "10:30–19:00 Monday - Friday"
     }
+  },
+  "bookingInfo": {
+    "title": "How to Book Your Service",
+    "step1": {
+      "title": "Contact or Visit",
+      "text": "Get in touch via phone, email, or visit us directly at our service center"
+    },
+    "step2": {
+      "title": "Discuss Your Needs",
+      "text": "Tell us about your vehicle and the service you need"
+    },
+    "step3": {
+      "title": "Confirm Appointment",
+      "text": "We'll schedule a convenient time and send you a confirmation"
+    },
+    "googleBooking": {
+      "title": "Book Online",
+      "description": "Choose a convenient time for your service through our booking system.",
+      "cta": "Reserve with Google"
+    },
+    "phoneBooking": {
+      "title": "Call Us",
+      "description": "Contact us directly for fast booking and personalized service."
+    },
+    "or": "or"
   },
   "forms": {
     "contact": {

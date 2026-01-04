@@ -16,6 +16,7 @@ type ParallaxDividerProps = {
   overlayGradient?: string;
   height?: string;
   speed?: number;
+  locale?: string;
 };
 
 export function ParallaxDivider({
@@ -26,6 +27,7 @@ export function ParallaxDivider({
   overlayGradient = "bg-gradient-to-b from-black/70 via-black/50 to-black/70",
   height = "h-[500px]",
   speed = 0.5,
+  locale = "bg",
 }: ParallaxDividerProps) {
   const imageRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,8 +76,19 @@ export function ParallaxDivider({
       {(text || icon) && (
         <div className="absolute inset-0 flex items-center justify-center">
           <AnimatedText>
-            <div className="text-center px-6">
+            <div className="text-center px-6 flex flex-col items-center">
               {icon && <div className="mb-8">{icon}</div>}
+              <Image
+                src={
+                  locale === "en"
+                    ? "/assets/logos/mbc-logo-en-white.png"
+                    : "/assets/logos/mbc-logo-white.png"
+                }
+                alt="MB Center Sofia"
+                width={300}
+                height={100}
+                className="h-18 md:h-20 lg:h-24 w-auto mb-6 group-hover:scale-105 transition-transform duration-300 mx-auto"
+              />
               {text && (
                 <p className="text-3xl md:text-5xl lg:text-6xl font-bold text-white max-w-5xl leading-tight">
                   {text}
