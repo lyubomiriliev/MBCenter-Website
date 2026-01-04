@@ -11,6 +11,18 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "MB Center Sofia",
   description: "Mercedes-Benz Service Center in Sofia, Bulgaria",
+  icons: {
+    icon: [
+      {
+        url: "/assets/favicon-32x32.webp",
+        type: "image/webp",
+        sizes: "32x32",
+      },
+      { url: "/assets/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/assets/favicon.ico",
+    apple: "/assets/favicon-32x32.webp",
+  },
 };
 
 export default function RootLayout({
