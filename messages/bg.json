@@ -76,7 +76,7 @@
     }
   },
   "about": {
-    "title": "За MB Center София",
+    "title": "За MB Center",
     "hero": {
       "title": "Експертен сервиз за Mercedes-Benz",
       "subtitle": "Вашият доверен партньор в София"
@@ -494,7 +494,7 @@
         "s1": "Смяна на масло, проверка на съединител и механизъм на превключване"
       },
       "differential": {
-        "title": "Обслужване на диференциали, раздатъчни кутии и крайни предавки",
+        "title": "Обслужване на диференциали и раздатъчни кутии.",
         "s1": "Смяна на масло по график",
         "s2": "Проверка на износване, шумове и хлабини",
         "s3": "Проверка на сензори и актуатори"
@@ -1190,6 +1190,125 @@
       "email": "contact@mbcenter.bg",
       "website": "www.mbcenter.bg",
       "effectiveDate": "Настоящите Общи условия са утвърдени от Управителя на \"Ем Би Център\" ООД и са в сила, считано от 23.11.2025 г."
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "dashboard": "Табло",
+      "offers": "Оферти",
+      "createOffer": "Нова оферта",
+      "clients": "Клиенти",
+      "backToSite": "Към сайта",
+      "logout": "Изход"
+    },
+    "roles": {
+      "admin": "Администратор",
+      "mechanic": "Механик"
+    },
+    "offers": {
+      "title": "Оферти",
+      "subtitle": "Управление на сервизни оферти",
+      "mechanicSubtitle": "Преглед и създаване на сервизни оферти",
+      "newOffer": "Нова оферта",
+      "createOffer": "Създай оферта",
+      "editOffer": "Редактиране на оферта",
+      "createOfferSubtitle": "Създаване на нова сервизна оферта",
+      "noResults": "Няма намерени оферти",
+      "error": "Грешка при зареждане на офертите",
+      "showing": "Показване на {from} до {to} от {total} оферти",
+      "previous": "Предишна",
+      "next": "Следваща",
+      "columns": {
+        "offerNumber": "Оферта №",
+        "client": "Клиент",
+        "car": "Автомобил",
+        "status": "Статус",
+        "total": "Сума",
+        "date": "Дата",
+        "actions": "Действия"
+      },
+      "status": {
+        "draft": "Чернова",
+        "sent": "Изпратена",
+        "approved": "Одобрена",
+        "finished": "Завършена",
+        "cancelled": "Отказана"
+      },
+      "deleteConfirm": {
+        "title": "Изтриване на оферта",
+        "description": "Сигурни ли сте, че искате да изтриете тази оферта? Това действие е необратимо.",
+        "cancel": "Отказ",
+        "confirm": "Изтрий"
+      },
+      "generateOffer": "Генериране на PDF оферта",
+      "generateServiceCard": "Генериране на сервизна карта",
+      "downloadOffer": "Изтегли оферта",
+      "openOffer": "Отвори в нов таб",
+      "downloadServiceCard": "Изтегли сервизна карта",
+      "openServiceCard": "Отвори сервизна карта",
+      "filters": {
+        "search": "Търсене",
+        "searchPlaceholder": "Търсене по № на оферта или име на клиент...",
+        "status": "Статус",
+        "allStatuses": "Всички статуси",
+        "dateFrom": "От дата",
+        "dateTo": "До дата",
+        "selectDate": "Изберете дата",
+        "clear": "Изчисти филтри"
+      }
+    },
+    "form": {
+      "clientInfo": "Информация за клиента",
+      "clientName": "Име на клиента",
+      "clientNamePlaceholder": "Въведете име на клиента",
+      "clientPhone": "Телефон",
+      "clientEmail": "Имейл",
+      "carInfo": "Информация за автомобила",
+      "carModel": "Модел",
+      "selectModel": "Изберете модел Mercedes",
+      "searchModel": "Търсене на модели...",
+      "noModelFound": "Няма намерен модел",
+      "carYear": "Година",
+      "carVin": "VIN номер",
+      "carLicensePlate": "Регистрационен номер",
+      "carMileage": "Километраж",
+      "createdBy": "Създадена от",
+      "selectCreator": "Избери създател",
+      "productName": "Име на продукт",
+      "brand": "Производител",
+      "partNumber": "№ част",
+      "qty": "К-во",
+      "unitPrice": "Цена/бр (EUR)",
+      "total": "Обща",
+      "remove": "Премахни",
+      "parts": "Части",
+      "labor": "Труд",
+      "serviceActions": "Сервизни активности",
+      "addPart": "Добави част",
+      "addLabor": "Добави труд",
+      "addServiceAction": "Добави сервизна дейност",
+      "noPartsAdded": "Все още няма добавени части",
+      "noLaborAdded": "Все още няма добавен труд",
+      "noServiceActionsAdded": "Няма добавени сервизни дейности",
+      "serviceActionName": "Име на сервизна дейност",
+      "timeRequired": "Необходимо време",
+      "timeFormat": "Формат",
+      "pricePerHour": "Цена/час (EUR)",
+      "itemDescription": "Описание",
+      "additionalInfo": "Допълнителна информация",
+      "discount": "Отстъпка",
+      "notes": "Бележки",
+      "notesPlaceholder": "Добавете допълнителни бележки или коментари...",
+      "summary": "Обобщение",
+      "subtotal": "Междинна сума",
+      "netTotal": "Нето сума",
+      "vat": "ДДС (20%)",
+      "total": "Общо",
+      "createOffer": "Създай оферта",
+      "updateOffer": "Обнови оферта",
+      "saving": "Запазване...",
+      "cancel": "Отказ",
+      "addPrePayment": "Добави предплащане"
     }
   }
 }

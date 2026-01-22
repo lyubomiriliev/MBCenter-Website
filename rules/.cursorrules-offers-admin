@@ -1,0 +1,117 @@
+# Mercedes-Benz Service Website — Cursor Rules
+
+## Project Overview
+
+Official Mercedes-Benz partnered service center in Sofia, Bulgaria.
+Premium, modern website with multilingual support (Bulgarian/English).
+**Hybrid Architecture**: Public pages are Static (SSG). Admin pages are Client-Side SPA.
+
+## Tech Stack & Configuration
+
+- Framework: Next.js 14 App Router
+- Styling: Tailwind CSS v4.0+
+- Language: TypeScript (strict)
+- Database/Auth: **Supabase** (Client-side usage only)
+- Forms: **react-hook-form** + **zod**
+- PDF Generation: **@react-pdf/renderer**
+- UI Primitives: shadcn/ui
+
+## Admin Panel & Supabase Rules (NEW & CRITICAL)
+
+### 1. Client-Side Only Logic
+
+Since the site uses `output: 'export'`, you **cannot** use:
+
+- `cookies()` from `next/headers`
+- Middleware (`middleware.ts`)
+- Server Actions for data mutation (unless using Next.js compatible patterns, but prefer Client Supabase SDK for this SSG setup).
+- API Routes (`app/api/...`)
+
+**Instead, use:**
+
+- `createClientComponentClient` (from `@supabase/auth-helpers-nextjs`) or standard `createClient`.
+- React `useEffect` or `TanStack Query` for data fetching.
+- Client-side Auth Guards (Wrapper components that check session on mount).
+
+### 2. Database & Data Fetching
+
+- **Strict Typing**: All Supabase queries must be typed using generated Database types.
+- **Row Level Security (RLS)**: Rely on RLS policies for security, not just UI hiding.
+- **Data Loading**:
+  - Use loading skeletons (`<Skeleton />`) while fetching admin data.
+  - Never block the UI thread with large data; use pagination (limit: 20/50 rows).
+
+### 3. "Create Offer" Complex Form Rules
+
+- **State Management**: Use `react-hook-form` exclusively. Do not mix local `useState` for form fields.
+- **Calculations**:
+  - Use `useWatch` to observe quantity/price changes.
+  - Calculate totals (VAT, discounts) in a dedicated `useOfferCalculations` hook, separate from the UI.
+- **Dual Currency**: Store values in EUR. Convert to BGN for display using a fixed constant `1.95583` or a configurable setting.
+
+### 4. PDF Generation
+
+- **Library**: Use `@react-pdf/renderer`.
+- **Components**: Create separate PDF components (e.g., `templates/OfferPdf.tsx`).
+- **Rendering**: Use `pdf()` blob generation on the client side to trigger downloads.
+- **Styling**: PDF primitives (`<View>`, `<Text>`) do not support Tailwind classes directly. Use `StyleSheet.create` with consistent design tokens matching the web UI.
+
+---
+
+## Directory Structure (Admin Extension)
+
+- `/app/(admin)/` -> Layout with Sidebar/AuthGuard
+  - `/mb-admin-x77/` -> Admin routes
+  - `/mb-admin-mechanics/` -> Mechanic routes
+- `/components/admin/` -> Admin-specific UI
+  - `/offers/` -> Tables, Filters
+  - `/forms/` -> Create Offer complex forms
+- `/lib/supabase/` -> Client initialization
+- `/types/database.ts` -> Supabase generated types
+
+---
+
+## Existing Project Rules (SEO & Public Site)
+
+### TypeScript
+
+- Strict mode, no implicit any.
+- Define interfaces/types for props.
+
+### React Architecture
+
+- Public pages: **React Server Components** by default.
+- Admin pages: **"use client"** at the top of page/layout files.
+- **DRY + Constants**: Store selection lists (e.g., Mercedes Models, Status options) in `constants.ts`.
+
+### Styling (Tailwind v4)
+
+- Use `@theme` variables for colors.
+- Dark premium palette:
+  - Background: `mb-black` / `mb-anthracite`
+  - Accent: `mb-blue`
+
+### Performance
+
+- **Virtualization**: If rendering the 900k parts list or large offer tables, use `react-virtual` or `tanstack-virtual`.
+- **Lazy Loading**: Lazy load the PDF renderer and heavy admin charts.
+
+### Specific Functionality Guides
+
+**Offer Status Flow:**
+
+- `New` -> Created.
+- `Finished` -> Work done.
+- `Cancelled` -> Archived.
+
+**Security Routes:**
+
+- `/mb-admin-x77/offers` -> **Require** role `admin`.
+- `/mb-admin-mechanics/offers` -> **Require** role `mechanic` OR `admin`.
+- **Redirect**: If no session, redirect to `/`.
+
+## Notes for the AI
+
+- When asked to generate a PDF, assume `@react-pdf/renderer` is installed.
+- Do not suggest Server-Side Rendering (SSR) features like `getServerSideProps`.
+- Focus on **Offline/Client-first** capability since this is an admin tool for a physical shop.

@@ -30,7 +30,7 @@ const SITE_CONFIG_BG: SiteConfig = {
   name: "MB Center Sofia",
   baseUrl: "https://mbcenter.bg",
   phone: "+359 883 788 873",
-  email: "info@mbcenter.bg",
+  email: "contact@mbcenter.bg",
   address: {
     street: "ул. Околовръстен път 155",
     city: "София",
@@ -59,7 +59,7 @@ const SITE_CONFIG_EN: SiteConfig = {
   name: "MB Center Sofia",
   baseUrl: "https://mbcenter.bg",
   phone: "+359 883 788 873",
-  email: "info@mbcenter.bg",
+  email: "contact@mbcenter.bg",
   address: {
     street: "155 Ring Road",
     city: "Sofia",

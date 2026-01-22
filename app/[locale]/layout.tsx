@@ -14,6 +14,7 @@ import { StickyBookingCTA } from "@/components/layout/StickyBookingCTA";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { generateAlternateLinks, generateLocalBusinessSchema } from "@/lib/seo";
 import { SITE_CONFIG } from "@/lib/constants";
+import { ConditionalLayout } from "./ConditionalLayout";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -116,12 +117,8 @@ export default async function LocaleLayout({
         />
       </head>
       <body className="bg-mb-black text-white">
-        <SmoothScroll />
         <NextIntlClientProvider messages={messages}>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-          <StickyBookingCTA />
+          <ConditionalLayout>{children}</ConditionalLayout>
         </NextIntlClientProvider>
       </body>
     </html>
