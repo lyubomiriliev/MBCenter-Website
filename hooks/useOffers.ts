@@ -38,10 +38,17 @@ export function useOffers(filters: OffersFilters = {}) {
       let query = supabase
         .from('offers')
         .select(`
-          *,
-          client:clients(*),
-          car:cars(*),
-          items:offer_items(*)
+          id,
+          offer_number,
+          customer_name,
+          customer_phone,
+          customer_email,
+          car_model_text,
+          status,
+          total_gross,
+          created_at,
+          client:clients(id, name),
+          car:cars(id, model, year)
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
@@ -52,7 +59,7 @@ export function useOffers(filters: OffersFilters = {}) {
       }
 
       if (search) {
-        query = query.or(`offer_number.ilike.%${search}%,client.name.ilike.%${search}%`);
+        query = query.or(`offer_number.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`);
       }
 
       if (dateFrom) {
@@ -73,6 +80,9 @@ export function useOffers(filters: OffersFilters = {}) {
         totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
+    staleTime: 10 * 1000, // Consider data fresh for 10 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -87,11 +97,14 @@ export function useOffer(id: string | undefined) {
         .from('offers')
         .select(`
           *,
-          client:clients(*),
-          car:cars(*),
-          items:offer_items(*)
+          client:clients(id, name, phone, email),
+          car:cars(id, model, year, vin, license_plate, mileage),
+          items:offer_items(*),
+          service_actions(*)
         `)
         .eq('id', id)
+        .order('sort_order', { referencedTable: 'offer_items', ascending: true })
+        .order('sort_order', { referencedTable: 'service_actions', ascending: true })
         .single();
 
       if (error) throw error;
@@ -99,6 +112,10 @@ export function useOffer(id: string | undefined) {
       return data as OfferWithRelations;
     },
     enabled: !!id,
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
   });
 }
 

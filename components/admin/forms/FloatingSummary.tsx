@@ -6,19 +6,25 @@ import { useOfferCalculations } from "@/hooks/useOfferCalculations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { OfferFormData } from "@/lib/schemas/offer";
+import { EUR_TO_BGN } from "@/lib/schemas/offer";
 
 interface FloatingSummaryProps {
   children?: React.ReactNode;
+  prepayments?: number[];
+  onRemovePrepayment?: (index: number) => void;
 }
 
-export function FloatingSummary({ children }: FloatingSummaryProps) {
+export function FloatingSummary({ children, prepayments = [], onRemovePrepayment }: FloatingSummaryProps) {
   const t = useTranslations("admin.form");
   const { control, watch } = useFormContext<OfferFormData>();
   const calculations = useOfferCalculations(control);
   const discountPercent = watch("discountPercent") || 0;
+  const prepaymentsTotal = prepayments.reduce((a, b) => a + b, 0);
+  const amountDueEur = Math.max(0, calculations.grossTotal - prepaymentsTotal);
+  const amountDueBgn = amountDueEur * EUR_TO_BGN;
 
   return (
-    <div className="sticky top-6 space-y-4">
+    <div className="space-y-4">
       <Card className="bg-mb-anthracite border-mb-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -106,7 +112,7 @@ export function FloatingSummary({ children }: FloatingSummaryProps) {
 
           {/* VAT */}
           <div className="flex justify-between items-center text-sm">
-            <span className="text-mb-silver">{t("vat")} (20%)</span>
+            <span className="text-mb-silver">{t("vat")}</span>
             <div className="text-right">
               <div className="text-white">
                 {calculations.formatted.vatAmount}
@@ -131,6 +137,47 @@ export function FloatingSummary({ children }: FloatingSummaryProps) {
               </div>
             </div>
           </div>
+
+          {/* Prepayments */}
+          {prepayments.length > 0 && (
+            <>
+              <Separator className="bg-mb-border" />
+              {prepayments.map((amt, i) => (
+                <div key={i} className="flex justify-between items-center text-sm">
+                  <span className="text-mb-silver">{t("prepayment")} {i + 1}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right text-green-400">
+                      <div>-€{amt.toFixed(2)}</div>
+                      <div className="text-xs">-{(amt * EUR_TO_BGN).toFixed(2)} лв.</div>
+                    </div>
+                    {onRemovePrepayment && (
+                      <button
+                        type="button"
+                        onClick={() => onRemovePrepayment(i)}
+                        className="p-1 rounded text-red-400 hover:bg-red-500/10"
+                        aria-label={t("remove")}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between items-center">
+                <span className="text-white font-bold">{t("amountDue")}</span>
+                <div className="text-right">
+                  <div className="text-xl font-bold text-mb-blue">
+                    €{amountDueEur.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-mb-silver">
+                    {amountDueBgn.toFixed(2)} лв.
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

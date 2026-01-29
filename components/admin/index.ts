@@ -6,6 +6,7 @@ export { AdminGuard, withAdminGuard } from './AdminGuard';
 // Layout
 export { AdminSidebar } from './AdminSidebar';
 export { AdminHeader } from './AdminHeader';
+export { SidebarProvider, useSidebar } from './SidebarContext';
 
 // Offers
 export { OffersTable } from './offers/OffersTable';

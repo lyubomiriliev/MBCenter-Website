@@ -102,7 +102,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
             <SelectTrigger className="bg-gray-100 text-gray-900 border-mb-border">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-mb-anthracite border-mb-border">
+            <SelectContent className="bg-gray-100 text-mb-anthracite border-mb-border">
               <SelectItem value="all">{t('filters.allStatuses')}</SelectItem>
               <SelectItem value="draft">{t('status.draft')}</SelectItem>
               <SelectItem value="sent">{t('status.sent')}</SelectItem>

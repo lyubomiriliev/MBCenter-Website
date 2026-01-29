@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { SidebarProvider } from '@/components/admin/SidebarContext';
 
 export default function AdminLayout({
   children,
@@ -16,7 +17,7 @@ export default function AdminLayout({
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000, // 1 minute
+        staleTime: 60 * 1000,
         refetchOnWindowFocus: false,
       },
     },
@@ -25,12 +26,14 @@ export default function AdminLayout({
   return (
     <QueryClientProvider client={queryClient}>
       <AdminGuard requiredRole="admin" redirectTo={`/${locale}/admin-login`}>
-        <div className="flex min-h-screen bg-mb-black">
-          <AdminSidebar basePath={`/${locale}/mb-admin-x77`} />
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
-        </div>
+        <SidebarProvider>
+          <div className="min-h-screen bg-mb-black">
+            <AdminSidebar basePath={`/${locale}/mb-admin`} />
+            <main className="lg:ml-64 min-h-screen flex flex-col overflow-hidden">
+              {children}
+            </main>
+          </div>
+        </SidebarProvider>
       </AdminGuard>
     </QueryClientProvider>
   );

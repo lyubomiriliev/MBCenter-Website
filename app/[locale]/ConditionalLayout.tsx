@@ -10,7 +10,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
   // Check if this is an admin route
-  const isAdminRoute = pathname?.includes('/mb-admin-x77') || 
+  const isAdminRoute = pathname?.includes('/mb-admin') || 
                        pathname?.includes('/mb-admin-mechanics') || 
                        pathname?.includes('/admin-login');
 

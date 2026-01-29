@@ -25,26 +25,35 @@ export function AdminGuard({
     // Wait for auth to load
     if (isLoading) return;
 
-    // Extract locale from pathname (e.g., /bg/mb-admin-x77 -> bg)
+    // Extract locale from pathname (e.g., /bg/mb-admin -> bg)
     const localeMatch = pathname?.match(/^\/([a-z]{2})\//);
     const locale = localeMatch ? localeMatch[1] : 'bg';
     
     // Default redirect to login page with locale preserved
     const defaultRedirect = `/${locale}/admin-login`;
-    const finalRedirect = redirectTo || defaultRedirect;
 
     // Redirect if not authenticated
     if (!isAuthenticated) {
+      const finalRedirect = redirectTo || defaultRedirect;
       router.replace(finalRedirect);
       return;
     }
 
-    // Redirect if doesn't have required role
+    // Smart role-based redirect
     if (!hasRole(requiredRole)) {
-      router.replace(finalRedirect);
+      // If user is authenticated but doesn't have required role,
+      // redirect them to their appropriate admin panel
+      if (profile?.role === 'mechanic') {
+        router.replace(`/${locale}/mb-admin-mechanics/offers`);
+      } else if (profile?.role === 'admin') {
+        router.replace(`/${locale}/mb-admin/offers`);
+      } else {
+        // Unknown role, redirect to login
+        router.replace(redirectTo || defaultRedirect);
+      }
       return;
     }
-  }, [isLoading, isAuthenticated, hasRole, requiredRole, router, redirectTo, pathname]);
+  }, [isLoading, isAuthenticated, hasRole, requiredRole, profile, router, redirectTo, pathname]);
 
   // Show loading skeleton while checking auth
   if (isLoading) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { Label } from "@/components/ui/label";
@@ -22,22 +23,28 @@ export function CreatedBySelector() {
   const { setValue, watch } = useFormContext<OfferFormData>();
   const createdByName = watch("createdByName");
 
+  const options = useMemo(() => {
+    const list = [...CREATORS];
+    if (createdByName && !list.includes(createdByName)) list.unshift(createdByName);
+    return list;
+  }, [createdByName]);
+
   return (
     <div className="space-y-2">
       <Label htmlFor="createdByName">{t("createdBy")}</Label>
       <Select
-        value={createdByName}
+        value={createdByName || undefined}
         onValueChange={(value) => setValue("createdByName", value, { shouldValidate: true })}
       >
         <SelectTrigger className="bg-gray-100 text-gray-900 border-mb-border">
           <SelectValue placeholder={t("selectCreator")} />
         </SelectTrigger>
-        <SelectContent className="bg-mb-anthracite border-mb-border">
-          {CREATORS.map((creator) => (
+        <SelectContent className="bg-white border-gray-200 text-gray-900">
+          {options.map((creator) => (
             <SelectItem
               key={creator}
               value={creator}
-              className="text-white focus:bg-mb-black focus:text-white"
+              className="text-gray-900 focus:bg-gray-100 focus:text-gray-900"
             >
               {creator}
             </SelectItem>

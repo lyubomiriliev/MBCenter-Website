@@ -27,52 +27,57 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      // Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) throw authError;
+      if (!authData?.user) throw new Error('Authentication failed');
 
-      type ProfileRole = { role: UserRole };
-      let profile: ProfileRole | null = null;
-      let profileError: { code?: string } | null = null;
-
-      const profileRes = await supabase
+      // Fetch user profile with role
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('auth_id', data.user.id)
+        .eq('auth_id', authData.user.id)
         .single();
-      profile = profileRes.data as ProfileRole | null;
-      profileError = profileRes.error;
 
+      // If profile doesn't exist, create default profile
       if (profileError?.code === 'PGRST116') {
         const insertPayload: InsertProfile = {
-          auth_id: data.user.id,
+          auth_id: authData.user.id,
           role: 'mechanic',
-          full_name: data.user.email?.split('@')[0] || 'User',
+          full_name: authData.user.email?.split('@')[0] || 'User',
         };
-        const createRes = await supabase
+        
+        const { error: createError } = await supabase
           .from('profiles')
           .insert(insertPayload as never)
           .select('role')
           .single();
-        if (createRes.error) throw createRes.error;
-        profile = createRes.data as ProfileRole | null;
-      } else if (profileError) {
-        throw profileError;
+
+        if (createError) throw createError;
+        
+        // Redirect new mechanic user
+        router.replace(`/${locale}/mb-admin-mechanics/offers`);
+        return;
       }
 
+      if (profileError) throw profileError;
       if (!profile) throw new Error('Profile not found');
 
-      if (profile.role === 'admin') {
-        router.replace(`/${locale}/mb-admin-x77/offers`);
-      } else if (profile.role === 'mechanic') {
-        router.replace(`/${locale}/mb-admin-mechanics/offers`);
-      } else {
-        throw new Error('Unauthorized role');
-      }
+      type ProfileRole = { role: UserRole };
+      const userRole = (profile as ProfileRole).role;
+
+      // Redirect based on role
+      const targetRoute = userRole === 'admin' 
+        ? `/${locale}/mb-admin/offers`
+        : `/${locale}/mb-admin-mechanics/offers`;
+      
+      router.replace(targetRoute);
     } catch (err) {
+      console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
       setIsLoading(false);
     }

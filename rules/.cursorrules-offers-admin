@@ -61,7 +61,7 @@ Since the site uses `output: 'export'`, you **cannot** use:
 ## Directory Structure (Admin Extension)
 
 - `/app/(admin)/` -> Layout with Sidebar/AuthGuard
-  - `/mb-admin-x77/` -> Admin routes
+  - `/mb-admin/` -> Admin routes
   - `/mb-admin-mechanics/` -> Mechanic routes
 - `/components/admin/` -> Admin-specific UI
   - `/offers/` -> Tables, Filters
@@ -106,7 +106,7 @@ Since the site uses `output: 'export'`, you **cannot** use:
 
 **Security Routes:**
 
-- `/mb-admin-x77/offers` -> **Require** role `admin`.
+- `/mb-admin/offers` -> **Require** role `admin`.
 - `/mb-admin-mechanics/offers` -> **Require** role `mechanic` OR `admin`.
 - **Redirect**: If no session, redirect to `/`.
 

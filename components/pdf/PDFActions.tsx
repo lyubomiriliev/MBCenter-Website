@@ -11,8 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { OfferPDFv3 } from './OfferPDFv3';
-import { ServiceCardPDFv3 } from './ServiceCardPDFv3';
+import { OfferPDFv3, setFontRegistered as setOfferFontRegistered } from './OfferPDFv3';
+import { ServiceCardPDFv3, setFontRegistered as setServiceCardFontRegistered } from './ServiceCardPDFv3';
+import { registerPDFFonts } from '@/lib/pdf-fonts';
 import type { OfferWithRelations } from '@/types/database';
 
 interface PDFActionsProps {
@@ -29,6 +30,14 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
     setIsGenerating(type);
     
     try {
+      // Register fonts before generating PDF
+      const fontsReady = await registerPDFFonts();
+      setOfferFontRegistered(fontsReady);
+      setServiceCardFontRegistered(fontsReady);
+      
+      // Additional delay to ensure fonts are fully processed
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      
       const PDFComponent = type === 'offer' 
         ? <OfferPDFv3 offer={offer} locale={locale} />
         : <ServiceCardPDFv3 offer={offer} locale={locale} />;
@@ -57,6 +66,14 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
     setIsGenerating(type);
     
     try {
+      // Register fonts before generating PDF
+      const fontsReady = await registerPDFFonts();
+      setOfferFontRegistered(fontsReady);
+      setServiceCardFontRegistered(fontsReady);
+      
+      // Additional delay to ensure fonts are fully processed
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      
       const PDFComponent = type === 'offer' 
         ? <OfferPDFv3 offer={offer} locale={locale} />
         : <ServiceCardPDFv3 offer={offer} locale={locale} />;

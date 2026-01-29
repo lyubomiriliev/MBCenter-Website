@@ -10,7 +10,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // Redirect to offers page
-    router.replace(`/${locale}/mb-admin-x77/offers`);
+    router.replace(`/${locale}/mb-admin/offers`);
   }, [router, locale]);
 
   return null;

@@ -89,27 +89,27 @@ export function CarSelector() {
                 </svg>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0 bg-mb-anthracite border-mb-border" align="start">
-              <Command className="bg-transparent">
+            <PopoverContent className="w-[400px] p-0 bg-white border-gray-200 text-gray-900" align="start">
+              <Command className="bg-white text-gray-900 [&_[cmdk-input-wrapper]]:border-gray-200">
                 <CommandInput 
                   placeholder={t('searchModel')} 
                   value={search}
                   onValueChange={setSearch}
-                  className="border-mb-border bg-gray-100 text-gray-900"
+                  className="border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                 />
                 <CommandList className="max-h-[300px]">
-                  <CommandEmpty>{t('noModelFound')}</CommandEmpty>
+                  <CommandEmpty className="text-gray-600">{t('noModelFound')}</CommandEmpty>
                   {Object.entries(groupedModels).map(([className, models]) => (
-                    <CommandGroup key={className} heading={className}>
+                    <CommandGroup key={className} heading={className} className="[&_[cmdk-group-heading]]:text-gray-600">
                       {models.map((model) => (
                         <CommandItem
                           key={model.id}
                           value={model.name}
                           onSelect={() => handleSelectModel(model.name)}
-                          className="cursor-pointer"
+                          className="cursor-pointer text-gray-900 data-[selected=true]:bg-gray-100 data-[selected=true]:text-gray-900"
                         >
                           <span>{model.name}</span>
-                          <span className="ml-auto text-xs text-mb-silver">
+                          <span className="ml-auto text-xs text-gray-500">
                             {model.years[0]}-{model.years[model.years.length - 1]}
                           </span>
                         </CommandItem>

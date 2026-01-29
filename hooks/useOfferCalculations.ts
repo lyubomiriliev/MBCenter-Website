@@ -5,6 +5,7 @@ import { useWatch } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
 import type { OfferFormData, OfferItemFormData } from '@/lib/schemas/offer';
 import { VAT_RATE, EUR_TO_BGN } from '@/lib/schemas/offer';
+import { parseTimeToHours } from '@/lib/utils';
 
 interface CalculationResult {
   // Parts calculations
@@ -72,10 +73,7 @@ export function useOfferCalculations(
 
     // Calculate labor subtotal from service actions
     const laborSubtotal = serviceActions.reduce((sum: number, action: any) => {
-      const timeStr = action.timeRequired || "0h 0min";
-      const hourMatch = timeStr.match(/(\d+)h/);
-      const minMatch = timeStr.match(/(\d+)min/);
-      const hours = (hourMatch ? parseInt(hourMatch[1]) : 0) + (minMatch ? parseInt(minMatch[1]) : 0) / 60;
+      const hours = parseTimeToHours(action.timeRequired || '0');
       const price = action.pricePerHour || 0;
       return sum + (hours * price);
     }, 0);

@@ -9,179 +9,202 @@ import {
 } from "@react-pdf/renderer";
 import type { OfferWithRelations } from "@/types/database";
 
-// Font registration is handled by registerPDFFonts() which is called before PDF generation
-let fontRegistered = false;
-
-// This will be set to true when fonts are registered via registerPDFFonts()
-export function setFontRegistered(value: boolean) {
-  fontRegistered = value;
-}
+export let fontRegistered = false;
+export const setFontRegistered = (v: boolean) => {
+  fontRegistered = !!v;
+};
 
 const EUR_TO_BGN = 1.95583;
 const VAT_RATE = 0.2;
 
-// Same styles but adjusted for service card (no part number column)
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontSize: 9,
-    fontFamily: fontRegistered ? "NotoSansCyrillic" : "Helvetica",
-    backgroundColor: "#ffffff",
-    lineHeight: 1.3,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottom: "2px solid #000",
-  },
-  logo: {
-    width: 180,
-    height: 50,
-    marginBottom: 8,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerRight: {
-    flex: 1,
-    alignItems: "flex-end",
-  },
-  companyName: {
-    fontSize: 11,
-    fontWeight: 700,
-    marginTop: 4,
-    marginBottom: 2,
-  },
-  companyInfo: {
-    fontSize: 8,
-    marginTop: 1,
-    color: "#000",
-    lineHeight: 1.4,
-  },
-  customerInfo: {
-    fontSize: 10,
-    marginTop: 1,
-    textAlign: "right",
-    fontWeight: 500,
-    lineHeight: 1.5,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 700,
-    textAlign: "center",
-    marginVertical: 15,
-    letterSpacing: 0.5,
-  },
-  vinText: {
-    fontSize: 10,
-    textAlign: "center",
-    marginBottom: 15,
-    fontWeight: 500,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: 700,
-    marginTop: 15,
-    marginBottom: 8,
-    paddingBottom: 4,
-    borderBottom: "1px solid #333",
-  },
+// Create styles function that uses current fontRegistered state
+const createStyles = () => {
+  const fontFamily = fontRegistered ? "NotoSans" : "Helvetica";
+  return StyleSheet.create({
+    page: {
+      padding: 30,
+      fontSize: 9,
+      fontFamily: fontFamily,
+      backgroundColor: "#ffffff",
+      lineHeight: 1.3,
+    },
+    text: { fontFamily: fontFamily, fontSize: 11, lineHeight: 1.2 },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 20,
+      paddingBottom: 15,
+      borderBottom: "2px solid #000",
+    },
+    logo: {
+      width: 140,
+      height: 42,
+      marginBottom: 8,
+      objectFit: "contain",
+    },
+    headerLeft: {
+      width: "50%",
+    },
+    headerRight: {
+      width: "50%",
+      alignItems: "flex-end",
+      paddingTop: 54,
+    },
+    companyName: {
+      fontSize: 11,
+      fontWeight: 700,
+      marginTop: 4,
+      marginBottom: 2,
+      fontFamily: fontFamily,
+    },
+    companyInfo: {
+      fontSize: 8,
+      marginTop: 1,
+      color: "#000",
+      lineHeight: 1.4,
+      fontFamily: fontFamily,
+    },
+    customerInfo: {
+      fontSize: 9,
+      marginTop: 2,
+      textAlign: "right",
+      fontWeight: 500,
+      lineHeight: 1.5,
+      fontFamily: fontFamily,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: 700,
+      textAlign: "center",
+      marginTop: 15,
+      marginBottom: 15,
+      letterSpacing: 0.5,
+      fontFamily: fontFamily,
+    },
+    vinText: {
+      fontSize: 10,
+      textAlign: "center",
+      marginBottom: 15,
+      fontWeight: 500,
+      fontFamily: fontFamily,
+    },
+    sectionTitle: {
+      fontSize: 11,
+      fontWeight: 700,
+      marginTop: 15,
+      marginBottom: 8,
+      paddingBottom: 6,
+      borderBottom: "2px solid #000",
+      fontFamily: fontFamily,
+    },
   table: {
     width: "100%",
     marginBottom: 15,
     border: "1px solid #000",
   },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: 6,
-    fontWeight: 700,
-    fontSize: 8,
-    borderBottom: "1px solid #000",
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottom: "1px solid #ccc",
-    padding: 5,
-    fontSize: 8,
-    minHeight: 25,
-  },
+    tableHeader: {
+      flexDirection: "row",
+      backgroundColor: "#000",
+      color: "#fff",
+      padding: 5,
+      fontWeight: 700,
+      fontSize: 8,
+      borderBottom: "1px solid #000",
+      fontFamily: fontFamily,
+    },
+    tableRow: {
+      flexDirection: "row",
+      borderBottom: "1px solid #ccc",
+      padding: 4,
+      fontSize: 8,
+      minHeight: 22,
+      fontFamily: fontFamily,
+    },
   tableRowAlt: {
     backgroundColor: "#f9f9f9",
   },
   // Service card parts table (6 columns - no part number)
-  col1: { width: "6%", textAlign: "center" },
-  col2: { width: "38%", paddingLeft: 4 },
-  col3: { width: "18%", textAlign: "center" },
-  col4: { width: "10%", textAlign: "center" },
-  col5: { width: "14%", textAlign: "right", paddingRight: 4 },
-  col6: { width: "14%", textAlign: "right", paddingRight: 4 },
+  // Using flex instead of width for better column sizing in react-pdf
+  col1: { flex: 0.06, paddingVertical: 2, paddingHorizontal: 2 },
+  col2: { flex: 0.38, paddingLeft: 4, paddingVertical: 2, paddingRight: 2 },
+  col3: { flex: 0.18, paddingVertical: 2, paddingHorizontal: 2 },
+  col4: { flex: 0.10, paddingVertical: 2, paddingHorizontal: 2 },
+  col5: { flex: 0.14, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
+  col6: { flex: 0.14, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
   // Service actions columns (5 columns)
-  colSvc1: { width: "5%", textAlign: "center" },
-  colSvc2: { width: "42%", paddingLeft: 4 },
-  colSvc3: { width: "15%", textAlign: "center" },
-  colSvc4: { width: "19%", textAlign: "right", paddingRight: 4 },
-  colSvc5: { width: "19%", textAlign: "right", paddingRight: 4 },
+  colSvc1: { flex: 0.05, paddingHorizontal: 2 },
+  colSvc2: { flex: 0.42, paddingLeft: 4, paddingRight: 2 },
+  colSvc3: { flex: 0.15, paddingHorizontal: 2 },
+  colSvc4: { flex: 0.19, paddingRight: 4, paddingLeft: 2 },
+  colSvc5: { flex: 0.19, paddingRight: 4, paddingLeft: 2 },
+  // Text styles for table cells
+  colTextCenter: { textAlign: "center", fontFamily: fontFamily, fontSize: 8 },
+  colTextLeft: { textAlign: "left", fontFamily: fontFamily, fontSize: 8 },
+  colTextRight: { textAlign: "right", fontFamily: fontFamily, fontSize: 8 },
   summarySection: {
     marginTop: 20,
     padding: 12,
     border: "2px solid #000",
     backgroundColor: "#f5f5f5",
   },
-  summaryTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    marginBottom: 8,
-    textAlign: "center",
-  },
+    summaryTitle: {
+      fontSize: 12,
+      fontWeight: 700,
+      marginBottom: 8,
+      textAlign: "center",
+      fontFamily: fontFamily,
+    },
   summaryTable: {
     width: "100%",
     border: "1px solid #000",
   },
-  summaryHeaderRow: {
-    flexDirection: "row",
-    backgroundColor: "#000",
-    color: "#fff",
-    padding: 5,
-    fontWeight: 700,
-    fontSize: 8,
-    borderBottom: "1px solid #000",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    padding: 5,
-    borderBottom: "1px solid #ccc",
-    fontSize: 8,
-  },
-  summaryCol1: { width: "35%", paddingLeft: 4 },
-  summaryCol2: { width: "20%", textAlign: "right", paddingRight: 4 },
-  summaryCol3: { width: "15%", textAlign: "center" },
-  summaryCol4: { width: "15%", textAlign: "right", paddingRight: 4 },
-  summaryCol5: { width: "15%", textAlign: "right", paddingRight: 4 },
+    summaryHeaderRow: {
+      flexDirection: "row",
+      backgroundColor: "#000",
+      color: "#fff",
+      padding: 5,
+      fontWeight: 700,
+      fontSize: 8,
+      borderBottom: "1px solid #000",
+      fontFamily: fontFamily,
+    },
+    summaryRow: {
+      flexDirection: "row",
+      padding: 5,
+      borderBottom: "1px solid #ccc",
+      fontSize: 8,
+      fontFamily: fontFamily,
+    },
+  summaryCol1: { flex: 0.35, paddingLeft: 4, paddingRight: 2 },
+  summaryCol2: { flex: 0.20, paddingRight: 4, paddingLeft: 2 },
+  summaryCol3: { flex: 0.15, paddingHorizontal: 2 },
+  summaryCol4: { flex: 0.15, paddingRight: 4, paddingLeft: 2 },
+  summaryCol5: { flex: 0.15, paddingRight: 4, paddingLeft: 2 },
   summaryTotalRow: {
     backgroundColor: "#e0e0e0",
     fontWeight: 700,
   },
-  footer: {
-    marginTop: 20,
-    paddingTop: 10,
-    borderTop: "1px solid #ccc",
-    fontSize: 7,
-    color: "#555",
-  },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 3,
-  },
-  footerText: {
-    fontSize: 8,
-    marginTop: 2,
-  },
-});
+    footer: {
+      marginTop: 20,
+      paddingTop: 10,
+      borderTop: "1px solid #ccc",
+      fontSize: 7,
+      color: "#555",
+      fontFamily: fontFamily,
+    },
+    footerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 3,
+    },
+    footerText: {
+      fontSize: 8,
+      marginTop: 2,
+      fontFamily: fontFamily,
+    },
+  });
+};
 
 interface ServiceCardPDFv3Props {
   offer: OfferWithRelations;
@@ -189,15 +212,13 @@ interface ServiceCardPDFv3Props {
 }
 
 export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
+  // Create styles dynamically based on current fontRegistered state
+  const styles = createStyles();
+  
   // Format currency
-  const formatBGN = (eurValue: number) => {
-    const bgnValue = eurValue * EUR_TO_BGN;
-    return `${bgnValue.toFixed(2)} BGN`;
-  };
-
   const formatDual = (eurValue: number) => {
     const bgnValue = eurValue * EUR_TO_BGN;
-    return `${bgnValue.toFixed(2)} BGN (${eurValue.toFixed(2)} EUR)`;
+    return `${eurValue.toFixed(2)} EUR / ${bgnValue.toFixed(2)} BGN`;
   };
 
   // Calculate parts total (with VAT)
@@ -259,7 +280,7 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
           {offer.offer_number ? `№${offer.offer_number}` : "(чернова)"}
         </Text>
         {offer.vin_text && (
-          <Text style={styles.vinText}>VIN: {offer.vin_text}</Text>
+          <Text style={styles.vinText}>VIN: {offer.vin_text.toUpperCase()}</Text>
         )}
 
         {/* Parts Table - WITHOUT part number column */}
@@ -268,12 +289,12 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
             <Text style={styles.sectionTitle}>Части</Text>
             <View style={styles.table}>
               <View style={styles.tableHeader}>
-                <Text style={styles.col1}>№</Text>
-                <Text style={styles.col2}>Продукт</Text>
-                <Text style={styles.col3}>Производител</Text>
-                <Text style={styles.col4}>К-во</Text>
-                <Text style={styles.col5}>Цена на брой (с ДДС)</Text>
-                <Text style={styles.col6}>Обща цена (с ДДС)</Text>
+                <View style={styles.col1}><Text style={styles.colTextCenter}>№</Text></View>
+                <View style={styles.col2}><Text style={styles.colTextLeft}>Продукт</Text></View>
+                <View style={styles.col3}><Text style={styles.colTextCenter}>Производител</Text></View>
+                <View style={styles.col4}><Text style={styles.colTextCenter}>К-во</Text></View>
+                <View style={styles.col5}><Text style={styles.colTextRight}>Цена на брой (с ДДС)</Text></View>
+                <View style={styles.col6}><Text style={styles.colTextRight}>Обща цена (с ДДС)</Text></View>
               </View>
               {offer.items
                 .filter((item) => item.type === "part")
@@ -289,14 +310,12 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
                         index % 2 === 1 ? styles.tableRowAlt : {},
                       ]}
                     >
-                      <Text style={styles.col1}>{index + 1}</Text>
-                      <Text style={styles.col2}>{item.description}</Text>
-                      <Text style={styles.col3}>{item.brand || "-"}</Text>
-                      <Text style={styles.col4}>{item.quantity}</Text>
-                      <Text style={styles.col5}>
-                        {formatDual(unitPriceGross)}
-                      </Text>
-                      <Text style={styles.col6}>{formatDual(totalGross)}</Text>
+                      <View style={styles.col1}><Text style={styles.colTextCenter}>{index + 1}</Text></View>
+                      <View style={styles.col2}><Text style={styles.colTextLeft}>{item.description || "-"}</Text></View>
+                      <View style={styles.col3}><Text style={styles.colTextCenter}>{item.brand || "-"}</Text></View>
+                      <View style={styles.col4}><Text style={styles.colTextCenter}>{item.quantity}</Text></View>
+                      <View style={styles.col5}><Text style={styles.colTextRight}>{formatDual(unitPriceGross)}</Text></View>
+                      <View style={styles.col6}><Text style={styles.colTextRight}>{formatDual(totalGross)}</Text></View>
                     </View>
                   );
                 })}
@@ -310,11 +329,11 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
             <Text style={styles.sectionTitle}>Сервизни активности</Text>
             <View style={styles.table}>
               <View style={styles.tableHeader}>
-                <Text style={styles.colSvc1}>№</Text>
-                <Text style={styles.colSvc2}>Сервизна дейност</Text>
-                <Text style={styles.colSvc3}>Време за ремонт</Text>
-                <Text style={styles.colSvc4}>Цена на час (с ДДС)</Text>
-                <Text style={styles.colSvc5}>Цена за ремонт (с ДДС)</Text>
+                <View style={styles.colSvc1}><Text style={styles.colTextCenter}>№</Text></View>
+                <View style={styles.colSvc2}><Text style={styles.colTextLeft}>Сервизна дейност</Text></View>
+                <View style={styles.colSvc3}><Text style={styles.colTextCenter}>Време за ремонт</Text></View>
+                <View style={styles.colSvc4}><Text style={styles.colTextRight}>Цена на час (с ДДС)</Text></View>
+                <View style={styles.colSvc5}><Text style={styles.colTextRight}>Цена за ремонт (с ДДС)</Text></View>
               </View>
               {offer.service_actions
                 .sort((a, b) => a.sort_order - b.sort_order)
@@ -330,17 +349,11 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
                         index % 2 === 1 ? styles.tableRowAlt : {},
                       ]}
                     >
-                      <Text style={styles.colSvc1}>{index + 1}</Text>
-                      <Text style={styles.colSvc2}>{action.action_name}</Text>
-                      <Text style={styles.colSvc3}>
-                        {action.time_required_text || "-"}
-                      </Text>
-                      <Text style={styles.colSvc4}>
-                        {formatBGN(hourlyRateGross)}
-                      </Text>
-                      <Text style={styles.colSvc5}>
-                        {formatDual(totalGross)}
-                      </Text>
+                      <View style={styles.colSvc1}><Text style={styles.colTextCenter}>{index + 1}</Text></View>
+                      <View style={styles.colSvc2}><Text style={styles.colTextLeft}>{action.action_name || "-"}</Text></View>
+                      <View style={styles.colSvc3}><Text style={styles.colTextCenter}>{action.time_required_text || "-"}</Text></View>
+                      <View style={styles.colSvc4}><Text style={styles.colTextRight}>{formatDual(hourlyRateGross)}</Text></View>
+                      <View style={styles.colSvc5}><Text style={styles.colTextRight}>{formatDual(totalGross)}</Text></View>
                     </View>
                   );
                 })}
@@ -353,49 +366,37 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
           <Text style={styles.summaryTitle}>Обобщение</Text>
           <View style={styles.summaryTable}>
             <View style={styles.summaryHeaderRow}>
-              <Text style={styles.summaryCol1}>Вид на разходите</Text>
-              <Text style={styles.summaryCol2}>Обща стойност (без ДДС)</Text>
-              <Text style={styles.summaryCol3}>Ставка на ДДС</Text>
-              <Text style={styles.summaryCol4}>ДДС</Text>
-              <Text style={styles.summaryCol5}>Обща стойност (с ДДС)</Text>
+              <View style={styles.summaryCol1}><Text style={styles.colTextLeft}>Вид на разходите</Text></View>
+              <View style={styles.summaryCol2}><Text style={styles.colTextRight}>Обща стойност (без ДДС)</Text></View>
+              <View style={styles.summaryCol3}><Text style={styles.colTextCenter}>Ставка на ДДС</Text></View>
+              <View style={styles.summaryCol4}><Text style={styles.colTextRight}>ДДС</Text></View>
+              <View style={styles.summaryCol5}><Text style={styles.colTextRight}>Обща стойност (с ДДС)</Text></View>
             </View>
             {offer.items &&
               offer.items.filter((i) => i.type === "part").length > 0 && (
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryCol1}>Части</Text>
-                  <Text style={styles.summaryCol2}>
-                    {formatBGN(partsNet)}
-                  </Text>
-                  <Text style={styles.summaryCol3}>20%</Text>
-                  <Text style={styles.summaryCol4}>
-                    {formatBGN(partsVat)}
-                  </Text>
-                  <Text style={styles.summaryCol5}>
-                    {formatDual(partsGross)}
-                  </Text>
+                  <View style={styles.summaryCol1}><Text style={styles.colTextLeft}>Части</Text></View>
+                  <View style={styles.summaryCol2}><Text style={styles.colTextRight}>{formatDual(partsNet)}</Text></View>
+                  <View style={styles.summaryCol3}><Text style={styles.colTextCenter}>20%</Text></View>
+                  <View style={styles.summaryCol4}><Text style={styles.colTextRight}>{formatDual(partsVat)}</Text></View>
+                  <View style={styles.summaryCol5}><Text style={styles.colTextRight}>{formatDual(partsGross)}</Text></View>
                 </View>
               )}
             {offer.service_actions && offer.service_actions.length > 0 && (
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryCol1}>Сервизни активности</Text>
-                <Text style={styles.summaryCol2}>
-                  {formatBGN(serviceNet)}
-                </Text>
-                <Text style={styles.summaryCol3}>20%</Text>
-                <Text style={styles.summaryCol4}>
-                  {formatBGN(serviceVat)}
-                </Text>
-                <Text style={styles.summaryCol5}>
-                  {formatDual(serviceGross)}
-                </Text>
+                <View style={styles.summaryCol1}><Text style={styles.colTextLeft}>Сервизни активности</Text></View>
+                <View style={styles.summaryCol2}><Text style={styles.colTextRight}>{formatDual(serviceNet)}</Text></View>
+                <View style={styles.summaryCol3}><Text style={styles.colTextCenter}>20%</Text></View>
+                <View style={styles.summaryCol4}><Text style={styles.colTextRight}>{formatDual(serviceVat)}</Text></View>
+                <View style={styles.summaryCol5}><Text style={styles.colTextRight}>{formatDual(serviceGross)}</Text></View>
               </View>
             )}
             <View style={[styles.summaryRow, styles.summaryTotalRow]}>
-              <Text style={styles.summaryCol1}>Обща стойност</Text>
-              <Text style={styles.summaryCol2}>{formatBGN(totalNet)}</Text>
-              <Text style={styles.summaryCol3}></Text>
-              <Text style={styles.summaryCol4}></Text>
-              <Text style={styles.summaryCol5}>{formatDual(totalGross)}</Text>
+              <View style={styles.summaryCol1}><Text style={styles.colTextLeft}>Обща стойност</Text></View>
+              <View style={styles.summaryCol2}><Text style={styles.colTextRight}>{formatDual(totalNet)}</Text></View>
+              <View style={styles.summaryCol3}><Text style={styles.colTextCenter}></Text></View>
+              <View style={styles.summaryCol4}><Text style={styles.colTextRight}></Text></View>
+              <View style={styles.summaryCol5}><Text style={styles.colTextRight}>{formatDual(totalGross)}</Text></View>
             </View>
           </View>
         </View>

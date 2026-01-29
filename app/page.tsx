@@ -1,46 +1,26 @@
-import {
-  getTranslations,
-  setRequestLocale,
-  getMessages,
-} from "next-intl/server";
-import { NextIntlClientProvider } from "next-intl";
-import type { Metadata } from "next";
-import { HomePageContent } from "./HomePageContent";
-import { generateAlternateLinks } from "@/lib/seo";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { StickyBookingCTA } from "@/components/layout/StickyBookingCTA";
-import { SmoothScroll } from "@/components/layout/SmoothScroll";
+'use client';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations({ locale: "bg", namespace: "seo.home" });
-  const alternateLinks = generateAlternateLinks("bg");
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-  return {
-    title: t("title"),
-    description: t("description"),
-    alternates: alternateLinks,
-    openGraph: {
-      title: t("title"),
-      description: t("description"),
-      url: alternateLinks.canonical,
-    },
-  };
-}
+export default function RootPage() {
+  const router = useRouter();
 
-export default async function RootPage() {
-  setRequestLocale("bg");
-  const messages = await getMessages({ locale: "bg" });
+  useEffect(() => {
+    router.replace('/bg');
+  }, [router]);
 
   return (
-    <NextIntlClientProvider messages={messages} locale="bg">
-      <SmoothScroll />
-      <Header />
-      <main className="min-h-screen">
-        <HomePageContent />
-      </main>
-      <Footer />
-      <StickyBookingCTA />
-    </NextIntlClientProvider>
+    <div className="min-h-screen flex items-center justify-center bg-mb-black">
+      <Image
+        src="/assets/logos/mbc-logo-white.png"
+        alt="MB Center"
+        width={600}
+        height={300}
+        className="animate-pulse"
+        priority
+      />
+    </div>
   );
 }

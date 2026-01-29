@@ -124,7 +124,7 @@ npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.
 
 The implementation already updated the create-offer pages to use `CreateOfferFormV2`:
 
-- `/app/[locale]/(admin)/mb-admin-x77/create-offer/page.tsx`
+- `/app/[locale]/(admin)/mb-admin/create-offer/page.tsx`
 - `/app/[locale]/(admin)/mb-admin-mechanics/create-offer/page.tsx`
 
 ### 4. Test the Flow

@@ -48,8 +48,12 @@ create table if not exists offers (
   -- Denormalized fields for PDF stability
   customer_name text,
   customer_phone text,
+  customer_email text,
   car_model_text text,
   vin_text text,
+  license_plate text,
+  mileage int,
+  car_year int,
   created_by_name text,
   -- Status and totals
   status text check (status in ('draft', 'sent', 'approved', 'finished', 'cancelled')) default 'draft',
@@ -288,6 +292,12 @@ create index if not exists idx_offer_items_offer_id on offer_items(offer_id);
 create index if not exists idx_service_actions_offer_id on service_actions(offer_id);
 create index if not exists idx_offer_payments_offer_id on offer_payments(offer_id);
 create index if not exists idx_cars_client_id on cars(client_id);
+
+-- Performance indexes for search and filtering
+create index if not exists idx_offers_offer_number on offers(offer_number);
+create index if not exists idx_offers_customer_name on offers(customer_name);
+create index if not exists idx_offers_customer_phone on offers(customer_phone);
+create index if not exists idx_offers_status_created_at on offers(status, created_at desc);
 
 -- ============================================
 -- TRIGGER TO CREATE PROFILE ON USER SIGNUP

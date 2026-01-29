@@ -17,7 +17,7 @@ export type PartItemFormData = z.infer<typeof partItemSchema>;
 export const serviceActionSchema = z.object({
   id: z.string().optional(),
   actionName: z.string().min(1, "Service action name is required"),
-  timeRequired: z.string().optional(), // e.g., "0h 40min"
+  timeRequired: z.string().optional(), // H:MM format e.g. "1", "0:30", "1:30"
   pricePerHour: z.number().min(0, "Hourly rate must be positive"),
 });
 
@@ -79,7 +79,6 @@ export const offerFormSchema = z
     items: z.array(offerItemSchema).optional(),
   })
   .refine((data) => data.parts.length + data.serviceActions.length > 0, {
-    message: "At least one part or service action is required",
     path: ["parts"],
   });
 

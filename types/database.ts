@@ -102,8 +102,12 @@ export interface Database {
           car_id: string | null;
           customer_name: string | null;
           customer_phone: string | null;
+          customer_email: string | null;
           car_model_text: string | null;
           vin_text: string | null;
+          license_plate: string | null;
+          mileage: number | null;
+          car_year: number | null;
           created_by_name: string | null;
           status: OfferStatus;
           total_net: number;
@@ -123,8 +127,12 @@ export interface Database {
           car_id?: string | null;
           customer_name?: string | null;
           customer_phone?: string | null;
+          customer_email?: string | null;
           car_model_text?: string | null;
           vin_text?: string | null;
+          license_plate?: string | null;
+          mileage?: number | null;
+          car_year?: number | null;
           created_by_name?: string | null;
           status?: OfferStatus;
           total_net?: number;
@@ -144,8 +152,12 @@ export interface Database {
           car_id?: string | null;
           customer_name?: string | null;
           customer_phone?: string | null;
+          customer_email?: string | null;
           car_model_text?: string | null;
           vin_text?: string | null;
+          license_plate?: string | null;
+          mileage?: number | null;
+          car_year?: number | null;
           created_by_name?: string | null;
           status?: OfferStatus;
           total_net?: number;

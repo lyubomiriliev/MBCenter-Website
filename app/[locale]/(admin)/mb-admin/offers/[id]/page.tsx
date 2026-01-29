@@ -11,13 +11,12 @@ export default function EditOfferPage() {
   const offerId = params.id as string;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       <AdminHeader
         title={t('offers.editOffer')}
-        subtitle={`ID: ${offerId}`}
+        subtitle={offerId ? `ID: ${offerId}` : undefined}
       />
-      
-      <div className="flex-1 p-6">
+      <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6">
         <CreateOfferFormV2 offerId={offerId} />
       </div>
     </div>
