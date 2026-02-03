@@ -36,41 +36,36 @@ export default function AdminLoginPage() {
       if (authError) throw authError;
       if (!authData?.user) throw new Error('Authentication failed');
 
-      // Fetch user profile with role
+      // Fetch user profile with role (minimal fields for faster response)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('auth_id', authData.user.id)
-        .single();
+        .maybeSingle();
 
       // If profile doesn't exist, create default profile
-      if (profileError?.code === 'PGRST116') {
+      if (!profile) {
         const insertPayload: InsertProfile = {
           auth_id: authData.user.id,
           role: 'mechanic',
           full_name: authData.user.email?.split('@')[0] || 'User',
         };
         
-        const { error: createError } = await supabase
+        await supabase
           .from('profiles')
-          .insert(insertPayload as never)
-          .select('role')
-          .single();
-
-        if (createError) throw createError;
+          .insert(insertPayload as never);
         
-        // Redirect new mechanic user
+        // Redirect new mechanic user (don't wait for confirmation)
         router.replace(`/${locale}/mb-admin-mechanics/offers`);
         return;
       }
 
       if (profileError) throw profileError;
-      if (!profile) throw new Error('Profile not found');
 
       type ProfileRole = { role: UserRole };
       const userRole = (profile as ProfileRole).role;
 
-      // Redirect based on role
+      // Redirect based on role (keep loading state for smooth transition)
       const targetRoute = userRole === 'admin' 
         ? `/${locale}/mb-admin/offers`
         : `/${locale}/mb-admin-mechanics/offers`;

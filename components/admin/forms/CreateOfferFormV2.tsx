@@ -5,6 +5,7 @@ import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { pdf } from "@react-pdf/renderer";
 import { ClientSelector } from "./ClientSelector";
 import { CarSelector } from "./CarSelector";
@@ -58,6 +59,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
   const locale = useLocale() as "bg" | "en";
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [savedOffer, setSavedOffer] = useState<OfferWithRelations | null>(null);
@@ -442,9 +444,11 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         if (offerRes.error) throw new Error(`Failed to update offer: ${offerRes.error.message}`);
         offer = offerRes.data as Offer;
 
-        // Delete existing items and service actions
-        await supabase.from("offer_items").delete().eq("offer_id", offerId);
-        await supabase.from("service_actions").delete().eq("offer_id", offerId);
+        // Delete existing items and service actions in parallel
+        await Promise.all([
+          supabase.from("offer_items").delete().eq("offer_id", offerId),
+          supabase.from("service_actions").delete().eq("offer_id", offerId)
+        ]);
 
       } else {
         // CREATE new offer
@@ -453,14 +457,22 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
-        const profileRes = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("auth_id", user.id)
-          .single();
+        // Try to get profile from cache first
+        const cachedProfile = queryClient.getQueryData(['profile', user.id]) as Pick<Profile, 'id'> | undefined;
+        
+        let profile: Pick<Profile, 'id'> | null;
+        if (cachedProfile?.id) {
+          profile = cachedProfile;
+        } else {
+          const profileRes = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("auth_id", user.id)
+            .single();
 
-        const profile = profileRes.data as Pick<Profile, 'id'> | null;
-        if (!profile) throw new Error("Profile not found");
+          profile = profileRes.data as Pick<Profile, 'id'> | null;
+          if (!profile) throw new Error("Profile not found");
+        }
 
         // Generate offer number
         console.log("Calling generate_offer_number RPC...");
@@ -548,62 +560,66 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         console.log("Offer created successfully:", offer.id);
       }
 
-      // Insert parts
-      if (data.parts.length > 0) {
-        console.log(`Inserting ${data.parts.length} parts...`);
-        const partsInserts: InsertOfferItem[] = data.parts.map((part, index) => ({
+      // Prepare parts inserts
+      const partsInserts: InsertOfferItem[] = data.parts.map((part, index) => ({
+        offer_id: offer.id,
+        type: "part" as const,
+        description: part.description,
+        brand: part.brand || null,
+        part_number: part.partNumber || null,
+        unit_price: part.unitPrice,
+        quantity: part.quantity,
+        total: part.unitPrice * part.quantity,
+        sort_order: index,
+      }));
+
+      // Prepare service actions inserts
+      const serviceInserts: InsertServiceAction[] = data.serviceActions.map((action, index) => {
+        const hours = parseTimeToHours(action.timeRequired || "0");
+        const total = hours * action.pricePerHour;
+
+        return {
           offer_id: offer.id,
-          type: "part" as const,
-          description: part.description,
-          brand: part.brand || null,
-          part_number: part.partNumber || null,
-          unit_price: part.unitPrice,
-          quantity: part.quantity,
-          total: part.unitPrice * part.quantity,
+          action_name: action.actionName,
+          time_required_text: action.timeRequired || null,
+          price_per_hour_eur_net: action.pricePerHour,
+          total_eur_net: total,
           sort_order: index,
-        }));
+        };
+      });
 
-        const { error: partsError } = await supabase
-          .from("offer_items")
-          .insert(partsInserts as never);
-
-        if (partsError) {
-          console.error("Parts insert error:", partsError);
-          throw new Error(`Failed to insert parts: ${partsError.message}`);
-        }
-        console.log("Parts inserted successfully");
+      // Insert parts and service actions in parallel
+      const insertPromises = [];
+      
+      if (partsInserts.length > 0) {
+        console.log(`Inserting ${partsInserts.length} parts...`);
+        insertPromises.push(
+          supabase
+            .from("offer_items")
+            .insert(partsInserts as never)
+            .then(({ error }) => {
+              if (error) throw new Error(`Failed to insert parts: ${error.message}`);
+              console.log("Parts inserted successfully");
+            })
+        );
       }
 
-      // Insert service actions
-      if (data.serviceActions.length > 0) {
-        console.log(
-          `Inserting ${data.serviceActions.length} service actions...`
+      if (serviceInserts.length > 0) {
+        console.log(`Inserting ${serviceInserts.length} service actions...`);
+        insertPromises.push(
+          supabase
+            .from("service_actions")
+            .insert(serviceInserts as never)
+            .then(({ error }) => {
+              if (error) throw new Error(`Failed to insert service actions: ${error.message}`);
+              console.log("Service actions inserted successfully");
+            })
         );
-        const serviceInserts: InsertServiceAction[] = data.serviceActions.map((action, index) => {
-          const hours = parseTimeToHours(action.timeRequired || "0");
-          const total = hours * action.pricePerHour;
+      }
 
-          return {
-            offer_id: offer.id,
-            action_name: action.actionName,
-            time_required_text: action.timeRequired || null,
-            price_per_hour_eur_net: action.pricePerHour,
-            total_eur_net: total,
-            sort_order: index,
-          };
-        });
-
-        const { error: serviceError } = await supabase
-          .from("service_actions")
-          .insert(serviceInserts as never);
-
-        if (serviceError) {
-          console.error("Service actions insert error:", serviceError);
-          throw new Error(
-            `Failed to insert service actions: ${serviceError.message}`
-          );
-        }
-        console.log("Service actions inserted successfully");
+      // Wait for all inserts to complete
+      if (insertPromises.length > 0) {
+        await Promise.all(insertPromises);
       }
 
       // Fetch complete offer with relations

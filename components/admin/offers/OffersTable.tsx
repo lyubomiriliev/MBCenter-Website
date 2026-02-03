@@ -11,11 +11,13 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { useOffers, useUpdateOfferStatus, useDeleteOffer } from '@/hooks/useOffers';
 import { OfferStatusBadge } from './OfferStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/lib/supabase/client';
 import {
   Table,
   TableBody,
@@ -59,6 +61,7 @@ export function OffersTable({ isMechanicView = false, filters }: OffersTableProp
   const t = useTranslations('admin');
   const locale = useLocale();
   const basePath = isMechanicView ? `/${locale}/mb-admin-mechanics` : `/${locale}/mb-admin`;
+  const queryClient = useQueryClient();
   
   const [sorting, setSorting] = useState<SortingState>([]);
   const [page, setPage] = useState(1);
@@ -75,6 +78,51 @@ export function OffersTable({ isMechanicView = false, filters }: OffersTableProp
     dateTo: filters?.dateTo?.toISOString(),
   });
   const updateStatus = useUpdateOfferStatus();
+
+  // Prefetch offer data on hover for instant navigation
+  const prefetchOffer = async (offerId: string) => {
+    await queryClient.prefetchQuery({
+      queryKey: ['offer', offerId],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from('offers')
+          .select(`
+            id,
+            offer_number,
+            customer_name,
+            customer_phone,
+            customer_email,
+            client_id,
+            car_model_text,
+            car_year,
+            vin_text,
+            license_plate,
+            mileage,
+            car_id,
+            created_by_name,
+            discount_percent,
+            notes,
+            status,
+            total_net,
+            total_gross,
+            created_at,
+            updated_at,
+            client:clients(id, name, phone, email),
+            car:cars(id, model, year, vin, license_plate, mileage),
+            items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, sort_order),
+            service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, sort_order)
+          `)
+          .eq('id', offerId)
+          .order('sort_order', { referencedTable: 'offer_items', ascending: true })
+          .order('sort_order', { referencedTable: 'service_actions', ascending: true })
+          .single();
+
+        if (error) throw error;
+        return data as OfferWithRelations;
+      },
+      staleTime: 60 * 1000,
+    });
+  };
 
   const columns = [
     columnHelper.accessor('offer_number', {
@@ -183,6 +231,7 @@ export function OffersTable({ isMechanicView = false, filters }: OffersTableProp
                 <TableRow
                   key={row.id}
                   className="border-mb-border hover:bg-mb-anthracite/50"
+                  onMouseEnter={() => prefetchOffer(row.original.id)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

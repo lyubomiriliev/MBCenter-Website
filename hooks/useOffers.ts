@@ -80,8 +80,8 @@ export function useOffers(filters: OffersFilters = {}) {
         totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
-    staleTime: 10 * 1000, // Consider data fresh for 10 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds (increased from 10s)
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (increased from 5min)
     refetchOnWindowFocus: false,
   });
 }
@@ -96,11 +96,30 @@ export function useOffer(id: string | undefined) {
       const { data, error } = await supabase
         .from('offers')
         .select(`
-          *,
+          id,
+          offer_number,
+          customer_name,
+          customer_phone,
+          customer_email,
+          client_id,
+          car_model_text,
+          car_year,
+          vin_text,
+          license_plate,
+          mileage,
+          car_id,
+          created_by_name,
+          discount_percent,
+          notes,
+          status,
+          total_net,
+          total_gross,
+          created_at,
+          updated_at,
           client:clients(id, name, phone, email),
           car:cars(id, model, year, vin, license_plate, mileage),
-          items:offer_items(*),
-          service_actions(*)
+          items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, sort_order),
+          service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, sort_order)
         `)
         .eq('id', id)
         .order('sort_order', { referencedTable: 'offer_items', ascending: true })
@@ -112,10 +131,10 @@ export function useOffer(id: string | undefined) {
       return data as OfferWithRelations;
     },
     enabled: !!id,
-    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
+    staleTime: 60 * 1000, // Consider data fresh for 60 seconds (increased from 30s)
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (increased from 5min)
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

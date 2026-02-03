@@ -285,6 +285,7 @@ create trigger update_offers_updated_at
 -- ============================================
 -- INDEXES
 -- ============================================
+create index if not exists idx_profiles_auth_id on profiles(auth_id);
 create index if not exists idx_offers_status on offers(status);
 create index if not exists idx_offers_created_at on offers(created_at desc);
 create index if not exists idx_offers_client_id on offers(client_id);

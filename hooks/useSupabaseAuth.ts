@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import type { Profile, UserRole, InsertProfile } from "@/types/database";
 
@@ -14,6 +15,7 @@ interface AuthState {
 }
 
 export function useSupabaseAuth() {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
@@ -22,20 +24,26 @@ export function useSupabaseAuth() {
     error: null,
   });
 
-  // Fetch profile for user
+  // Fetch profile for user with React Query cache
   const fetchProfile = useCallback(async (userId: string) => {
     try {
+      // Check cache first
+      const cachedProfile = queryClient.getQueryData(['profile', userId]) as Profile | undefined;
+      if (cachedProfile) {
+        return cachedProfile;
+      }
+
       let { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("auth_id", userId)
-        .single();
+        .maybeSingle();
 
-      // If profile doesn't exist, create one (fallback if trigger didn't run)
-      if (error && error.code === "PGRST116") {
+      // If profile doesn't exist, create one
+      if (!data) {
         const insertPayload: InsertProfile = {
           auth_id: userId,
-          role: "mechanic", // Default role
+          role: "mechanic",
           full_name: null,
         };
         
@@ -49,16 +57,22 @@ export function useSupabaseAuth() {
           console.error("Error creating profile:", profileRes.error);
           return null;
         }
-        return profileRes.data as Profile;
+        data = profileRes.data as Profile;
       }
 
       if (error) throw error;
+
+      // Cache the profile
+      if (data) {
+        queryClient.setQueryData(['profile', userId], data);
+      }
+
       return data as Profile | null;
     } catch (error) {
       console.error("Error fetching profile:", error);
       return null;
     }
-  }, []);
+  }, [queryClient]);
 
   // Initialize auth state
   useEffect(() => {
