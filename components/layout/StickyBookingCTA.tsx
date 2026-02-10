@@ -29,7 +29,7 @@ export function StickyBookingCTA() {
     <div className="fixed bottom-8 right-8 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <Link
         href={`/${locale}/booking`}
-        className="bg-mb-blue text-white px-6 py-3 rounded-full shadow-card hover:scale-105 transition-transform font-medium text-sm flex items-center gap-2"
+        className="bg-mb-blue text-white px-6 py-3 rounded-full shadow-none hover:scale-105 transition-transform font-medium text-sm flex items-center gap-2"
       >
         <svg
           className="w-5 h-5"

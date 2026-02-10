@@ -1,40 +1,39 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import { useWatch } from 'react-hook-form';
-import type { Control } from 'react-hook-form';
-import type { OfferFormData, OfferItemFormData } from '@/lib/schemas/offer';
-import { VAT_RATE, EUR_TO_BGN } from '@/lib/schemas/offer';
-import { parseTimeToHours } from '@/lib/utils';
+import { useMemo } from "react";
+import { useWatch } from "react-hook-form";
+import type { Control } from "react-hook-form";
+import type { OfferFormData } from "@/lib/schemas/offer";
+import { VAT_RATE, EUR_TO_BGN } from "@/lib/schemas/offer";
+import { parseTimeToHours } from "@/lib/utils";
 
 interface CalculationResult {
-  // Parts calculations
   partsSubtotal: number;
   partsCount: number;
-  
-  // Labor calculations
   laborSubtotal: number;
   laborCount: number;
-  
-  // Totals
   subtotal: number;
+  partsDiscountAmount: number;
+  servicesDiscountAmount: number;
   discountAmount: number;
   netTotal: number;
   vatAmount: number;
   grossTotal: number;
-  
-  // BGN conversions
   subtotalBGN: number;
+  partsDiscountAmountBGN: number;
+  servicesDiscountAmountBGN: number;
   discountAmountBGN: number;
   netTotalBGN: number;
   vatAmountBGN: number;
   grossTotalBGN: number;
-  
-  // Formatted values
   formatted: {
     partsSubtotal: string;
     laborSubtotal: string;
     subtotal: string;
+    partsDiscountAmount: string;
+    partsDiscountAmountBGN: string;
+    servicesDiscountAmount: string;
+    servicesDiscountAmountBGN: string;
     discountAmount: string;
     netTotal: string;
     vatAmount: string;
@@ -58,36 +57,51 @@ function formatBGN(value: number): string {
 export function useOfferCalculations(
   control: Control<OfferFormData>
 ): CalculationResult {
-  // Watch the separate arrays and discount
-  const parts = useWatch({ control, name: 'parts' }) || [];
-  const serviceActions = useWatch({ control, name: 'serviceActions' }) || [];
-  const discountPercent = useWatch({ control, name: 'discountPercent' }) || 0;
+  const parts = useWatch({ control, name: "parts" }) || [];
+  const serviceActions = useWatch({ control, name: "serviceActions" }) || [];
+  const discountPercent = useWatch({ control, name: "discountPercent" }) || 0;
+  const discountPartsPercent =
+    useWatch({ control, name: "discountPartsPercent" }) || 0;
+  const discountServicesPercent =
+    useWatch({ control, name: "discountServicesPercent" }) || 0;
 
   return useMemo(() => {
-    // Calculate parts subtotal
     const partsSubtotal = parts.reduce((sum: number, part: any) => {
       const qty = part.quantity || 1;
       const price = part.unitPrice || 0;
-      return sum + (price * qty);
+      return sum + price * qty;
     }, 0);
 
-    // Calculate labor subtotal from service actions
     const laborSubtotal = serviceActions.reduce((sum: number, action: any) => {
-      const hours = parseTimeToHours(action.timeRequired || '0');
+      if (action.isFixedPrice && action.fixedPriceAmount) {
+        return sum + (action.fixedPriceAmount || 0);
+      }
+      const hours = parseTimeToHours(action.timeRequired || "0");
       const price = action.pricePerHour || 0;
-      return sum + (hours * price);
+      return sum + hours * price;
     }, 0);
 
-    // Calculate totals
+    // Calculate gross for parts and services (add VAT)
+    const partsGross = partsSubtotal * (1 + VAT_RATE);
+    const servicesGross = laborSubtotal * (1 + VAT_RATE);
+
+    // Discounts are applied to gross amounts (with VAT)
+    const partsDiscountAmount = partsGross * (discountPartsPercent / 100);
+    const servicesDiscountAmount =
+      servicesGross * (discountServicesPercent / 100);
+    const totalDiscountAmount = partsDiscountAmount + servicesDiscountAmount;
+
     const subtotal = partsSubtotal + laborSubtotal;
-    const discountAmount = subtotal * (discountPercent / 100);
-    const netTotal = subtotal - discountAmount;
-    const vatAmount = netTotal * VAT_RATE;
-    const grossTotal = netTotal + vatAmount;
+    const grossBeforeDiscount = partsGross + servicesGross;
+    const grossTotal = grossBeforeDiscount - totalDiscountAmount;
+    const netTotal = grossTotal / (1 + VAT_RATE);
+    const vatAmount = grossTotal - netTotal;
 
     // Convert to BGN
     const subtotalBGN = subtotal * EUR_TO_BGN;
-    const discountAmountBGN = discountAmount * EUR_TO_BGN;
+    const partsDiscountAmountBGN = partsDiscountAmount * EUR_TO_BGN;
+    const servicesDiscountAmountBGN = servicesDiscountAmount * EUR_TO_BGN;
+    const discountAmountBGN = totalDiscountAmount * EUR_TO_BGN;
     const netTotalBGN = netTotal * EUR_TO_BGN;
     const vatAmountBGN = vatAmount * EUR_TO_BGN;
     const grossTotalBGN = grossTotal * EUR_TO_BGN;
@@ -98,11 +112,15 @@ export function useOfferCalculations(
       laborSubtotal,
       laborCount: serviceActions.length,
       subtotal,
-      discountAmount,
+      partsDiscountAmount,
+      servicesDiscountAmount,
+      discountAmount: totalDiscountAmount,
       netTotal,
       vatAmount,
       grossTotal,
       subtotalBGN,
+      partsDiscountAmountBGN,
+      servicesDiscountAmountBGN,
       discountAmountBGN,
       netTotalBGN,
       vatAmountBGN,
@@ -111,7 +129,11 @@ export function useOfferCalculations(
         partsSubtotal: formatEUR(partsSubtotal),
         laborSubtotal: formatEUR(laborSubtotal),
         subtotal: formatEUR(subtotal),
-        discountAmount: formatEUR(discountAmount),
+        partsDiscountAmount: formatEUR(partsDiscountAmount),
+        partsDiscountAmountBGN: formatBGN(partsDiscountAmountBGN),
+        servicesDiscountAmount: formatEUR(servicesDiscountAmount),
+        servicesDiscountAmountBGN: formatBGN(servicesDiscountAmountBGN),
+        discountAmount: formatEUR(totalDiscountAmount),
         netTotal: formatEUR(netTotal),
         vatAmount: formatEUR(vatAmount),
         grossTotal: formatEUR(grossTotal),
@@ -122,6 +144,11 @@ export function useOfferCalculations(
         grossTotalBGN: formatBGN(grossTotalBGN),
       },
     };
-  }, [parts, serviceActions, discountPercent]);
+  }, [
+    parts,
+    serviceActions,
+    discountPercent,
+    discountPartsPercent,
+    discountServicesPercent,
+  ]);
 }
-

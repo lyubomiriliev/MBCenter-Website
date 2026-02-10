@@ -14,17 +14,22 @@ interface FloatingSummaryProps {
   onRemovePrepayment?: (index: number) => void;
 }
 
-export function FloatingSummary({ children, prepayments = [], onRemovePrepayment }: FloatingSummaryProps) {
+export function FloatingSummary({
+  children,
+  prepayments = [],
+  onRemovePrepayment,
+}: FloatingSummaryProps) {
   const t = useTranslations("admin.form");
   const { control, watch } = useFormContext<OfferFormData>();
   const calculations = useOfferCalculations(control);
-  const discountPercent = watch("discountPercent") || 0;
+  const discountPartsPercent = watch("discountPartsPercent") || 0;
+  const discountServicesPercent = watch("discountServicesPercent") || 0;
   const prepaymentsTotal = prepayments.reduce((a, b) => a + b, 0);
   const amountDueEur = Math.max(0, calculations.grossTotal - prepaymentsTotal);
   const amountDueBgn = amountDueEur * EUR_TO_BGN;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:fixed lg:top-28 mr-6">
       <Card className="bg-mb-anthracite border-mb-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -82,16 +87,31 @@ export function FloatingSummary({ children, prepayments = [], onRemovePrepayment
             </div>
           </div>
 
-          {/* Discount */}
-          {discountPercent > 0 && (
+          {/* Parts Discount */}
+          {discountPartsPercent > 0 && (
             <div className="flex justify-between items-center text-sm">
               <span className="text-green-400">
-                {t("discount")} ({discountPercent}%)
+                {t("discountParts")} ({discountPartsPercent}%)
               </span>
               <div className="text-right text-green-400">
-                <div>-{calculations.formatted.discountAmount}</div>
+                <div>-{calculations.formatted.partsDiscountAmount}</div>
                 <div className="text-xs">
-                  -{calculations.formatted.discountAmountBGN}
+                  -{calculations.formatted.partsDiscountAmountBGN}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Services Discount */}
+          {discountServicesPercent > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-green-400">
+                {t("discountServices")} ({discountServicesPercent}%)
+              </span>
+              <div className="text-right text-green-400">
+                <div>-{calculations.formatted.servicesDiscountAmount}</div>
+                <div className="text-xs">
+                  -{calculations.formatted.servicesDiscountAmountBGN}
                 </div>
               </div>
             </div>
@@ -143,12 +163,17 @@ export function FloatingSummary({ children, prepayments = [], onRemovePrepayment
             <>
               <Separator className="bg-mb-border" />
               {prepayments.map((amt, i) => (
-                <div key={i} className="flex justify-between items-center text-sm">
-                  <span className="text-mb-silver">{t("prepayment")} {i + 1}</span>
+                <div
+                  key={i}
+                  className="flex justify-between items-center text-sm"
+                >
+                  <span className="text-mb-silver">{t("prepayment")}</span>
                   <div className="flex items-center gap-2">
                     <div className="text-right text-green-400">
                       <div>-€{amt.toFixed(2)}</div>
-                      <div className="text-xs">-{(amt * EUR_TO_BGN).toFixed(2)} лв.</div>
+                      <div className="text-xs">
+                        -{(amt * EUR_TO_BGN).toFixed(2)} лв.
+                      </div>
                     </div>
                     {onRemovePrepayment && (
                       <button
@@ -157,8 +182,18 @@ export function FloatingSummary({ children, prepayments = [], onRemovePrepayment
                         className="p-1 rounded text-red-400 hover:bg-red-500/10"
                         aria-label={t("remove")}
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                       </button>
                     )}
@@ -181,7 +216,6 @@ export function FloatingSummary({ children, prepayments = [], onRemovePrepayment
         </CardContent>
       </Card>
 
-      {/* Action Buttons Section */}
       {children && <div className="space-y-3">{children}</div>}
     </div>
   );

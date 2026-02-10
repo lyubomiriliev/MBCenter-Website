@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MB Center Sofia",
+  title: "MB Center",
   description: "Mercedes-Benz Service Center in Sofia, Bulgaria",
   icons: {
     icon: [

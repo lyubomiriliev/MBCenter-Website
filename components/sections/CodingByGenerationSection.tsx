@@ -15,6 +15,7 @@ type CodingFeature = {
 type Generation = {
   id: string;
   name: string;
+  nameSubtitle?: string;
   models: string;
   system: string;
   image: string;
@@ -60,7 +61,9 @@ export function CodingByGenerationSection({
                 }`}
               >
                 <div className="text-sm font-bold">{gen.name}</div>
-                <div className="text-xs opacity-80">{gen.system}</div>
+                <div className="text-xs opacity-80">
+                  {gen.nameSubtitle ?? gen.system}
+                </div>
               </button>
             ))}
           </div>

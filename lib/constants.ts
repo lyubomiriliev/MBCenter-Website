@@ -13,9 +13,12 @@ type SiteConfig = {
     weekdays: string;
     weekend: string;
   };
+  viberUrl?: string;
   social: {
     facebook: string;
     instagram: string;
+    tiktok: string;
+    youtube: string;
   };
   booking: {
     googleCalendar: string;
@@ -27,23 +30,26 @@ type SiteConfig = {
 };
 
 const SITE_CONFIG_BG: SiteConfig = {
-  name: "MB Center Sofia",
+  name: "MB Center",
   baseUrl: "https://mbcenter.bg",
   phone: "+359 883 788 873",
   email: "contact@mbcenter.bg",
   address: {
-    street: "ул. Околовръстен път 155",
+    street: "MB Center - гр. София ул. Околовръстен път 155",
     city: "София",
     country: "България",
     postalCode: "1700",
   },
   hours: {
-    weekdays: "10:30–19:00ч. Понеделник - Петък",
-    weekend: "Затворено",
+    weekdays: "Понеделник - Петък 10:30 - 19:00ч.",
+    weekend: "Събота и Неделя - Почивни дни",
   },
+  viberUrl: "viber://chat?number=359883788873",
   social: {
     facebook: "https://www.facebook.com/mbcenterbg",
     instagram: "https://www.instagram.com/mbcenter.bg/",
+    tiktok: "https://www.tiktok.com/@mbcenter.bg",
+    youtube: "https://www.youtube.com/@MBCenterBG",
   },
   booking: {
     googleCalendar:
@@ -56,23 +62,26 @@ const SITE_CONFIG_BG: SiteConfig = {
 };
 
 const SITE_CONFIG_EN: SiteConfig = {
-  name: "MB Center Sofia",
+  name: "MB Center",
   baseUrl: "https://mbcenter.bg",
   phone: "+359 883 788 873",
   email: "contact@mbcenter.bg",
   address: {
-    street: "155 Ring Road",
+    street: "MB Center - Sofia, 155 Ring Road",
     city: "Sofia",
     country: "Bulgaria",
     postalCode: "1700",
   },
   hours: {
-    weekdays: "10:30–19:00 Monday - Friday",
-    weekend: "Closed",
+    weekdays: "Monday - Friday 10:30 - 19:00h",
+    weekend: "Saturday and Sunday - Closed",
   },
+  viberUrl: "viber://chat?number=359883788873",
   social: {
     facebook: "https://www.facebook.com/mbcenterbg",
     instagram: "https://www.instagram.com/mbcenter.bg/",
+    tiktok: "https://www.tiktok.com/@mbcenter.bg",
+    youtube: "https://www.youtube.com/@MBCenterBG",
   },
   booking: {
     googleCalendar:

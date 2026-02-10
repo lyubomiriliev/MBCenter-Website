@@ -157,7 +157,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
       name: t("codingGen.compact.name"),
       models: t("codingGen.compact.models"),
       system: "MBUX NTG 6",
-      image: "/assets/images/eqb2021.webp",
+      image: "/assets/images/gallery/gle-w167.jpg",
       categories: [
         {
           title: t("codingGen.compact.dashboard.title"),
@@ -175,6 +175,8 @@ export default function ServicesPage({ params: { locale } }: Props) {
             t("codingGen.compact.modes.f2"),
             t("codingGen.compact.modes.f3"),
             t("codingGen.compact.modes.f4"),
+            t("codingGen.compact.modes.f5"),
+            t("codingGen.compact.modes.f6"),
           ],
         },
         {
@@ -183,6 +185,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
             t("codingGen.compact.lights.f1"),
             t("codingGen.compact.lights.f2"),
             t("codingGen.compact.lights.f3"),
+            t("codingGen.compact.lights.f4"),
           ],
         },
         {
@@ -191,6 +194,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
             t("codingGen.compact.comfort.f1"),
             t("codingGen.compact.comfort.f2"),
             t("codingGen.compact.comfort.f3"),
+            t("codingGen.compact.comfort.f4"),
           ],
         },
       ],
@@ -239,6 +243,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
     {
       id: "older",
       name: t("codingGen.older.name"),
+      nameSubtitle: t("codingGen.older.nameSubtitle"),
       models: t("codingGen.older.models"),
       system: "NTG 5.0 / 5.1",
       image: "/assets/images/glc2018.avif",
@@ -249,6 +254,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
             t("codingGen.older.multimedia.f1"),
             t("codingGen.older.multimedia.f2"),
             t("codingGen.older.multimedia.f3"),
+            t("codingGen.older.multimedia.f4"),
           ],
         },
         {
@@ -417,13 +423,13 @@ export default function ServicesPage({ params: { locale } }: Props) {
         categories={detailedCategories}
       />
 
-      <RemoteDiagnosisSection locale={locale} />
+      <RepairServicesSection locale={locale} />
 
       <DigitalServiceBookletSection locale={locale} />
 
-      <PeriodicMaintenanceSection locale={locale} />
+      <RemoteDiagnosisSection locale={locale} />
 
-      <RepairServicesSection locale={locale} />
+      <PeriodicMaintenanceSection locale={locale} />
 
       <CTABand locale={locale} />
     </>

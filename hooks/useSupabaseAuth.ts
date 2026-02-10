@@ -25,54 +25,61 @@ export function useSupabaseAuth() {
   });
 
   // Fetch profile for user with React Query cache
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      // Check cache first
-      const cachedProfile = queryClient.getQueryData(['profile', userId]) as Profile | undefined;
-      if (cachedProfile) {
-        return cachedProfile;
-      }
-
-      let { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("auth_id", userId)
-        .maybeSingle();
-
-      // If profile doesn't exist, create one
-      if (!data) {
-        const insertPayload: InsertProfile = {
-          auth_id: userId,
-          role: "mechanic",
-          full_name: null,
-        };
-        
-        const profileRes = await supabase
-          .from("profiles")
-          .insert(insertPayload as never)
-          .select("*")
-          .single();
-
-        if (profileRes.error) {
-          console.error("Error creating profile:", profileRes.error);
-          return null;
+  const fetchProfile = useCallback(
+    async (userId: string) => {
+      try {
+        // Check cache first
+        const cachedProfile = queryClient.getQueryData(["profile", userId]) as
+          | Profile
+          | undefined;
+        if (cachedProfile) {
+          return cachedProfile;
         }
-        data = profileRes.data as Profile;
+
+        const { data: queryData, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("auth_id", userId)
+          .maybeSingle();
+
+        let data: Profile | null = queryData;
+
+        // If profile doesn't exist, create one
+        if (!data) {
+          const insertPayload: InsertProfile = {
+            auth_id: userId,
+            role: "mechanic",
+            full_name: null,
+          };
+
+          const profileRes = await supabase
+            .from("profiles")
+            .insert(insertPayload as never)
+            .select("*")
+            .single();
+
+          if (profileRes.error) {
+            console.error("Error creating profile:", profileRes.error);
+            return null;
+          }
+          data = profileRes.data as Profile;
+        }
+
+        if (error) throw error;
+
+        // Cache the profile
+        if (data) {
+          queryClient.setQueryData(["profile", userId], data);
+        }
+
+        return data as Profile | null;
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        return null;
       }
-
-      if (error) throw error;
-
-      // Cache the profile
-      if (data) {
-        queryClient.setQueryData(['profile', userId], data);
-      }
-
-      return data as Profile | null;
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      return null;
-    }
-  }, [queryClient]);
+    },
+    [queryClient]
+  );
 
   // Initialize auth state
   useEffect(() => {

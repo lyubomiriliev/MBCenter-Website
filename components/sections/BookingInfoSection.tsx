@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getSiteConfig } from "@/lib/constants";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { AnimatedText } from "@/components/animations/AnimatedText";
 import { PatternBackground } from "./PatternBackground";
@@ -17,6 +17,7 @@ const stepImages = [
 
 export function BookingInfoSection({ locale }: BookingInfoSectionProps) {
   const t = useTranslations("bookingInfo");
+  const config = getSiteConfig(locale);
 
   const steps = ["step1", "step2", "step3"];
 
@@ -75,65 +76,54 @@ export function BookingInfoSection({ locale }: BookingInfoSectionProps) {
 
         {/* Booking Options */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {/* Google Calendar Booking Card */}
+          {/* Viber Card */}
           <AnimatedSection from="left" delay={0.5}>
             <div className="group relative h-full overflow-hidden rounded-2xl border border-mb-border hover:border-mb-blue transition-all duration-500 hover:shadow-2xl hover:shadow-mb-blue/30">
-              {/* Image Background */}
               <div className="absolute inset-0">
                 <Image
                   src="/assets/images/gallery/w223.jpg"
-                  alt="Book Appointment"
+                  alt="Viber"
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                {/* Black Overlay */}
                 <div className="absolute inset-0 bg-black/75 group-hover:bg-black/70 transition-colors duration-500"></div>
               </div>
-
-              {/* Content */}
               <div className="relative z-10 p-8 lg:p-10 h-full flex flex-col justify-between min-h-[300px]">
                 <div>
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-mb-blue to-blue-600 flex items-center justify-center shadow-xl mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                    <svg
-                      className="w-8 h-8 text-white"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <Image
+                      src="/assets/logos/viber-logo.png"
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 flex-shrink-0"
+                      unoptimized
+                      aria-hidden
+                    />
                   </div>
                   <div className="text-3xl font-bold text-white mb-4 group-hover:text-mb-chrome transition-colors duration-300">
-                    {t("googleBooking.title")}
+                    {t("viberBooking.title")}
                   </div>
                   <p className="text-lg text-mb-silver leading-relaxed mb-8">
-                    {t("googleBooking.description")}
+                    {t("viberBooking.description")}
                   </p>
                 </div>
                 <a
-                  href={SITE_CONFIG.booking.googleCalendar}
+                  href={config.viberUrl ?? "viber://chat?number=359883788873"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group/btn relative inline-flex items-center justify-center gap-2 bg-mb-blue text-white px-8 py-4 rounded-button hover:bg-mb-blue/90 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl hover:scale-105 overflow-hidden w-full sm:w-auto"
                 >
-                  <span className="relative z-10">
-                    {t("googleBooking.cta")}
-                  </span>
-                  <svg
-                    className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                  <div className="absolute inset-0 bg-gradient-to-r from-mb-blue via-blue-600 to-mb-blue opacity-100 transition-opacity duration-300" />
+                  <span className="relative z-10">{t("viberBooking.cta")}</span>
+                  <Image
+                    src="/assets/logos/viber-logo.png"
+                    alt=""
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 flex-shrink-0"
+                    unoptimized
+                    aria-hidden
+                  />
                 </a>
               </div>
             </div>
@@ -187,7 +177,7 @@ export function BookingInfoSection({ locale }: BookingInfoSectionProps) {
                   </p>
                 </div>
                 <a
-                  href={`tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`}
+                  href={`tel:${config.phone.replace(/\s/g, "")}`}
                   className="group/btn inline-flex items-center justify-center gap-3 bg-mb-anthracite/90 backdrop-blur-sm border-2 border-mb-blue text-white px-8 py-4 rounded-button hover:bg-mb-blue transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto"
                 >
                   <svg
@@ -201,7 +191,7 @@ export function BookingInfoSection({ locale }: BookingInfoSectionProps) {
                   >
                     <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
-                  <span className="text-xl font-bold">{SITE_CONFIG.phone}</span>
+                  <span className="text-xl font-bold">{config.phone}</span>
                 </a>
               </div>
             </div>

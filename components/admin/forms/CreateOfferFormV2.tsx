@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
@@ -38,23 +38,28 @@ import { supabase } from "@/lib/supabase/client";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
 import { useOffer } from "@/hooks/useOffers";
-import type { 
-  OfferWithRelations, 
+import type {
+  OfferWithRelations,
   Profile,
   InsertOffer,
   InsertOfferItem,
   InsertServiceAction,
   Offer,
-  UpdateOffer
+  UpdateOffer,
 } from "@/types/database";
 
 interface CreateOfferFormV2Props {
   offerId?: string;
+  isMechanicView?: boolean;
 }
 
-const AUTOSAVE_KEY = 'mbcenter_offer_draft';
+const AUTOSAVE_KEY = "mbcenter_offer_draft";
+const AUTOSAVE_DEBOUNCE_MS = 3000;
 
-export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
+export function CreateOfferFormV2({
+  offerId,
+  isMechanicView = false,
+}: CreateOfferFormV2Props) {
   const t = useTranslations("admin.form");
   const locale = useLocale() as "bg" | "en";
   const router = useRouter();
@@ -68,11 +73,15 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
   const [prepaymentModalOpen, setPrepaymentModalOpen] = useState(false);
   const [prepaymentAmount, setPrepaymentAmount] = useState("");
   const [prepaymentError, setPrepaymentError] = useState("");
-  
+
   const { notifications, dismiss, showError, showSuccess } = useNotification();
 
   const isEditing = !!offerId;
-  const { data: existingOffer, isLoading: offerLoading, refetch: refetchOffer } = useOffer(offerId);
+  const {
+    data: existingOffer,
+    isLoading: offerLoading,
+    refetch: refetchOffer,
+  } = useOffer(offerId);
 
   const methods = useForm<OfferFormData>({
     resolver: zodResolver(offerFormSchema) as any,
@@ -83,7 +92,13 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
     handleSubmit,
     formState: { errors },
     watch,
+    getValues,
+    trigger,
   } = methods;
+
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAutoSaveRef = useRef<string | null>(null);
+  const formLoadedRef = useRef(false);
 
   // Load existing offer data into form when editing
   useEffect(() => {
@@ -98,31 +113,28 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       customerName: existingOffer.customer_name ?? "",
       customerPhone: existingOffer.customer_phone ?? "",
       clientEmail:
-        existingOffer.customer_email ??
-        existingOffer.client?.email ??
-        "",
+        existingOffer.customer_email ?? existingOffer.client?.email ?? "",
       clientId: existingOffer.client_id ?? undefined,
 
       carModel: existingOffer.car_model_text ?? "",
+      carModelDetail: existingOffer.car_model_detail ?? "",
+      repairName: existingOffer.repair_name ?? "",
       carYear:
-        existingOffer.car_year ??
-        existingOffer.car?.year ??
-        yearFallback,
+        existingOffer.car_year ?? existingOffer.car?.year ?? yearFallback,
       vinText: existingOffer.vin_text ?? "",
       carLicensePlate:
-        existingOffer.license_plate ??
-        existingOffer.car?.license_plate ??
-        "",
-      carMileage:
-        existingOffer.mileage ??
-        existingOffer.car?.mileage ??
-        0,
+        existingOffer.license_plate ?? existingOffer.car?.license_plate ?? "",
+      carMileage: existingOffer.mileage ?? existingOffer.car?.mileage ?? 0,
       carId: existingOffer.car_id ?? undefined,
 
       createdByName: existingOffer.created_by_name ?? "",
 
       discountPercent: existingOffer.discount_percent ?? 0,
+      discountPartsPercent: existingOffer.discount_parts_percent ?? 0,
+      discountServicesPercent: existingOffer.discount_services_percent ?? 0,
       notes: existingOffer.notes ?? "",
+      notesInternal: existingOffer.notes_internal ?? "",
+      notesService: existingOffer.notes_service ?? "",
 
       parts: (existingOffer.items ?? [])
         .filter((item) => item.type === "part")
@@ -142,6 +154,8 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
           actionName: action.action_name,
           timeRequired: action.time_required_text ?? "",
           pricePerHour: action.price_per_hour_eur_net,
+          isFixedPrice: action.is_fixed_price ?? false,
+          fixedPriceAmount: action.fixed_price_amount ?? undefined,
         })),
     };
 
@@ -155,7 +169,155 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         methods.setValue("createdByName", name, { shouldValidate: true });
       }, 0);
     }
+    formLoadedRef.current = true;
+    lastAutoSaveRef.current = JSON.stringify(methods.getValues());
   }, [existingOffer, isEditing, methods]);
+
+  // Debounced auto-save when editing
+  const watchedValues = watch();
+  useEffect(() => {
+    if (!isEditing || !offerId || !formLoadedRef.current || !existingOffer)
+      return;
+
+    const snapshot = JSON.stringify(watchedValues);
+    if (lastAutoSaveRef.current === snapshot) return;
+
+    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      autoSaveTimeoutRef.current = null;
+      const isValid = await trigger();
+      if (!isValid) return;
+
+      const data = getValues();
+      const dataSnapshot = JSON.stringify(data);
+      if (lastAutoSaveRef.current === dataSnapshot) return;
+
+      try {
+        let partsTotal = 0;
+        data.parts.forEach((p) => {
+          partsTotal += (p.unitPrice || 0) * (p.quantity || 1);
+        });
+        let serviceTotal = 0;
+        data.serviceActions.forEach((action) => {
+          if (action.isFixedPrice && action.fixedPriceAmount) {
+            serviceTotal += action.fixedPriceAmount;
+          } else {
+            const hours = parseTimeToHours(action.timeRequired || "0");
+            serviceTotal += hours * (action.pricePerHour || 0);
+          }
+        });
+        const subtotal = partsTotal + serviceTotal;
+        const discount = subtotal * ((data.discountPercent || 0) / 100);
+        const netTotal = subtotal - discount;
+        const vat = netTotal * 0.2;
+        const grossTotal = netTotal + vat;
+
+        const updateData: UpdateOffer = {
+          customer_name: data.customerName,
+          customer_phone: data.customerPhone || null,
+          customer_email: data.clientEmail || null,
+          car_model_text: data.carModel,
+          car_model_detail: data.carModelDetail || null,
+          repair_name: data.repairName || null,
+          vin_text: data.vinText || null,
+          license_plate: data.carLicensePlate || null,
+          mileage: data.carMileage ?? null,
+          car_year: data.carYear ?? null,
+          created_by_name: data.createdByName,
+          total_net: netTotal,
+          total_vat: vat,
+          total_gross: grossTotal,
+          discount_percent: data.discountPercent || 0,
+          discount_parts_percent: data.discountPartsPercent || 0,
+          discount_services_percent: data.discountServicesPercent || 0,
+          notes: data.notes || null,
+          notes_internal: data.notesInternal || null,
+          notes_service: data.notesService || null,
+        };
+
+        const offerRes = await supabase
+          .from("offers")
+          .update(updateData as never)
+          .eq("id", offerId)
+          .select()
+          .single();
+
+        if (offerRes.error) throw new Error(offerRes.error.message);
+
+        await Promise.all([
+          supabase.from("offer_items").delete().eq("offer_id", offerId),
+          supabase.from("service_actions").delete().eq("offer_id", offerId),
+        ]);
+
+        const partsInserts = data.parts.map((part, i) => ({
+          offer_id: offerId,
+          type: "part" as const,
+          description: part.description,
+          brand: part.brand || null,
+          part_number: part.partNumber || null,
+          unit_price: part.unitPrice,
+          quantity: part.quantity,
+          total: part.unitPrice * part.quantity,
+          sort_order: i,
+        }));
+        const serviceInserts = data.serviceActions.map((action, i) => {
+          const isFixed = action.isFixedPrice ?? false;
+          const hours = isFixed
+            ? 0
+            : parseTimeToHours(action.timeRequired || "0");
+          const total = isFixed
+            ? action.fixedPriceAmount || 0
+            : hours * action.pricePerHour;
+          return {
+            offer_id: offerId,
+            action_name: action.actionName,
+            time_required_text: action.timeRequired || null,
+            price_per_hour_eur_net: action.pricePerHour,
+            total_eur_net: total,
+            is_fixed_price: isFixed,
+            fixed_price_amount: isFixed
+              ? action.fixedPriceAmount || null
+              : null,
+            sort_order: i,
+          };
+        });
+
+        if (partsInserts.length > 0) {
+          await supabase.from("offer_items").insert(partsInserts as never);
+        }
+        if (serviceInserts.length > 0) {
+          await supabase
+            .from("service_actions")
+            .insert(serviceInserts as never);
+        }
+
+        lastAutoSaveRef.current = dataSnapshot;
+        queryClient.invalidateQueries({ queryKey: ["offers"] });
+        queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
+        const refreshed = await refetchOffer();
+        if (refreshed.data) setSavedOffer(refreshed.data);
+        showSuccess(t("saved"));
+      } catch (err) {
+        console.error("Auto-save failed:", err);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    };
+  }, [
+    watchedValues,
+    isEditing,
+    offerId,
+    existingOffer,
+    trigger,
+    getValues,
+    refetchOffer,
+    queryClient,
+    showSuccess,
+    t,
+  ]);
 
   // Load from localStorage on mount (only for new offers)
   useEffect(() => {
@@ -166,8 +328,9 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       if (saved) {
         const data = JSON.parse(saved);
         const savedTime = new Date(data.timestamp);
-        const hoursSince = (Date.now() - savedTime.getTime()) / (1000 * 60 * 60);
-        
+        const hoursSince =
+          (Date.now() - savedTime.getTime()) / (1000 * 60 * 60);
+
         if (hoursSince < 24 && data.formData) {
           methods.reset(data.formData);
           if (data.prepayments) setPrepayments(data.prepayments);
@@ -182,25 +345,31 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         }
       }
     } catch (err) {
-      console.error('Error loading draft:', err);
+      console.error("Error loading draft:", err);
       localStorage.removeItem(AUTOSAVE_KEY);
     }
   }, [isEditing, methods]);
 
   // Watch form values for auto-save
-  const customerName = watch('customerName');
-  const customerPhone = watch('customerPhone');
-  const clientEmail = watch('clientEmail');
-  const carModel = watch('carModel');
-  const carYear = watch('carYear');
-  const vinText = watch('vinText');
-  const carLicensePlate = watch('carLicensePlate');
-  const carMileage = watch('carMileage');
-  const createdByName = watch('createdByName');
-  const discountPercent = watch('discountPercent');
-  const notes = watch('notes');
-  const parts = watch('parts');
-  const serviceActions = watch('serviceActions');
+  const customerName = watch("customerName");
+  const customerPhone = watch("customerPhone");
+  const clientEmail = watch("clientEmail");
+  const carModel = watch("carModel");
+  const carModelDetail = watch("carModelDetail");
+  const repairName = watch("repairName");
+  const carYear = watch("carYear");
+  const vinText = watch("vinText");
+  const carLicensePlate = watch("carLicensePlate");
+  const carMileage = watch("carMileage");
+  const createdByName = watch("createdByName");
+  const discountPercent = watch("discountPercent");
+  const discountPartsPercent = watch("discountPartsPercent");
+  const discountServicesPercent = watch("discountServicesPercent");
+  const notes = watch("notes");
+  const notesInternal = watch("notesInternal");
+  const notesService = watch("notesService");
+  const parts = watch("parts");
+  const serviceActions = watch("serviceActions");
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -209,18 +378,44 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
     const saveTimeout = setTimeout(() => {
       const formData = methods.getValues();
       try {
-        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({
-          formData,
-          prepayments,
-          timestamp: new Date().toISOString(),
-        }));
+        localStorage.setItem(
+          AUTOSAVE_KEY,
+          JSON.stringify({
+            formData,
+            prepayments,
+            timestamp: new Date().toISOString(),
+          })
+        );
       } catch (err) {
-        console.error('Error saving draft:', err);
+        console.error("Error saving draft:", err);
       }
     }, 1000);
 
     return () => clearTimeout(saveTimeout);
-  }, [isEditing, methods, prepayments, customerName, customerPhone, clientEmail, carModel, carYear, vinText, carLicensePlate, carMileage, createdByName, discountPercent, notes, parts, serviceActions]);
+  }, [
+    isEditing,
+    methods,
+    prepayments,
+    customerName,
+    customerPhone,
+    clientEmail,
+    carModel,
+    carModelDetail,
+    repairName,
+    carYear,
+    vinText,
+    carLicensePlate,
+    carMileage,
+    createdByName,
+    discountPercent,
+    discountPartsPercent,
+    discountServicesPercent,
+    notes,
+    notesInternal,
+    notesService,
+    parts,
+    serviceActions,
+  ]);
 
   const generateOfferPDF = async (offerData: OfferWithRelations) => {
     setPdfGenerating(true);
@@ -267,7 +462,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       console.log("PDF download triggered");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      showError(t('errors.pdfFailed'));
+      showError(t("errors.pdfFailed"));
       throw error;
     } finally {
       setPdfGenerating(false);
@@ -280,7 +475,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       methods.watch("parts").length === 0 &&
       methods.watch("serviceActions").length === 0
     ) {
-      showError(t('errors.noItemsForServiceCard'));
+      showError(t("errors.noItemsForServiceCard"));
       return;
     }
 
@@ -294,6 +489,8 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         customer_phone: methods.watch("customerPhone") || null,
         customer_email: methods.watch("clientEmail") || null,
         car_model_text: methods.watch("carModel"),
+        car_model_detail: methods.watch("carModelDetail") || null,
+        repair_name: methods.watch("repairName") || null,
         vin_text: methods.watch("vinText") || null,
         license_plate: methods.watch("carLicensePlate") || null,
         mileage: methods.watch("carMileage") ?? null,
@@ -304,8 +501,13 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         total_vat: 0,
         total_gross: 0,
         discount_percent: methods.watch("discountPercent") || 0,
+        discount_parts_percent: methods.watch("discountPartsPercent") || 0,
+        discount_services_percent:
+          methods.watch("discountServicesPercent") || 0,
         currency: "EUR",
         notes: methods.watch("notes") || null,
+        notes_internal: methods.watch("notesInternal") || null,
+        notes_service: methods.watch("notesService") || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         client_id: null,
@@ -326,14 +528,24 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         service_actions: methods
           .watch("serviceActions")
           .map((action, index) => {
-            const hours = parseTimeToHours(action.timeRequired || "0");
+            const isFixed = action.isFixedPrice ?? false;
+            const hours = isFixed
+              ? 0
+              : parseTimeToHours(action.timeRequired || "0");
+            const total = isFixed
+              ? action.fixedPriceAmount || 0
+              : hours * action.pricePerHour;
             return {
               id: `action-${index}`,
               offer_id: "temp",
               action_name: action.actionName,
               time_required_text: action.timeRequired || null,
               price_per_hour_eur_net: action.pricePerHour,
-              total_eur_net: hours * action.pricePerHour,
+              total_eur_net: total,
+              is_fixed_price: isFixed,
+              fixed_price_amount: isFixed
+                ? action.fixedPriceAmount || null
+                : null,
               sort_order: index,
               created_at: new Date().toISOString(),
             };
@@ -367,9 +579,17 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      // Auto-set status to "finished" when generating service card
+      if (savedOffer && savedOffer.id !== "temp") {
+        await supabase
+          .from("offers")
+          .update({ status: "finished" } as never)
+          .eq("id", savedOffer.id);
+      }
     } catch (error) {
       console.error("Error generating service card PDF:", error);
-      showError(t('errors.serviceCardFailed'));
+      showError(t("errors.serviceCardFailed"));
     } finally {
       setPdfGenerating(false);
     }
@@ -388,7 +608,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
     // Add timeout to prevent infinite hanging
     const timeoutId = setTimeout(() => {
       console.error("Form submission timeout after 30 seconds");
-      showError(t('errors.saveFailed'));
+      showError(t("errors.saveFailed"));
       setIsSaving(false);
     }, 30000);
 
@@ -416,12 +636,14 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       if (isEditing && offerId) {
         // UPDATE existing offer
         console.log("Updating existing offer:", offerId);
-        
+
         const updateData: UpdateOffer = {
           customer_name: data.customerName,
           customer_phone: data.customerPhone || null,
           customer_email: data.clientEmail || null,
           car_model_text: data.carModel,
+          car_model_detail: data.carModelDetail || null,
+          repair_name: data.repairName || null,
           vin_text: data.vinText || null,
           license_plate: data.carLicensePlate || null,
           mileage: data.carMileage ?? null,
@@ -431,7 +653,11 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
           total_vat: vat,
           total_gross: grossTotal,
           discount_percent: data.discountPercent || 0,
+          discount_parts_percent: data.discountPartsPercent || 0,
+          discount_services_percent: data.discountServicesPercent || 0,
           notes: data.notes || null,
+          notes_internal: data.notesInternal || null,
+          notes_service: data.notesService || null,
         };
 
         const offerRes = await supabase
@@ -441,15 +667,15 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
           .select()
           .single();
 
-        if (offerRes.error) throw new Error(`Failed to update offer: ${offerRes.error.message}`);
+        if (offerRes.error)
+          throw new Error(`Failed to update offer: ${offerRes.error.message}`);
         offer = offerRes.data as Offer;
 
         // Delete existing items and service actions in parallel
         await Promise.all([
           supabase.from("offer_items").delete().eq("offer_id", offerId),
-          supabase.from("service_actions").delete().eq("offer_id", offerId)
+          supabase.from("service_actions").delete().eq("offer_id", offerId),
         ]);
-
       } else {
         // CREATE new offer
         const {
@@ -458,9 +684,11 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         if (!user) throw new Error("Not authenticated");
 
         // Try to get profile from cache first
-        const cachedProfile = queryClient.getQueryData(['profile', user.id]) as Pick<Profile, 'id'> | undefined;
-        
-        let profile: Pick<Profile, 'id'> | null;
+        const cachedProfile = queryClient.getQueryData(["profile", user.id]) as
+          | Pick<Profile, "id">
+          | undefined;
+
+        let profile: Pick<Profile, "id"> | null;
         if (cachedProfile?.id) {
           profile = cachedProfile;
         } else {
@@ -470,7 +698,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
             .eq("auth_id", user.id)
             .single();
 
-          profile = profileRes.data as Pick<Profile, 'id'> | null;
+          profile = profileRes.data as Pick<Profile, "id"> | null;
           if (!profile) throw new Error("Profile not found");
         }
 
@@ -479,9 +707,8 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
         let offerNumber: string;
 
         try {
-          const { data: rpcResult, error: offerNumberError } = await supabase.rpc(
-            "generate_offer_number"
-          );
+          const { data: rpcResult, error: offerNumberError } =
+            await supabase.rpc("generate_offer_number");
 
           console.log("Offer number RPC result:", {
             rpcResult,
@@ -529,19 +756,25 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
           customer_phone: data.customerPhone || null,
           customer_email: data.clientEmail || null,
           car_model_text: data.carModel,
+          car_model_detail: data.carModelDetail || null,
+          repair_name: data.repairName || null,
           vin_text: data.vinText || null,
           license_plate: data.carLicensePlate || null,
           mileage: data.carMileage ?? null,
           car_year: data.carYear ?? null,
           created_by_name: data.createdByName,
           created_by: profile.id,
-          status: "draft",
+          status: "sent",
           total_net: netTotal,
           total_vat: vat,
           total_gross: grossTotal,
           discount_percent: data.discountPercent || 0,
+          discount_parts_percent: data.discountPartsPercent || 0,
+          discount_services_percent: data.discountServicesPercent || 0,
           currency: "EUR",
           notes: data.notes || null,
+          notes_internal: data.notesInternal || null,
+          notes_service: data.notesService || null,
         };
 
         const offerRes = await supabase
@@ -574,23 +807,34 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       }));
 
       // Prepare service actions inserts
-      const serviceInserts: InsertServiceAction[] = data.serviceActions.map((action, index) => {
-        const hours = parseTimeToHours(action.timeRequired || "0");
-        const total = hours * action.pricePerHour;
+      const serviceInserts: InsertServiceAction[] = data.serviceActions.map(
+        (action, index) => {
+          const isFixed = action.isFixedPrice ?? false;
+          const hours = isFixed
+            ? 0
+            : parseTimeToHours(action.timeRequired || "0");
+          const total = isFixed
+            ? action.fixedPriceAmount || 0
+            : hours * action.pricePerHour;
 
-        return {
-          offer_id: offer.id,
-          action_name: action.actionName,
-          time_required_text: action.timeRequired || null,
-          price_per_hour_eur_net: action.pricePerHour,
-          total_eur_net: total,
-          sort_order: index,
-        };
-      });
+          return {
+            offer_id: offer.id,
+            action_name: action.actionName,
+            time_required_text: action.timeRequired || null,
+            price_per_hour_eur_net: action.pricePerHour,
+            total_eur_net: total,
+            is_fixed_price: isFixed,
+            fixed_price_amount: isFixed
+              ? action.fixedPriceAmount || null
+              : null,
+            sort_order: index,
+          };
+        }
+      );
 
       // Insert parts and service actions in parallel
       const insertPromises = [];
-      
+
       if (partsInserts.length > 0) {
         console.log(`Inserting ${partsInserts.length} parts...`);
         insertPromises.push(
@@ -598,7 +842,8 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
             .from("offer_items")
             .insert(partsInserts as never)
             .then(({ error }) => {
-              if (error) throw new Error(`Failed to insert parts: ${error.message}`);
+              if (error)
+                throw new Error(`Failed to insert parts: ${error.message}`);
               console.log("Parts inserted successfully");
             })
         );
@@ -611,7 +856,10 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
             .from("service_actions")
             .insert(serviceInserts as never)
             .then(({ error }) => {
-              if (error) throw new Error(`Failed to insert service actions: ${error.message}`);
+              if (error)
+                throw new Error(
+                  `Failed to insert service actions: ${error.message}`
+                );
               console.log("Service actions inserted successfully");
             })
         );
@@ -657,7 +905,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
             pdfError
           );
           // Don't throw - offer is saved, just PDF failed
-          showError(t('errors.pdfFailedButSaved'));
+          showError(t("errors.pdfFailedButSaved"));
         }
       } else {
         console.warn("Complete offer data not available for PDF generation");
@@ -667,9 +915,9 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       if (!isEditing) {
         try {
           localStorage.removeItem(AUTOSAVE_KEY);
-          console.log('Cleared draft from localStorage');
+          console.log("Cleared draft from localStorage");
         } catch (err) {
-          console.error('Error clearing draft:', err);
+          console.error("Error clearing draft:", err);
         }
       }
 
@@ -685,18 +933,20 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       } else {
         console.log("Offer updated successfully, refreshing data...");
         clearTimeout(timeoutId);
-        
+
         // Refetch the updated offer to get fresh data with all relations
         const refreshResult = await refetchOffer();
         if (refreshResult.data) {
           console.log("Offer data refreshed");
         }
-        
+
         setIsSaving(false);
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error(`=== ERROR ${isEditing ? 'UPDATING' : 'CREATING'} OFFER ===`);
+      console.error(
+        `=== ERROR ${isEditing ? "UPDATING" : "CREATING"} OFFER ===`
+      );
       console.error("Error details:", error);
       console.error(
         "Error stack:",
@@ -708,9 +958,9 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
           ? error.message
           : typeof error === "string"
           ? error
-          : `Failed to ${isEditing ? 'update' : 'create'} offer`;
+          : `Failed to ${isEditing ? "update" : "create"} offer`;
 
-      showError(isEditing ? t('errors.updateFailed') : t('errors.saveFailed'));
+      showError(isEditing ? t("errors.updateFailed") : t("errors.saveFailed"));
       setIsSaving(false);
     }
   };
@@ -721,15 +971,15 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
 
     // Map field names to user-friendly errors
     if (errors.customerName) {
-      showError(t('errors.customerNameRequired'));
+      showError(t("errors.customerNameRequired"));
     } else if (errors.createdByName) {
-      showError(t('errors.creatorRequired'));
+      showError(t("errors.creatorRequired"));
     } else if (errors.parts) {
-      showError(t('errors.partsRequired'));
+      showError(t("errors.partsRequired"));
     } else {
-      showError(t('errors.formInvalid'));
+      showError(t("errors.formInvalid"));
     }
-    
+
     setIsSaving(false);
   };
 
@@ -767,6 +1017,120 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
     );
   }
 
+  // Mechanic limited view
+  if (isMechanicView && isEditing && savedOffer) {
+    const offerParts = (savedOffer.items || []).filter(
+      (i) => i.type === "part"
+    );
+    return (
+      <div className="space-y-6 max-w-3xl">
+        {notifications.map((notification) => (
+          <Toast
+            key={notification.id}
+            type={notification.type}
+            message={notification.message}
+            onClose={() => dismiss(notification.id)}
+          />
+        ))}
+
+        {/* Notes for Service - shown prominently */}
+        {savedOffer.notes_service && (
+          <Card className="bg-yellow-500/10 border-yellow-500/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg text-yellow-400">
+                {t("mechanicNote")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white whitespace-pre-wrap">
+                {savedOffer.notes_service}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Car Data */}
+        <Card className="bg-mb-anthracite border-mb-border">
+          <CardHeader>
+            <CardTitle className="text-lg">{t("carInfo")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-mb-silver text-sm">{t("carModel")}</span>
+                <p className="text-white">
+                  {[savedOffer.car_model_text, savedOffer.car_model_detail]
+                    .filter(Boolean)
+                    .join(" ") || "-"}
+                </p>
+              </div>
+              <div>
+                <span className="text-mb-silver text-sm">
+                  {t("carLicensePlate")}
+                </span>
+                <p className="text-white">{savedOffer.license_plate || "-"}</p>
+              </div>
+              <div>
+                <span className="text-mb-silver text-sm">{t("carVin")}</span>
+                <p className="text-white font-mono">
+                  {savedOffer.vin_text || "-"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Repair Name */}
+        {savedOffer.repair_name && (
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardHeader>
+              <CardTitle className="text-lg">{t("repairName")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white">{savedOffer.repair_name}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Parts - no prices, only names, numbers, quantities */}
+        {offerParts.length > 0 && (
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {t("parts")} ({offerParts.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="grid grid-cols-[40px_1fr_120px_80px] gap-2 text-xs text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
+                  <div>#</div>
+                  <div>{t("productName")}</div>
+                  <div>{t("partNumber")}</div>
+                  <div>{t("qty")}</div>
+                </div>
+                {offerParts
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                  .map((part, i) => (
+                    <div
+                      key={part.id}
+                      className="grid grid-cols-[40px_1fr_120px_80px] gap-2 text-sm py-1.5 border-b border-mb-border/50"
+                    >
+                      <div className="text-mb-silver">{i + 1}</div>
+                      <div className="text-white">{part.description}</div>
+                      <div className="text-mb-silver font-mono">
+                        {part.part_number || "-"}
+                      </div>
+                      <div className="text-white">{part.quantity}</div>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...methods}>
       {/* Notifications */}
@@ -778,70 +1142,77 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
           onClose={() => dismiss(notification.id)}
         />
       ))}
-      
-      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4 sm:space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-          {/* Main Form - 2 columns */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Client Info */}
-            <Card className="bg-mb-anthracite border-mb-border">
-              <CardContent className="pt-6">
-                <ClientSelector />
-              </CardContent>
-            </Card>
 
-            {/* Car Info */}
-            <Card className="bg-mb-anthracite border-mb-border">
-              <CardContent className="pt-6">
-                <CarSelector />
-              </CardContent>
-            </Card>
+      <form
+        onSubmit={handleSubmit(onSubmit, onInvalid)}
+        className="flex flex-1 min-h-0 flex-col lg:flex-row"
+      >
+        {/* Scrollable form content - max width so right summary stays visible */}
+        <div className="flex-1 min-w-0 max-w-4xl overflow-y-auto p-4 sm:p-6 space-y-6">
+          {/* Client Info */}
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardContent className="pt-6">
+              <ClientSelector />
+            </CardContent>
+          </Card>
 
-            {/* Created By */}
-            <Card className="bg-mb-anthracite border-mb-border">
-              <CardContent className="pt-6" key={isEditing && existingOffer ? existingOffer.id : "create"}>
-                <CreatedBySelector />
-              </CardContent>
-            </Card>
+          {/* Car Info */}
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardContent className="pt-6">
+              <CarSelector />
+            </CardContent>
+          </Card>
 
-            {/* Parts */}
-            <PartsFieldArray />
- 
+          {/* Created By */}
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardContent
+              className="pt-6"
+              key={isEditing && existingOffer ? existingOffer.id : "create"}
+            >
+              <CreatedBySelector />
+            </CardContent>
+          </Card>
 
-            {/* Service Actions */}
-            <ServiceActionsFieldArray />
+          {/* Parts */}
+          <PartsFieldArray />
 
-            {/* Additional Info */}
-            <Card className="bg-mb-anthracite border-mb-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-mb-blue"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  {t("additionalInfo")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Discount */}
+          {/* Service Actions */}
+          <ServiceActionsFieldArray />
+
+          {/* Additional Info */}
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-mb-blue"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                {t("additionalInfo")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Discounts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="discountPercent">{t("discount")}</Label>
+                  <Label htmlFor="discountPartsPercent">
+                    {t("discountParts")}
+                  </Label>
                   <div className="relative w-32">
                     <Input
                       type="number"
                       min="0"
                       max="100"
                       step="0.5"
-                      {...methods.register("discountPercent", {
+                      {...methods.register("discountPartsPercent", {
                         valueAsNumber: true,
                       })}
                       className="bg-gray-100 text-gray-900 border-mb-border pr-8 placeholder:text-gray-500"
@@ -851,76 +1222,110 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
                     </span>
                   </div>
                 </div>
-
-                {/* Notes */}
                 <div className="space-y-2">
-                  <Label htmlFor="notes">{t("notes")}</Label>
-                  <Textarea
-                    {...methods.register("notes")}
-                    placeholder={t("notesPlaceholder")}
-                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
-                  />
+                  <Label htmlFor="discountServicesPercent">
+                    {t("discountServices")}
+                  </Label>
+                  <div className="relative w-32">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      {...methods.register("discountServicesPercent", {
+                        valueAsNumber: true,
+                      })}
+                      className="bg-gray-100 text-gray-900 border-mb-border pr-8 placeholder:text-gray-500"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver">
+                      %
+                    </span>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
 
-          {/* Sidebar - Summary with Action Buttons */}
-          <div className="lg:col-span-1">
+              {/* Notes for Me */}
+              <div className="space-y-2">
+                <Label htmlFor="notesInternal">{t("notesInternal")}</Label>
+                <Textarea
+                  {...methods.register("notesInternal")}
+                  placeholder={t("notesInternalPlaceholder")}
+                  className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
+                />
+              </div>
+
+              {/* Notes for Service */}
+              <div className="space-y-2">
+                <Label htmlFor="notesService">{t("notesService")}</Label>
+                <Textarea
+                  {...methods.register("notesService")}
+                  placeholder={t("notesServicePlaceholder")}
+                  className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar: fixed when scrolling (desktop), below form (mobile) */}
+        <div className="flex flex-col w-full lg:w-80 flex-shrink-0 p-4 sm:p-6 lg:border-l border-mb-border">
+          <div className="sticky top-4">
             <FloatingSummary
               prepayments={prepayments}
-              onRemovePrepayment={(i) => setPrepayments((p) => p.filter((_, j) => j !== i))}
+              onRemovePrepayment={(i) =>
+                setPrepayments((p) => p.filter((_, j) => j !== i))
+              }
             >
-              {/* Create/Update Offer Button */}
-              <Button
-                type="submit"
-                disabled={isSaving}
-                className="w-full bg-mb-blue hover:bg-mb-blue/90"
-              >
-                {isSaving ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
+              {/* Create Offer Button - only on create page (edit page uses auto-save) */}
+              {!isEditing && (
+                <Button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full bg-mb-blue hover:bg-mb-blue/90"
+                >
+                  {isSaving ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      {t("saving")}
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        viewBox="0 0 24 24"
                         stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    {t("saving")}
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    {isEditing ? t("updateOffer") : t("createOffer")}
-                  </>
-                )}
-              </Button>
-
-             
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      {t("createOffer")}
+                    </>
+                  )}
+                </Button>
+              )}
 
               {/* Download Offer PDF (only when editing existing offer) */}
               {isEditing && savedOffer && (
@@ -969,7 +1374,7 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
                           d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      Download Offer PDF
+                      {t("downloadOfferPdf")}
                     </>
                   )}
                 </Button>
@@ -1053,6 +1458,43 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
                 {t("addPrePayment")}
               </Button>
 
+              {/* Delete Button (only for existing offers) */}
+              {isEditing && savedOffer && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    if (confirm(t("errors.saveFailed"))) {
+                      await supabase
+                        .from("offers")
+                        .delete()
+                        .eq("id", savedOffer.id);
+                      const basePath = pathname.includes("/mb-admin")
+                        ? pathname.split("/mb-admin")[0] + "/mb-admin"
+                        : pathname.split("/mb-admin-mechanics")[0] +
+                          "/mb-admin-mechanics";
+                      router.push(`${basePath}/offers`);
+                    }
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  {t("deleteOffer")}
+                </Button>
+              )}
+
               {/* Cancel Button */}
               <Button
                 type="button"
@@ -1071,7 +1513,9 @@ export function CreateOfferFormV2({ offerId }: CreateOfferFormV2Props) {
       <Dialog open={prepaymentModalOpen} onOpenChange={setPrepaymentModalOpen}>
         <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-white">{t("addPrePayment")}</DialogTitle>
+            <DialogTitle className="text-white">
+              {t("addPrePayment")}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">

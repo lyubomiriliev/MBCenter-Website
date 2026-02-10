@@ -1,23 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { supabase } from '@/lib/supabase/client';
-import type { InsertProfile, UserRole } from '@/types/database';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { supabase } from "@/lib/supabase/client";
+import type { InsertProfile, UserRole } from "@/types/database";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
-  const t = useTranslations('admin');
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const t = useTranslations("admin");
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,33 +34,32 @@ export default function AdminLoginPage() {
 
     try {
       // Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (authError) throw authError;
-      if (!authData?.user) throw new Error('Authentication failed');
+      if (!authData?.user) throw new Error("Authentication failed");
 
       // Fetch user profile with role (minimal fields for faster response)
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('auth_id', authData.user.id)
+        .from("profiles")
+        .select("role")
+        .eq("auth_id", authData.user.id)
         .maybeSingle();
 
       // If profile doesn't exist, create default profile
       if (!profile) {
         const insertPayload: InsertProfile = {
           auth_id: authData.user.id,
-          role: 'mechanic',
-          full_name: authData.user.email?.split('@')[0] || 'User',
+          role: "mechanic",
+          full_name: authData.user.email?.split("@")[0] || "User",
         };
-        
-        await supabase
-          .from('profiles')
-          .insert(insertPayload as never);
-        
+
+        await supabase.from("profiles").insert(insertPayload as never);
+
         // Redirect new mechanic user (don't wait for confirmation)
         router.replace(`/${locale}/mb-admin-mechanics/offers`);
         return;
@@ -66,14 +71,15 @@ export default function AdminLoginPage() {
       const userRole = (profile as ProfileRole).role;
 
       // Redirect based on role (keep loading state for smooth transition)
-      const targetRoute = userRole === 'admin' 
-        ? `/${locale}/mb-admin/offers`
-        : `/${locale}/mb-admin-mechanics/offers`;
-      
+      const targetRoute =
+        userRole === "admin"
+          ? `/${locale}/mb-admin/offers`
+          : `/${locale}/mb-admin-mechanics/offers`;
+
       router.replace(targetRoute);
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error("Login error:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
       setIsLoading(false);
     }
   };
@@ -84,8 +90,18 @@ export default function AdminLoginPage() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <div className="w-16 h-16 bg-mb-blue rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
             </div>
           </div>
@@ -101,7 +117,7 @@ export default function AdminLoginPage() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -109,7 +125,7 @@ export default function AdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@mbcenter.bg"
+                placeholder=""
                 required
                 className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
               />
@@ -122,7 +138,7 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder=""
                 required
                 className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
               />
@@ -135,14 +151,29 @@ export default function AdminLoginPage() {
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </form>
@@ -151,4 +182,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-

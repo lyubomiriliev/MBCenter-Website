@@ -54,25 +54,22 @@ function AddEditPartModal({
   const [priceInput, setPriceInput] = useState("0");
   const [error, setError] = useState("");
 
-  const reset = useCallback(
-    (vals: PartItemFormData | null) => {
-      if (vals) {
-        setDescription(vals.description);
-        setBrand(vals.brand ?? "");
-        setPartNumber(vals.partNumber ?? "");
-        setQuantity(vals.quantity ?? 1);
-        setUnitPrice(vals.unitPrice ?? 0);
-      } else {
-        setDescription("");
-        setBrand("");
-        setPartNumber("");
-        setQuantity(1);
-        setUnitPrice(0);
-      }
-      setError("");
-    },
-    []
-  );
+  const reset = useCallback((vals: PartItemFormData | null) => {
+    if (vals) {
+      setDescription(vals.description);
+      setBrand(vals.brand ?? "");
+      setPartNumber(vals.partNumber ?? "");
+      setQuantity(vals.quantity ?? 1);
+      setUnitPrice(vals.unitPrice ?? 0);
+    } else {
+      setDescription("");
+      setBrand("");
+      setPartNumber("");
+      setQuantity(1);
+      setUnitPrice(0);
+    }
+    setError("");
+  }, []);
 
   useEffect(() => {
     if (open) reset(initialValues);
@@ -181,15 +178,18 @@ function AddEditPartModal({
                 onChange={(e) => {
                   const val = e.target.value;
                   // Allow only digits, dot, and comma
-                  if (val === '' || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                  if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
                     setPriceInput(val);
-                    const numVal = val.replace(',', '.');
-                    setUnitPrice(numVal === '' ? 0 : Number(numVal) || 0);
+                    const numVal = val.replace(",", ".");
+                    setUnitPrice(numVal === "" ? 0 : Number(numVal) || 0);
                   }
                 }}
                 onBlur={() => {
                   // Format on blur
-                  if (priceInput && !isNaN(Number(priceInput.replace(',', '.')))) {
+                  if (
+                    priceInput &&
+                    !isNaN(Number(priceInput.replace(",", ".")))
+                  ) {
                     setPriceInput(unitPrice.toString());
                   }
                 }}
@@ -209,7 +209,11 @@ function AddEditPartModal({
           >
             {t("cancel")}
           </Button>
-          <Button type="button" onClick={handleOk} className="bg-blue-500 hover:bg-blue-600">
+          <Button
+            type="button"
+            onClick={handleOk}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
             {t("ok")}
           </Button>
         </DialogFooter>
@@ -254,7 +258,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[auto_32px_1fr_120px_250px_90px_120px_60px_auto] gap-3 items-center py-1.5 px-2 rounded border border-mb-border bg-mb-anthracite/50 even:bg-mb-anthracite/30 min-w-[640px]"
+      className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_88px_88px_72px] gap-3 items-center py-1.5 px-2 rounded border border-mb-border bg-mb-anthracite/50 even:bg-mb-anthracite/30"
     >
       <button
         type="button"
@@ -263,23 +267,50 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
         {...listeners}
         aria-label="Drag to reorder"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
         </svg>
       </button>
-      <div className="text-mb-silver text-sm flex items-center justify-center">{index + 1}</div>
-      <div className="text-white text-sm truncate text-left" title={description}>
+      <div className="text-mb-silver text-sm flex items-center justify-center">
+        {index + 1}
+      </div>
+      <div
+        className="text-white text-sm truncate text-left min-w-0"
+        title={description}
+      >
         {description || "—"}
       </div>
-      <div className="text-mb-silver text-sm truncate flex items-center justify-center" title={brand}>
+      <div
+        className="text-mb-silver text-sm truncate flex items-center justify-center"
+        title={brand}
+      >
         {brand || "—"}
       </div>
-      <div className="text-mb-silver text-sm truncate font-mono flex items-center justify-center" title={partNumber}>
+      <div
+        className="text-mb-silver text-sm truncate font-mono flex items-center justify-center"
+        title={partNumber}
+      >
         {partNumber || "—"}
       </div>
-      <div className="text-white text-sm tabular-nums flex items-center justify-center">{quantity}</div>
-      <div className="text-white text-sm tabular-nums flex items-center justify-center">€{Number(unitPrice).toFixed(2)}</div>
-      <div className="text-mb-blue text-sm font-medium tabular-nums flex items-center justify-center">€{total.toFixed(2)}</div>
+      <div className="text-white text-sm tabular-nums flex items-center justify-end">
+        {quantity}
+      </div>
+      <div className="text-white text-sm tabular-nums flex items-center justify-end">
+        €{Number(unitPrice).toFixed(2)}
+      </div>
+      <div className="text-mb-blue text-sm font-medium tabular-nums flex items-center justify-end">
+        €{total.toFixed(2)}
+      </div>
       <div className="flex items-center gap-1">
         <Button
           type="button"
@@ -289,8 +320,18 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
           className="h-7 px-2 text-mb-silver hover:text-white hover:bg-mb-anthracite"
           aria-label={t("editPart")}
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
           </svg>
         </Button>
         <Button
@@ -301,8 +342,18 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
           className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
           aria-label={t("remove")}
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </Button>
       </div>
@@ -313,11 +364,16 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
 export function PartsFieldArray() {
   const t = useTranslations("admin.form");
   const { control, getValues, setValue } = useFormContext<OfferFormData>();
-  const { fields, append, remove, move } = useFieldArray({ control, name: "parts" });
+  const { fields, append, remove, move } = useFieldArray({
+    control,
+    name: "parts",
+  });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [modalInitial, setModalInitial] = useState<PartItemFormData | null>(null);
+  const [modalInitial, setModalInitial] = useState<PartItemFormData | null>(
+    null
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -369,35 +425,74 @@ export function PartsFieldArray() {
     <Card className="bg-mb-anthracite border-mb-border">
       <CardHeader className="flex flex-row items-center justify-between py-4">
         <CardTitle className="text-lg flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          <svg
+            className="w-5 h-5 text-blue-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+            />
           </svg>
           {t("parts")} ({fields.length})
         </CardTitle>
-        <Button type="button" onClick={openAdd} size="sm" className="bg-blue-500 hover:bg-blue-600">
-          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <Button
+          type="button"
+          onClick={openAdd}
+          size="sm"
+          className="bg-blue-500 hover:bg-blue-600"
+        >
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
           </svg>
           {t("addPart")}
         </Button>
       </CardHeader>
       <CardContent className="pt-0">
         {fields.length === 0 ? (
-          <div className="text-center py-6 text-mb-silver text-sm">{t("noPartsAdded")}</div>
+          <div className="text-center py-6 text-mb-silver text-sm">
+            {t("noPartsAdded")}
+          </div>
         ) : (
-          <div className="overflow-x-auto -mx-1 px-1 min-w-0">
-            <div className="grid grid-cols-[auto_32px_1fr_200px_200px_150px_120px_90px_auto] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1 min-w-[640px]">
+          <div className="min-w-0 -mx-1 px-1">
+            <div className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_88px_88px_72px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
               <div />
               <div className="flex items-center justify-center">#</div>
-              <div className="flex items-center justify-start">{t("productName")}</div>
-              <div className="flex items-center justify-center">{t("brand")}</div>
-              <div className="flex items-center justify-center">{t("partNumber")}</div>
-              <div className="flex items-center justify-center">{t("qty")}</div>
-              <div className="flex items-center justify-center">{t("unitPrice")}</div>
-              <div className="flex items-center justify-center">{t("total")}</div>
+              <div className="flex items-center justify-start min-w-0">
+                {t("productName")}
+              </div>
+              <div className="flex items-center justify-center">
+                {t("brand")}
+              </div>
+              <div className="flex items-center justify-center">
+                {t("partNumber")}
+              </div>
+              <div className="flex items-center justify-end">{t("qty")}</div>
+              <div className="flex items-center justify-end">
+                {t("unitPrice")}
+              </div>
+              <div className="flex items-center justify-end">{t("total")}</div>
               <div />
             </div>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
               <SortableContext
                 items={fields.map((_, i) => `part-${i}`)}
                 strategy={verticalListSortingStrategy}

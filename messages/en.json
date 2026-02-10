@@ -6,22 +6,22 @@
     "gallery": "Gallery",
     "career": "Career",
     "contacts": "Contacts",
-    "bookService": "Book Appointment",
+    "bookService": "Book an appointment",
     "viewOnMap": "View on Map"
   },
   "home": {
     "hero": {
-      "title": "Specialized Mercedes-Benz Service & Coding",
+      "title": "Specialized service for repair and coding of Mercedes-Benz",
       "subtitle": "Independent Service Center in Sofia, Bulgaria",
-      "cta": "Book Appointment",
-      "ctaSecondary": "Contact Us"
+      "cta": "Book an appointment",
+      "ctaSecondary": "Send inquiry"
     },
     "valueProps": {
       "title": "Why Choose Us",
       "oemTitle": "Original OEM Parts",
       "oemDesc": "We understand the importance of maintaining the performance and reliability of your Mercedes-Benz. That's why we offer original OEM parts, delivered directly from the manufacturer. With us, you can trust that every component is designed to meet the highest quality standards, ensuring perfect fit and optimal functionality.",
       "partnerTitle": "Customer Satisfaction",
-      "partnerDesc": "Our customers are at the heart of everything we do. We are committed to ensuring your satisfaction at every step of the journey. From the moment you visit our website to the successful installation of parts, we strive to provide a seamless and enjoyable experience.",
+      "partnerDesc": "Our customers are at the heart of everything we do. We are committed to ensuring your satisfaction at every step of the journey. From the moment you visit our website to successful repair or service, we strive to provide a seamless and enjoyable experience.",
       "experienceTitle": "Wide Selection",
       "whyChooseDesc": "Specialized Mercedes-Benz Service Center",
       "experienceDesc": "We pride ourselves on an extensive catalog of Mercedes-Benz OEM parts, serving a diverse range of models and years. Whether you drive a classic luxury sedan or the latest SUV, we have the parts you need to maintain and enhance your vehicle."
@@ -66,7 +66,7 @@
         "highVoltage": "High-Voltage Systems",
         "highVoltageDesc": "Specialized diagnostics and repair for EV battery systems",
         "battery": "Battery Health Analysis",
-        "batteryDesc": "Advanced testing and optimization for maximum range",
+        "batteryDesc": "Service test and battery condition protocol",
         "drivetrain": "Electric Drivetrain",
         "drivetrainDesc": "Expert maintenance for motors and power electronics",
         "charging": "Charging Systems",
@@ -86,10 +86,10 @@
     },
     "mission": {
       "title": "Our Mission",
-      "content": "At \"MB Center\" specialized Mercedes-Benz service, we strive to provide the highest quality service to our customers, constantly improving our services and products. Our main goal is to create long-lasting and trusting relationships with each client, providing them with reliable and innovative solutions for their vehicles."
+      "content": "At MB Center specialized Mercedes-Benz service, we strive to provide the highest quality service to our customers, constantly improving our services and products. Our main goal is to create long-lasting and trusting relationships with each client, providing them with reliable and innovative solutions for their vehicles."
     },
     "whyChoose": {
-      "title": "Why Choose \"MB Center\"?",
+      "title": "Why Choose MB Center?",
       "content": "We are proud to specialize in the Mercedes-Benz brand and offer a wide variety of new auto parts, original accessories, and high-quality consumables for your vehicles. Our products are carefully selected to meet the requirements of the most demanding customers who seek uncompromising quality and reliability."
     },
     "expertService": {
@@ -97,17 +97,17 @@
       "content": "Our qualified technicians are available to help you with service and maintenance of your vehicles. With years of experience and knowledge in the industry, we ensure professional treatment and individual approach to every Mercedes-Benz vehicle."
     },
     "carsForSale": {
-      "title": "Cars for Sale",
-      "content": "In addition, we offer a wide range of Mercedes-Benz vehicles for sale. Our consultants will be happy to help you choose the perfect vehicle that meets your needs and preferences."
+      "title": "Car inspection before purchase",
+      "content": "We assist with pre-purchase vehicle inspection. Our team performs a comprehensive check of the condition, history and technical soundness of the Mercedes-Benz before you buy it."
     },
     "allClients": {
       "title": "We Serve All Clients",
-      "content": "At \"MB Center\" we value diversity and work with both private individuals and business clients. Whether you are an individual vehicle owner or represent a company with its own fleet, you will receive professional and individual service that meets your needs."
+      "content": "At MB Center we value diversity and work with both private individuals and business clients. Whether you are an individual vehicle owner or represent a company with its own fleet, you will receive professional and individual service that meets your needs."
     },
     "cta": {
       "title": "Ready to Get Started?",
-      "description": "Contact us today and find out why so many customers trust our products and services. Our team is ready to help you with everything you need.",
-      "content": "Together with MB Center, we will turn the care of your Mercedes-Benz into a real pleasure. Contact us today and find out why so many customers trust our products and services.",
+      "description": "Contact us today and find out why so many customers trust our services. Our team is ready to help you with everything you need.",
+      "content": "Together with MB Center, we will turn the care of your Mercedes-Benz into a real pleasure. Contact us today and find out why so many customers trust our services.",
       "viewServices": "View Services"
     },
     "equipment": {
@@ -122,11 +122,11 @@
     "title": "Our Services",
     "hero": {
       "title": "Comprehensive Mercedes-Benz Services",
-      "subtitle": "From routine maintenance to advanced coding"
+      "subtitle": "From routine maintenance to high-quality coding"
     },
     "maintenance": {
       "title": "Regular Maintenance",
-      "desc": "Oil changes, inspections, brake service, and preventive care"
+      "desc": "Oil change, brake fluid, discs and pads, A/C service, etc."
     },
     "diagnostics": {
       "title": "Diagnostics & Repair",
@@ -138,7 +138,7 @@
     },
     "multimedia": {
       "title": "Multimedia Systems",
-      "desc": "Navigation updates, COMAND retrofits, audio upgrades"
+      "desc": "Update of navigation maps, COMAND modifications and audio upgrades"
     },
     "parts": {
       "title": "OEM Parts",
@@ -165,7 +165,7 @@
       },
       "coding": {
         "title": "SCN Online Coding",
-        "description": "Secure online coding and programming directly connected to Mercedes-Benz servers for authentic modifications",
+        "description": "Secure online coding and programming directly connected to Mercedes-Benz servers",
         "feature1": "Direct connection to MB servers",
         "feature2": "Feature activation and customization",
         "feature3": "Module coding and programming",
@@ -173,11 +173,11 @@
       },
       "transmission": {
         "title": "Transmission Services",
-        "description": "Specialized service for 7G-Tronic and 9G-Tronic transmissions including reset, adaptation, and ECU programming",
-        "feature1": "7G-Tronic & 9G-Tronic service",
-        "feature2": "TCU reset and adaptation",
-        "feature3": "ISM/DSM selector programming",
-        "feature4": "Engine ECU reset and training"
+        "description": "Service maintenance of 7G-DCT, 8G-DCT, 7G and 9G-Tronic gearboxes and ISM/DSM selectors",
+        "feature1": "Technical maintenance - oil and filter change",
+        "feature2": "Electronic control unit replacement (plate)",
+        "feature3": "Programming, update and adaptation",
+        "feature4": "Programming of ISM/DSM electronic selectors"
       }
     },
     "codingGen": {
@@ -219,8 +219,8 @@
         }
       },
       "compact": {
-        "name": "MBUX Compact",
-        "models": "A, B, CLA, GLA, GLB, EQC, EQB (2021+)",
+        "name": "MBUX Compact Models 2018+",
+        "models": "A, B, C, E, CLA, CLS, GLA, GLB, GLE, GLS, GT (2018+)",
         "dashboard": {
           "title": "Dashboard & MBUX",
           "f1": "AMG graphics and Supersport mode",
@@ -231,26 +231,30 @@
         "modes": {
           "title": "Modes & Control",
           "f1": "Last Mode Start/Stop memory",
-          "f2": "Vmax removal",
+          "f2": "Change Vmax",
           "f3": "Sport+ mode activation",
-          "f4": "Manual transmission mode"
+          "f4": "Manual transmission mode",
+          "f5": "Low Battery mode",
+          "f6": "Snow mode"
         },
         "lights": {
           "title": "Lighting",
           "f1": "Ambient Light sync with drive modes",
           "f2": "Enhanced Multibeam animation",
-          "f3": "100% illuminated door sills"
+          "f3": "100% illuminated door sills",
+          "f4": "Activation of Intelligent Lights System (ILS) / Multibeam headlights for Europe (ECE)"
         },
         "comfort": {
           "title": "Comfort & Multimedia",
           "f1": "Seatbelt warning removal",
-          "f2": "Permanent AdBlue level",
-          "f3": "30W Wireless Charging activation"
+          "f2": "Activation of AMG logo",
+          "f3": "AMG graphics in dashboard",
+          "f4": "30W Wireless Charging activation"
         }
       },
       "eCls": {
-        "name": "E/CLS/G Series",
-        "models": "W213, C257, W463, W205 FL",
+        "name": "E/CLS/G Models 2016+",
+        "models": "W213, C257, W463, W205 FL, S W222 FL, GT",
         "multimedia": {
           "title": "Multimedia",
           "f1": "CarPlay activation",
@@ -260,7 +264,7 @@
         },
         "display": {
           "title": "Display & Dashboard",
-          "f1": "AMG Combined Instrument",
+          "f1": "AMG Menu",
           "f2": "Custom speedometer scales (280/330 km/h)",
           "f3": "AMG Track Pace"
         },
@@ -278,12 +282,14 @@
       },
       "older": {
         "name": "Older Models",
-        "models": "A, C, GLC (<2018)",
+        "nameSubtitle": "NTG 5.0 / 5.1 / 4.5",
+        "models": "A, B, C, E, S, CLA, CLS, GLA, GLE, GLS (<2018)",
         "multimedia": {
           "title": "Multimedia",
           "f1": "AMG Logo activation",
           "f2": "AMG dashboard graphics",
-          "f3": "Engineering Mode (Comand Online)"
+          "f3": "Engineering Mode (Comand Online)",
+          "f4": "CarPlay and Android Auto"
         },
         "comfort": {
           "title": "Comfort",
@@ -376,7 +382,7 @@
         },
         "s3": {
           "title": "Language Conversion",
-          "desc": "Convert languages (MercedesMe, SOS, MBUX/Radio)"
+          "desc": "Convert languages (MBUX/Radio)"
         }
       }
     }
@@ -528,8 +534,10 @@
         "title": "Partial Engine Repairs",
         "s1": "Gasket and seal replacement",
         "s2": "Fuel system repair",
-        "s3": "EGR valve and DPF filter cleaning and replacement",
+        "s3": "Replacement of EGR and DPF filters",
         "s4": "Cooling system repair",
+        "s5": "Engine wiring harness replacement",
+        "s6": "Chain drive and variator gears replacement",
         "note": "Note: We do not perform major engine repairs, including timing chain replacement and engine opening."
       },
       "transmission": {
@@ -613,7 +621,8 @@
       "phone": "Phone",
       "email": "Email",
       "workingHours": "Working Hours",
-      "hours": "Mon-Fri: 9:00 - 18:00"
+      "hours": "Monday - Friday 10:30 - 19:00h",
+      "hoursWeekend": "Saturday and Sunday - Closed"
     },
     "form": {
       "title": "Send Us a Message"
@@ -642,14 +651,15 @@
     "hours": {
       "title": "Working Hours",
       "description": "Our team will confirm your appointment and provide any additional information you may need.",
-      "hours": "10:30–19:00 Monday - Friday"
+      "hours": "Monday - Friday 10:30 - 19:00h",
+      "hoursWeekend": "Saturday and Sunday - Closed"
     }
   },
   "bookingInfo": {
     "title": "How to Book Your Service",
     "step1": {
       "title": "Contact or Visit",
-      "text": "Get in touch via phone, email, or visit us directly at our service center"
+      "text": "Contact us by phone, Viber or email or visit us directly in the service center"
     },
     "step2": {
       "title": "Discuss Your Needs",
@@ -663,6 +673,11 @@
       "title": "Book Online",
       "description": "Choose a convenient time for your service through our booking system.",
       "cta": "Reserve with Google"
+    },
+    "viberBooking": {
+      "title": "Write to us on Viber",
+      "description": "Contact us on Viber for quick booking and inquiries.",
+      "cta": "Open Viber chat"
     },
     "phoneBooking": {
       "title": "Call Us",
@@ -1235,7 +1250,7 @@
       "status": {
         "draft": "Draft",
         "sent": "Sent",
-        "approved": "Approved",
+        "parts_ordered": "Parts Ordered",
         "finished": "Finished",
         "cancelled": "Cancelled"
       },
@@ -1253,7 +1268,7 @@
       "openServiceCard": "Open Service Card in New Tab",
       "filters": {
         "search": "Search",
-        "searchPlaceholder": "Search by offer # or client name...",
+        "searchPlaceholder": "Search by offer #, client, repair, car, VIN or license plate...",
         "status": "Status",
         "allStatuses": "All Statuses",
         "dateFrom": "From",
@@ -1277,6 +1292,10 @@
       "carVin": "VIN Number",
       "carLicensePlate": "License Plate",
       "carMileage": "Mileage",
+      "carModelDetail": "Exact Model",
+      "carModelDetailPlaceholder": "CLA 220d 4MATIC",
+      "repairName": "Repair Name",
+      "repairNamePlaceholder": "Enter repair name",
       "createdBy": "Created By",
       "selectCreator": "Select creator",
       "productName": "Product Name",
@@ -1304,8 +1323,14 @@
       "itemDescription": "Description",
       "additionalInfo": "Additional Information",
       "discount": "Discount",
+      "discountParts": "Parts Discount",
+      "discountServices": "Services Discount",
       "notes": "Notes",
       "notesPlaceholder": "Add any additional notes or comments...",
+      "notesInternal": "Notes for Me",
+      "notesInternalPlaceholder": "Internal notes (not visible to mechanics)...",
+      "notesService": "Notes for Service",
+      "notesServicePlaceholder": "Notes visible to service team...",
       "summary": "Summary",
       "subtotal": "Subtotal",
       "netTotal": "Net Total",
@@ -1315,9 +1340,24 @@
       "updateOffer": "Update Offer",
       "generateServiceCard": "Generate Service Card",
       "saving": "Saving...",
+      "saved": "Saved",
       "cancel": "Cancel",
-      "addPrePayment": "Add Pre-payment",
-      "prepayment": "Prepayment",
+      "addPrePayment": "Add Advance Payment",
+      "prepayment": "Advance Payment",
+      "downloadOfferPdf": "Download Offer",
+      "deleteOffer": "Delete",
+      "fixedPrice": "Fixed Price",
+      "pricePerHourLabel": "Price per Hour",
+      "selectFixedActivity": "select activity",
+      "addFixedActivity": "Add new",
+      "fixedPriceAmount": "Fixed Price (EUR)",
+      "rateType": "Rate Type",
+      "clone": "Clone",
+      "editDetails": "Edit Details",
+      "delete": "Delete",
+      "bulkDelete": "Delete Selected",
+      "bulkDeleteConfirm": "Are you sure you want to delete the selected offers?",
+      "mechanicNote": "Note",
       "amountDue": "Amount due",
       "prepaymentAmount": "Amount (EUR)",
       "prepaymentAmountInvalid": "Enter a valid positive amount.",

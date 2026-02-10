@@ -30,8 +30,57 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { OfferFormData, ServiceActionFormData } from "@/lib/schemas/offer";
+import { EUR_TO_BGN } from "@/lib/schemas/offer";
 import { parseTimeToHours } from "@/lib/utils";
+
+const FIXED_ACTIVITIES_KEY = "mbcenter_fixed_activities_v2";
+
+export type FixedActivity = { id: string; name: string; priceEur: number };
+
+function getStoredFixedActivities(): FixedActivity[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(FIXED_ACTIVITIES_KEY);
+    if (!stored) {
+      const legacy = localStorage.getItem("mbcenter_fixed_activities");
+      if (legacy) {
+        const arr = JSON.parse(legacy) as string[];
+        const migrated = arr.map((name, i) => ({
+          id: `legacy-${i}`,
+          name,
+          priceEur: 0,
+        }));
+        localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+      return [];
+    }
+    return JSON.parse(stored);
+  } catch {
+    return [];
+  }
+}
+
+function addFixedActivity(name: string, priceEur: number): FixedActivity {
+  const existing = getStoredFixedActivities();
+  const id = `act-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const item = { id, name, priceEur };
+  const updated = [...existing, item];
+  localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
+  return item;
+}
+
+function removeFixedActivity(id: string) {
+  const existing = getStoredFixedActivities();
+  const updated = existing.filter((a) => a.id !== id);
+  localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
+}
 
 function AddEditServiceActionModal({
   open,
@@ -47,36 +96,67 @@ function AddEditServiceActionModal({
   onConfirm: (action: ServiceActionFormData) => void;
 }) {
   const t = useTranslations("admin.form");
+  const [isFixedPrice, setIsFixedPrice] = useState(false);
   const [actionName, setActionName] = useState("");
   const [timeInput, setTimeInput] = useState("1");
   const [pricePerHour, setPricePerHour] = useState(65);
   const [priceInput, setPriceInput] = useState("65");
+  const [fixedPriceAmount, setFixedPriceAmount] = useState(0);
+  const [fixedPriceInput, setFixedPriceInput] = useState("0");
   const [error, setError] = useState("");
+  const [fixedActivities, setFixedActivities] = useState<FixedActivity[]>([]);
+  const [addNewModalOpen, setAddNewModalOpen] = useState(false);
+  const [newActivityName, setNewActivityName] = useState("");
+  const [newActivityPrice, setNewActivityPrice] = useState("0");
+  const [selectedActivityId, setSelectedActivityId] = useState<string>("");
+  const [activityPopoverOpen, setActivityPopoverOpen] = useState(false);
+
+  const refreshActivities = useCallback(() => {
+    setFixedActivities(getStoredFixedActivities());
+  }, []);
+
+  useEffect(() => {
+    refreshActivities();
+  }, [open, addNewModalOpen, refreshActivities]);
 
   const reset = useCallback((vals: ServiceActionFormData | null) => {
+    const activities =
+      typeof window !== "undefined" ? getStoredFixedActivities() : [];
     if (vals) {
       setActionName(vals.actionName);
       setTimeInput(vals.timeRequired ?? "1");
       const price = vals.pricePerHour ?? 65;
       setPricePerHour(price);
       setPriceInput(price.toString());
+      setIsFixedPrice(vals.isFixedPrice ?? false);
+      setFixedPriceAmount(vals.fixedPriceAmount ?? 0);
+      setFixedPriceInput((vals.fixedPriceAmount ?? 0).toString());
+      const match = activities.find(
+        (a) =>
+          a.name === vals.actionName &&
+          (vals.fixedPriceAmount == null ||
+            a.priceEur === vals.fixedPriceAmount)
+      );
+      setSelectedActivityId(match?.id ?? "");
     } else {
       setActionName("");
       setTimeInput("1");
       setPricePerHour(65);
       setPriceInput("65");
+      setIsFixedPrice(false);
+      setFixedPriceAmount(0);
+      setFixedPriceInput("0");
+      setSelectedActivityId("");
     }
     setError("");
+    setAddNewModalOpen(false);
+    setNewActivityName("");
+    setNewActivityPrice("0");
   }, []);
 
   useEffect(() => {
     if (open) reset(initialValues);
   }, [open, initialValues, reset]);
-
-  const handleOpen = useCallback(
-    (isOpen: boolean) => onOpenChange(isOpen),
-    [onOpenChange]
-  );
 
   const handleOk = () => {
     const name = actionName.trim();
@@ -84,92 +164,354 @@ function AddEditServiceActionModal({
       setError(t("serviceActionNameRequired"));
       return;
     }
-    if (pricePerHour < 0) {
-      setError("Price per hour must be positive");
-      return;
+
+    if (isFixedPrice) {
+      if (fixedPriceAmount <= 0) {
+        setError("Фиксираната цена трябва да е положителна");
+        return;
+      }
+      onConfirm({
+        actionName: name,
+        timeRequired: "",
+        pricePerHour: 0,
+        isFixedPrice: true,
+        fixedPriceAmount: fixedPriceAmount,
+      });
+    } else {
+      if (pricePerHour < 0) {
+        setError("Price per hour must be positive");
+        return;
+      }
+      const parsedHours = parseTimeToHours(timeInput);
+      if (parsedHours <= 0) {
+        setError("Time must be greater than 0");
+        return;
+      }
+      onConfirm({
+        actionName: name,
+        timeRequired: timeInput.trim(),
+        pricePerHour: Number(pricePerHour) || 0,
+        isFixedPrice: false,
+        fixedPriceAmount: undefined,
+      });
     }
-    const parsedHours = parseTimeToHours(timeInput);
-    if (parsedHours <= 0) {
-      setError("Time must be greater than 0");
-      return;
-    }
-    onConfirm({
-      actionName: name,
-      timeRequired: timeInput.trim(),
-      pricePerHour: Number(pricePerHour) || 0,
-    });
     onOpenChange(false);
   };
 
+  const handleAddNewFixedActivity = () => {
+    const trimmed = newActivityName.trim();
+    const price = parseFloat(newActivityPrice.replace(",", ".")) || 0;
+    if (trimmed && price > 0) {
+      const item = addFixedActivity(trimmed, price);
+      setFixedActivities((prev) => [...prev, item]);
+      setActionName(trimmed);
+      setFixedPriceAmount(price);
+      setFixedPriceInput(price.toString());
+      setSelectedActivityId(item.id);
+      setNewActivityName("");
+      setNewActivityPrice("0");
+      setAddNewModalOpen(false);
+    }
+  };
+
+  const handleSelectActivity = (id: string) => {
+    setSelectedActivityId(id);
+    const act = fixedActivities.find((a) => a.id === id);
+    if (act) {
+      setActionName(act.name);
+      setFixedPriceAmount(act.priceEur);
+      setFixedPriceInput(act.priceEur.toString());
+    }
+  };
+
+  const handleRemoveActivity = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    removeFixedActivity(id);
+    refreshActivities();
+    if (selectedActivityId === id) {
+      setSelectedActivityId("");
+      setActionName("");
+      setFixedPriceAmount(0);
+      setFixedPriceInput("0");
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={handleOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white">
-            {editIndex !== null ? t("editServiceAction") : t("addServiceAction")}
+            {editIndex !== null
+              ? t("editServiceAction")
+              : t("addServiceAction")}
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
+          {/* Rate Type Toggle */}
           <div className="space-y-2">
-            <Label htmlFor="modal-action-name" className="text-gray-200">
-              {t("serviceActionName")} *
-            </Label>
-            <Input
-              id="modal-action-name"
-              value={actionName}
-              onChange={(e) => setActionName(e.target.value)}
-              placeholder={t("serviceActionName")}
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
+            <Label className="text-gray-200">{t("rateType")}</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={!isFixedPrice}
+                  onChange={() => setIsFixedPrice(false)}
+                  className="text-mb-blue"
+                />
+                <span className="text-sm">{t("pricePerHourLabel")}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={isFixedPrice}
+                  onChange={() => setIsFixedPrice(true)}
+                  className="text-mb-blue"
+                />
+                <span className="text-sm">{t("fixedPrice")}</span>
+              </label>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="modal-time" className="text-gray-200">
-              {t("timeRequired")}
-            </Label>
-            <Input
-              id="modal-time"
-              type="text"
-              value={timeInput}
-              onChange={(e) => {
-                const val = e.target.value;
-                // Allow format: 1, 1:30, 0:10, etc
-                if (val === '' || /^[0-9]*:?[0-9]*$/.test(val)) {
-                  setTimeInput(val);
-                }
-              }}
-              placeholder="1:30"
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
-            <p className="text-xs text-mb-silver">{t("timeFormatExamples")}</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="modal-price-hr" className="text-gray-200">
-              {t("pricePerHour")} *
-            </Label>
-            <Input
-              id="modal-price-hr"
-              type="text"
-              inputMode="decimal"
-              value={priceInput}
-              onChange={(e) => {
-                const val = e.target.value;
-                // Allow only digits, dot, and comma
-                if (val === '' || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
-                  setPriceInput(val);
-                  const numVal = val.replace(',', '.');
-                  setPricePerHour(numVal === '' ? 0 : Number(numVal) || 0);
-                }
-              }}
-              onBlur={() => {
-                // Format on blur
-                if (priceInput && !isNaN(Number(priceInput.replace(',', '.')))) {
-                  setPriceInput(pricePerHour.toString());
-                }
-              }}
-              placeholder="0.00"
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
-          </div>
+
+          {isFixedPrice ? (
+            <>
+              {/* Fixed Price: Dropdown to select activity */}
+              <div className="space-y-2">
+                <Label className="text-gray-200">
+                  {t("serviceActionName")} *
+                </Label>
+                <div className="space-y-2">
+                  {fixedActivities.length > 0 ? (
+                    <Popover
+                      open={activityPopoverOpen}
+                      onOpenChange={setActivityPopoverOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between bg-gray-100 text-gray-900 border-mb-border h-10 font-normal"
+                        >
+                          <span className="truncate">
+                            {selectedActivityId
+                              ? (() => {
+                                  const act = fixedActivities.find(
+                                    (a) => a.id === selectedActivityId
+                                  );
+                                  return act
+                                    ? `${act.name} — €${act.priceEur.toFixed(2)} / ${(act.priceEur * EUR_TO_BGN).toFixed(2)} лв.`
+                                    : t("selectFixedActivity");
+                                })()
+                              : t("selectFixedActivity")}
+                          </span>
+                          <svg
+                            className="h-4 w-4 opacity-50 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
+                        align="start"
+                      >
+                        {fixedActivities.map((act) => (
+                          <div
+                            key={act.id}
+                            className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100"
+                            onClick={() => {
+                              handleSelectActivity(act.id);
+                              setActivityPopoverOpen(false);
+                            }}
+                          >
+                            <span className="flex-1 truncate min-w-0">
+                              {act.name} — €{act.priceEur.toFixed(2)} /{" "}
+                              {(act.priceEur * EUR_TO_BGN).toFixed(2)} лв.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveActivity(e, act.id);
+                              }}
+                              className="shrink-0 p-0.5 rounded text-red-400 hover:bg-red-100"
+                              aria-label={t("remove")}
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddNewModalOpen(true)}
+                    className="border-mb-border text-sm"
+                  >
+                    + {t("addFixedActivity")}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Add New Fixed Activity Modal */}
+              <Dialog open={addNewModalOpen} onOpenChange={setAddNewModalOpen}>
+                <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">
+                      {t("addFixedActivity")}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label className="text-gray-200">
+                        {t("serviceActionName")} *
+                      </Label>
+                      <Input
+                        value={newActivityName}
+                        onChange={(e) => setNewActivityName(e.target.value)}
+                        placeholder={t("serviceActionName")}
+                        className="bg-gray-100 text-gray-900 border-mb-border"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-200">
+                        {t("fixedPriceAmount")} (EUR) *
+                      </Label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={newActivityPrice}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val))
+                            setNewActivityPrice(val);
+                        }}
+                        placeholder="0.00"
+                        className="bg-gray-100 text-gray-900 border-mb-border"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAddNewModalOpen(false)}
+                      className="bg-red-500 hover:bg-red-600 text-white border-red-500"
+                    >
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleAddNewFixedActivity}
+                      className="bg-green-500 hover:bg-green-600"
+                    >
+                      {t("ok")}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Fixed Price Amount - editable when activity selected */}
+              <div className="space-y-2">
+                <Label className="text-gray-200">
+                  {t("fixedPriceAmount")} *
+                </Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={fixedPriceInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                      setFixedPriceInput(val);
+                      const numVal = val.replace(",", ".");
+                      setFixedPriceAmount(
+                        numVal === "" ? 0 : Number(numVal) || 0
+                      );
+                    }
+                  }}
+                  placeholder="0.00"
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Hourly Rate: Activity Name */}
+              <div className="space-y-2">
+                <Label className="text-gray-200">
+                  {t("serviceActionName")} *
+                </Label>
+                <Input
+                  value={actionName}
+                  onChange={(e) => setActionName(e.target.value)}
+                  placeholder={t("serviceActionName")}
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-gray-200">{t("timeRequired")}</Label>
+                <Input
+                  type="text"
+                  value={timeInput}
+                  onChange={(e) => setTimeInput(e.target.value)}
+                  placeholder="1:30"
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                />
+                <p className="text-xs text-mb-silver">
+                  {t("timeFormatExamples")}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-gray-200">{t("pricePerHour")} *</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={priceInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                      setPriceInput(val);
+                      const numVal = val.replace(",", ".");
+                      setPricePerHour(numVal === "" ? 0 : Number(numVal) || 0);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (
+                      priceInput &&
+                      !isNaN(Number(priceInput.replace(",", ".")))
+                    ) {
+                      setPriceInput(pricePerHour.toString());
+                    }
+                  }}
+                  placeholder="0.00"
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                />
+              </div>
+            </>
+          )}
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
         <DialogFooter>
@@ -181,7 +523,11 @@ function AddEditServiceActionModal({
           >
             {t("cancel")}
           </Button>
-          <Button type="button" onClick={handleOk} className="bg-green-500 hover:bg-green-600">
+          <Button
+            type="button"
+            onClick={handleOk}
+            className="bg-green-500 hover:bg-green-600"
+          >
             {t("ok")}
           </Button>
         </DialogFooter>
@@ -203,8 +549,11 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
   const timeRequired = watch(`serviceActions.${index}.timeRequired`) ?? "";
   const pricePerHour = watch(`serviceActions.${index}.pricePerHour`) ?? 0;
   const actionName = watch(`serviceActions.${index}.actionName`) ?? "";
+  const isFixed = watch(`serviceActions.${index}.isFixedPrice`) ?? false;
+  const fixedAmount = watch(`serviceActions.${index}.fixedPriceAmount`) ?? 0;
+
   const totalHours = parseTimeToHours(timeRequired);
-  const total = totalHours * pricePerHour;
+  const total = isFixed ? fixedAmount : totalHours * pricePerHour;
 
   const {
     attributes,
@@ -234,19 +583,41 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
         {...listeners}
         aria-label="Drag to reorder"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 8h16M4 16h16"
+          />
         </svg>
       </button>
-      <div className="text-mb-silver text-sm flex items-center justify-center">{index + 1}</div>
+      <div className="text-mb-silver text-sm flex items-center justify-center">
+        {index + 1}
+      </div>
       <div className="text-white text-sm truncate text-left" title={actionName}>
         {actionName || "—"}
+        {isFixed && (
+          <span className="ml-1 text-xs text-orange-400">(фикс.)</span>
+        )}
       </div>
-      <div className="text-mb-silver text-sm flex items-center justify-center" title={timeRequired}>
-        {timeRequired || "—"}
+      <div
+        className="text-mb-silver text-sm flex items-center justify-center"
+        title={timeRequired}
+      >
+        {isFixed ? "" : timeRequired || "—"}
       </div>
-      <div className="text-white text-sm tabular-nums flex items-center justify-center">€{Number(pricePerHour).toFixed(2)}</div>
-      <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-center">€{total.toFixed(2)}</div>
+      <div className="text-white text-sm tabular-nums flex items-center justify-center">
+        {isFixed ? "" : `€${Number(pricePerHour).toFixed(2)}`}
+      </div>
+      <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-center">
+        €{total.toFixed(2)}
+      </div>
       <div className="flex items-center gap-1">
         <Button
           type="button"
@@ -256,8 +627,18 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
           className="h-7 px-2 text-mb-silver hover:text-white hover:bg-mb-anthracite"
           aria-label={t("editServiceAction")}
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
           </svg>
         </Button>
         <Button
@@ -268,8 +649,18 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
           className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
           aria-label={t("remove")}
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </Button>
       </div>
@@ -280,11 +671,15 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
 export function ServiceActionsFieldArray() {
   const t = useTranslations("admin.form");
   const { control, getValues, setValue } = useFormContext<OfferFormData>();
-  const { fields, append, remove, move } = useFieldArray({ control, name: "serviceActions" });
+  const { fields, append, remove, move } = useFieldArray({
+    control,
+    name: "serviceActions",
+  });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [modalInitial, setModalInitial] = useState<ServiceActionFormData | null>(null);
+  const [modalInitial, setModalInitial] =
+    useState<ServiceActionFormData | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -314,6 +709,8 @@ export function ServiceActionsFieldArray() {
             actionName: a.actionName ?? "",
             timeRequired: a.timeRequired ?? "",
             pricePerHour: Number(a.pricePerHour) ?? 0,
+            isFixedPrice: a.isFixedPrice ?? false,
+            fixedPriceAmount: a.fixedPriceAmount ?? undefined,
           }
         : null
     );
@@ -333,34 +730,78 @@ export function ServiceActionsFieldArray() {
     <Card className="bg-mb-anthracite border-mb-border">
       <CardHeader className="flex flex-row items-center justify-between py-4">
         <CardTitle className="text-lg flex items-center gap-2">
-          <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <svg
+            className="w-5 h-5 text-green-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
           {t("serviceActions")} ({fields.length})
         </CardTitle>
-        <Button type="button" onClick={openAdd} size="sm" className="bg-green-500 hover:bg-green-600">
-          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <Button
+          type="button"
+          onClick={openAdd}
+          size="sm"
+          className="bg-green-500 hover:bg-green-600"
+        >
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
           </svg>
           {t("addServiceAction")}
         </Button>
       </CardHeader>
       <CardContent className="pt-0">
         {fields.length === 0 ? (
-          <div className="text-center py-6 text-mb-silver text-sm">{t("noServiceActionsAdded")}</div>
+          <div className="text-center py-6 text-mb-silver text-sm">
+            {t("noServiceActionsAdded")}
+          </div>
         ) : (
           <div className="overflow-x-auto -mx-1 px-1 min-w-0">
             <div className="grid grid-cols-[auto_32px_1fr_200px_200px_200px_auto] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1 min-w-[560px]">
               <div />
               <div className="flex items-center justify-center">#</div>
-              <div className="flex items-center justify-start">{t("serviceActionName")}</div>
-              <div className="flex items-center justify-center">{t("timeRequired")}</div>
-              <div className="flex items-center justify-center">{t("pricePerHour")}</div>
-              <div className="flex items-center justify-center">{t("total")}</div>
+              <div className="flex items-center justify-start">
+                {t("serviceActionName")}
+              </div>
+              <div className="flex items-center justify-center">
+                {t("timeRequired")}
+              </div>
+              <div className="flex items-center justify-center">
+                {t("pricePerHour")}
+              </div>
+              <div className="flex items-center justify-center">
+                {t("total")}
+              </div>
               <div />
             </div>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
               <SortableContext
                 items={fields.map((_, i) => `service-${i}`)}
                 strategy={verticalListSortingStrategy}

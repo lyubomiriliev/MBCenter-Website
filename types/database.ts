@@ -9,9 +9,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = 'admin' | 'mechanic';
-export type OfferStatus = 'draft' | 'sent' | 'approved' | 'finished' | 'cancelled';
-export type OfferItemType = 'part' | 'labor';
+export type UserRole = "admin" | "mechanic";
+export type OfferStatus =
+  | "draft"
+  | "sent"
+  | "parts_ordered"
+  | "finished"
+  | "cancelled";
+export type OfferItemType = "part" | "labor";
 
 export interface Database {
   public: {
@@ -104,6 +109,8 @@ export interface Database {
           customer_phone: string | null;
           customer_email: string | null;
           car_model_text: string | null;
+          car_model_detail: string | null;
+          repair_name: string | null;
           vin_text: string | null;
           license_plate: string | null;
           mileage: number | null;
@@ -114,8 +121,12 @@ export interface Database {
           total_vat: number;
           total_gross: number;
           discount_percent: number;
+          discount_parts_percent: number;
+          discount_services_percent: number;
           currency: string;
           notes: string | null;
+          notes_internal: string | null;
+          notes_service: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -129,6 +140,8 @@ export interface Database {
           customer_phone?: string | null;
           customer_email?: string | null;
           car_model_text?: string | null;
+          car_model_detail?: string | null;
+          repair_name?: string | null;
           vin_text?: string | null;
           license_plate?: string | null;
           mileage?: number | null;
@@ -139,8 +152,12 @@ export interface Database {
           total_vat?: number;
           total_gross?: number;
           discount_percent?: number;
+          discount_parts_percent?: number;
+          discount_services_percent?: number;
           currency?: string;
           notes?: string | null;
+          notes_internal?: string | null;
+          notes_service?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -154,6 +171,8 @@ export interface Database {
           customer_phone?: string | null;
           customer_email?: string | null;
           car_model_text?: string | null;
+          car_model_detail?: string | null;
+          repair_name?: string | null;
           vin_text?: string | null;
           license_plate?: string | null;
           mileage?: number | null;
@@ -164,8 +183,12 @@ export interface Database {
           total_vat?: number;
           total_gross?: number;
           discount_percent?: number;
+          discount_parts_percent?: number;
+          discount_services_percent?: number;
           currency?: string;
           notes?: string | null;
+          notes_internal?: string | null;
+          notes_service?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -217,6 +240,8 @@ export interface Database {
           time_required_text: string | null;
           price_per_hour_eur_net: number;
           total_eur_net: number;
+          is_fixed_price: boolean;
+          fixed_price_amount: number | null;
           sort_order: number;
           created_at: string;
         };
@@ -227,6 +252,8 @@ export interface Database {
           time_required_text?: string | null;
           price_per_hour_eur_net: number;
           total_eur_net: number;
+          is_fixed_price?: boolean;
+          fixed_price_amount?: number | null;
           sort_order?: number;
           created_at?: string;
         };
@@ -237,6 +264,8 @@ export interface Database {
           time_required_text?: string | null;
           price_per_hour_eur_net?: number;
           total_eur_net?: number;
+          is_fixed_price?: boolean;
+          fixed_price_amount?: number | null;
           sort_order?: number;
           created_at?: string;
         };
@@ -274,36 +303,44 @@ export interface Database {
     };
     Enums: {
       user_role: UserRole;
-      offer_status: OfferStatus;
+      offer_status: OfferStatus; // NOTE: DB migration needed to add 'parts_ordered' and remove 'approved'
       offer_item_type: OfferItemType;
     };
   };
 }
 
 // Convenience type aliases
-export type Profile = Database['public']['Tables']['profiles']['Row'];
-export type Client = Database['public']['Tables']['clients']['Row'];
-export type Car = Database['public']['Tables']['cars']['Row'];
-export type Offer = Database['public']['Tables']['offers']['Row'];
-export type OfferItem = Database['public']['Tables']['offer_items']['Row'];
-export type ServiceAction = Database['public']['Tables']['service_actions']['Row'];
-export type OfferPayment = Database['public']['Tables']['offer_payments']['Row'];
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Client = Database["public"]["Tables"]["clients"]["Row"];
+export type Car = Database["public"]["Tables"]["cars"]["Row"];
+export type Offer = Database["public"]["Tables"]["offers"]["Row"];
+export type OfferItem = Database["public"]["Tables"]["offer_items"]["Row"];
+export type ServiceAction =
+  Database["public"]["Tables"]["service_actions"]["Row"];
+export type OfferPayment =
+  Database["public"]["Tables"]["offer_payments"]["Row"];
 
-export type InsertProfile = Database['public']['Tables']['profiles']['Insert'];
-export type InsertClient = Database['public']['Tables']['clients']['Insert'];
-export type InsertCar = Database['public']['Tables']['cars']['Insert'];
-export type InsertOffer = Database['public']['Tables']['offers']['Insert'];
-export type InsertOfferItem = Database['public']['Tables']['offer_items']['Insert'];
-export type InsertServiceAction = Database['public']['Tables']['service_actions']['Insert'];
-export type InsertOfferPayment = Database['public']['Tables']['offer_payments']['Insert'];
+export type InsertProfile = Database["public"]["Tables"]["profiles"]["Insert"];
+export type InsertClient = Database["public"]["Tables"]["clients"]["Insert"];
+export type InsertCar = Database["public"]["Tables"]["cars"]["Insert"];
+export type InsertOffer = Database["public"]["Tables"]["offers"]["Insert"];
+export type InsertOfferItem =
+  Database["public"]["Tables"]["offer_items"]["Insert"];
+export type InsertServiceAction =
+  Database["public"]["Tables"]["service_actions"]["Insert"];
+export type InsertOfferPayment =
+  Database["public"]["Tables"]["offer_payments"]["Insert"];
 
-export type UpdateProfile = Database['public']['Tables']['profiles']['Update'];
-export type UpdateClient = Database['public']['Tables']['clients']['Update'];
-export type UpdateCar = Database['public']['Tables']['cars']['Update'];
-export type UpdateOffer = Database['public']['Tables']['offers']['Update'];
-export type UpdateOfferItem = Database['public']['Tables']['offer_items']['Update'];
-export type UpdateServiceAction = Database['public']['Tables']['service_actions']['Update'];
-export type UpdateOfferPayment = Database['public']['Tables']['offer_payments']['Update'];
+export type UpdateProfile = Database["public"]["Tables"]["profiles"]["Update"];
+export type UpdateClient = Database["public"]["Tables"]["clients"]["Update"];
+export type UpdateCar = Database["public"]["Tables"]["cars"]["Update"];
+export type UpdateOffer = Database["public"]["Tables"]["offers"]["Update"];
+export type UpdateOfferItem =
+  Database["public"]["Tables"]["offer_items"]["Update"];
+export type UpdateServiceAction =
+  Database["public"]["Tables"]["service_actions"]["Update"];
+export type UpdateOfferPayment =
+  Database["public"]["Tables"]["offer_payments"]["Update"];
 
 // Extended types with relations
 export interface OfferWithRelations extends Offer {
@@ -318,4 +355,3 @@ export interface OfferWithRelations extends Offer {
 export interface CarWithClient extends Car {
   client?: Client | null;
 }
-

@@ -1,6 +1,6 @@
-import { ServiceCard } from '@/components/sections/ServiceCard';
-import { PatternBackground } from '@/components/sections/PatternBackground';
-import { AnimatedText } from '@/components/animations/AnimatedText';
+import { ServiceCard } from "@/components/sections/ServiceCard";
+import { PatternBackground } from "@/components/sections/PatternBackground";
+import { AnimatedText } from "@/components/animations/AnimatedText";
 
 type Service = {
   key: string;
@@ -23,7 +23,7 @@ export function ServicesGridSection({
   locale,
 }: ServicesGridSectionProps) {
   return (
-    <PatternBackground className="py-32 bg-mb-black">
+    <PatternBackground className="py-16 md:py-32 bg-mb-black">
       <div className="max-w-7xl mx-auto px-6">
         <AnimatedText className="text-center mb-20">
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">
@@ -48,4 +48,3 @@ export function ServicesGridSection({
     </PatternBackground>
   );
 }
-

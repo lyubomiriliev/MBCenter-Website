@@ -48,8 +48,11 @@ export function HoursSection({ title, description }: HoursSectionProps) {
                   <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-4xl md:text-5xl text-mb-blue font-bold mb-6">
+              <p className="text-4xl md:text-5xl text-mb-blue font-bold mb-2">
                 {t("hours")}
+              </p>
+              <p className="text-xl text-mb-blue font-semibold mb-6">
+                {t("hoursWeekend")}
               </p>
               <p className="text-xl text-mb-silver leading-relaxed max-w-2xl mx-auto">
                 {description}

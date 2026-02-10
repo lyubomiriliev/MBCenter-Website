@@ -49,7 +49,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
           />
         </svg>
       ),
-      services: ["s1", "s2", "s3", "s4"],
+      services: ["s1", "s2", "s3", "s4", "s5", "s6"],
       note: true,
     },
     {
@@ -124,7 +124,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
   const additionalServices = ["add1", "add2"];
 
   return (
-    <section className="py-32 bg-gradient-to-b from-mb-black via-mb-anthracite to-mb-black relative overflow-hidden">
+    <section className="py-16 md:py-32 bg-gradient-to-b from-mb-black via-mb-anthracite to-mb-black relative overflow-hidden section-content-visibility">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div

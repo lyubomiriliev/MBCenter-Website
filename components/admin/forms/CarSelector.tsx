@@ -1,11 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { useTranslations } from 'next-intl';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { useState, useMemo } from "react";
+import { useFormContext } from "react-hook-form";
+import { useTranslations } from "next-intl";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Command,
   CommandEmpty,
@@ -13,33 +12,38 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { MERCEDES_MODELS, MERCEDES_CLASSES, searchModels } from '@/lib/data/mercedes-models';
-import type { OfferFormData } from '@/lib/schemas/offer';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { MERCEDES_MODELS, searchModels } from "@/lib/data/mercedes-models";
+import type { OfferFormData } from "@/lib/schemas/offer";
+import { cn } from "@/lib/utils";
 
 export function CarSelector() {
-  const t = useTranslations('admin.form');
-  const { register, setValue, watch, formState: { errors } } = useFormContext<OfferFormData>();
+  const t = useTranslations("admin.form");
+  const {
+    register,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useFormContext<OfferFormData>();
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
-  const selectedModel = watch('carModel');
+  const selectedModel = watch("carModel");
 
   const filteredModels = useMemo(() => {
-    if (!search) return MERCEDES_MODELS.slice(0, 50); // Show first 50 by default
+    if (!search) return MERCEDES_MODELS.slice(0, 50);
     return searchModels(search);
   }, [search]);
 
-  // Group models by class
   const groupedModels = useMemo(() => {
     const groups: Record<string, typeof MERCEDES_MODELS> = {};
-    filteredModels.forEach(model => {
+    filteredModels.forEach((model) => {
       if (!groups[model.class]) {
         groups[model.class] = [];
       }
@@ -49,29 +53,40 @@ export function CarSelector() {
   }, [filteredModels]);
 
   const handleSelectModel = (modelName: string) => {
-    setValue('carModel', modelName);
+    setValue("carModel", modelName);
     setOpen(false);
-    setSearch('');
+    setSearch("");
   };
-
-  // Generate year options
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1989 }, (_, i) => currentYear - i);
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium text-white flex items-center gap-2">
-        <svg className="w-5 h-5 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+        <svg
+          className="w-5 h-5 text-mb-blue"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+          />
         </svg>
-        {t('carInfo')}
+        {t("carInfo")}
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Model Selector */}
         <div className="space-y-2">
-          <Label htmlFor="carModel">{t('carModel')} *</Label>
+          <Label htmlFor="carModel">{t("carModel")} *</Label>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -83,24 +98,43 @@ export function CarSelector() {
                   !selectedModel && "text-gray-500"
                 )}
               >
-                {selectedModel || t('selectModel')}
-                <svg className="ml-2 h-4 w-4 shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                {selectedModel || t("selectModel")}
+                <svg
+                  className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+                  />
                 </svg>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0 bg-white border-gray-200 text-gray-900" align="start">
+            <PopoverContent
+              className="w-[400px] p-0 bg-white border-gray-200 text-gray-900"
+              align="start"
+            >
               <Command className="bg-white text-gray-900 [&_[cmdk-input-wrapper]]:border-gray-200">
-                <CommandInput 
-                  placeholder={t('searchModel')} 
+                <CommandInput
+                  placeholder={t("searchModel")}
                   value={search}
                   onValueChange={setSearch}
                   className="border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-500"
                 />
                 <CommandList className="max-h-[300px]">
-                  <CommandEmpty className="text-gray-600">{t('noModelFound')}</CommandEmpty>
+                  <CommandEmpty className="text-gray-600">
+                    {t("noModelFound")}
+                  </CommandEmpty>
                   {Object.entries(groupedModels).map(([className, models]) => (
-                    <CommandGroup key={className} heading={className} className="[&_[cmdk-group-heading]]:text-gray-600">
+                    <CommandGroup
+                      key={className}
+                      heading={className}
+                      className="[&_[cmdk-group-heading]]:text-gray-600"
+                    >
                       {models.map((model) => (
                         <CommandItem
                           key={model.id}
@@ -110,7 +144,8 @@ export function CarSelector() {
                         >
                           <span>{model.name}</span>
                           <span className="ml-auto text-xs text-gray-500">
-                            {model.years[0]}-{model.years[model.years.length - 1]}
+                            {model.years[0]}-
+                            {model.years[model.years.length - 1]}
                           </span>
                         </CommandItem>
                       ))}
@@ -125,27 +160,31 @@ export function CarSelector() {
           )}
         </div>
 
-        {/* Year */}
+        {/* Exact Model Detail */}
         <div className="space-y-2">
-          <Label htmlFor="carYear">{t('carYear')} *</Label>
+          <Label htmlFor="carModelDetail">{t("carModelDetail")}</Label>
           <Input
-            type="number"
-            min="1990"
-            max={currentYear}
-            {...register('carYear', { valueAsNumber: true })}
-            placeholder={currentYear.toString()}
+            {...register("carModelDetail")}
+            placeholder={t("carModelDetailPlaceholder")}
             className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
           />
-          {errors.carYear && (
-            <p className="text-xs text-red-400">{errors.carYear.message}</p>
-          )}
+        </div>
+
+        {/* Repair Name */}
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="repairName">{t("repairName")}</Label>
+          <Input
+            {...register("repairName")}
+            placeholder={t("repairNamePlaceholder")}
+            className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+          />
         </div>
 
         {/* VIN */}
         <div className="space-y-2">
-          <Label htmlFor="vinText">{t('carVin')}</Label>
+          <Label htmlFor="vinText">{t("carVin")}</Label>
           <Input
-            {...register('vinText')}
+            {...register("vinText")}
             placeholder="WDB1234567890"
             className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
             maxLength={17}
@@ -154,30 +193,31 @@ export function CarSelector() {
 
         {/* License Plate */}
         <div className="space-y-2">
-          <Label htmlFor="carLicensePlate">{t('carLicensePlate')}</Label>
+          <Label htmlFor="carLicensePlate">{t("carLicensePlate")}</Label>
           <Input
-            {...register('carLicensePlate')}
+            {...register("carLicensePlate")}
             placeholder="СА 1234 АВ"
             className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
           />
         </div>
 
-        {/* Mileage */}
+        {/* Mileage (Пробег) */}
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="carMileage">{t('carMileage')}</Label>
+          <Label htmlFor="carMileage">{t("carMileage")}</Label>
           <div className="relative">
             <Input
               type="number"
               min="0"
-              {...register('carMileage', { valueAsNumber: true })}
+              {...register("carMileage", { valueAsNumber: true })}
               placeholder="0"
               className="bg-gray-100 text-gray-900 border-mb-border pr-12 placeholder:text-gray-500"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver text-sm">км</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver text-sm">
+              км
+            </span>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

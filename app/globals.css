@@ -68,7 +68,6 @@
 }
 
 @layer utilities {
-  /* Custom spacing */
   .spacing-section {
     padding-top: 8rem;
     padding-bottom: 8rem;
@@ -77,6 +76,21 @@
   .spacing-section-sm {
     padding-top: 4rem;
     padding-bottom: 4rem;
+  }
+
+  /* Mobile: prevent text cut-off, allow wrapping */
+  .text-full-visible {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow: visible;
+  }
+
+  /* Below-fold sections: faster scroll/loading */
+  @media (prefers-reduced-motion: no-preference) {
+    .section-content-visibility {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 400px;
+    }
   }
 }
 

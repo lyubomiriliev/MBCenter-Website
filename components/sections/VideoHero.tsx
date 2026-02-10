@@ -97,7 +97,7 @@ export function VideoHero({
             hyphens: "none",
           }}
         >
-          {title.replace(/Mercedes-Benz/g, "Mercedes\u00A0Benz")}
+          {title}
         </h1>
         <p
           ref={subtitleRef}
