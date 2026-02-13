@@ -125,6 +125,7 @@ export function CreateOfferFormV2({
       carLicensePlate:
         existingOffer.license_plate ?? existingOffer.car?.license_plate ?? "",
       carMileage: existingOffer.mileage ?? existingOffer.car?.mileage ?? 0,
+      carMileageUnit: (existingOffer.mileage_unit as "km" | "miles") ?? "km",
       carId: existingOffer.car_id ?? undefined,
 
       createdByName: existingOffer.created_by_name ?? "",
@@ -223,6 +224,7 @@ export function CreateOfferFormV2({
           vin_text: data.vinText || null,
           license_plate: data.carLicensePlate || null,
           mileage: data.carMileage ?? null,
+          mileage_unit: data.carMileageUnit || "km",
           car_year: data.carYear ?? null,
           created_by_name: data.createdByName,
           total_net: netTotal,
@@ -361,6 +363,7 @@ export function CreateOfferFormV2({
   const vinText = watch("vinText");
   const carLicensePlate = watch("carLicensePlate");
   const carMileage = watch("carMileage");
+  const carMileageUnit = watch("carMileageUnit");
   const createdByName = watch("createdByName");
   const discountPercent = watch("discountPercent");
   const discountPartsPercent = watch("discountPartsPercent");
@@ -406,6 +409,7 @@ export function CreateOfferFormV2({
     vinText,
     carLicensePlate,
     carMileage,
+    carMileageUnit,
     createdByName,
     discountPercent,
     discountPartsPercent,
@@ -459,6 +463,19 @@ export function CreateOfferFormV2({
         URL.revokeObjectURL(url);
       }, 100);
 
+      if (offerData.id && offerData.id !== "temp") {
+        await supabase
+          .from("offers")
+          .update({ status: "sent" } as never)
+          .eq("id", offerData.id);
+        const { data: updated } = await supabase
+          .from("offers")
+          .select("*")
+          .eq("id", offerData.id)
+          .single();
+        if (updated) setSavedOffer(updated as any);
+      }
+
       console.log("PDF download triggered");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -494,6 +511,7 @@ export function CreateOfferFormV2({
         vin_text: methods.watch("vinText") || null,
         license_plate: methods.watch("carLicensePlate") || null,
         mileage: methods.watch("carMileage") ?? null,
+        mileage_unit: methods.watch("carMileageUnit") || "km",
         car_year: methods.watch("carYear") ?? null,
         created_by_name: methods.watch("createdByName"),
         status: "draft",
@@ -508,6 +526,8 @@ export function CreateOfferFormV2({
         notes: methods.watch("notes") || null,
         notes_internal: methods.watch("notesInternal") || null,
         notes_service: methods.watch("notesService") || null,
+        service_card_number: null,
+        service_card_generated_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         client_id: null,
@@ -580,12 +600,31 @@ export function CreateOfferFormV2({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      // Auto-set status to "finished" when generating service card
+      // Auto-set status to "finished" and save service card generation metadata
       if (savedOffer && savedOffer.id !== "temp") {
+        const updateData: any = { status: "finished" };
+
+        // Only set service card metadata on first generation
+        if (!savedOffer.service_card_generated_at) {
+          updateData.service_card_number = savedOffer.offer_number;
+          updateData.service_card_generated_at = new Date().toISOString();
+        }
+
         await supabase
           .from("offers")
-          .update({ status: "finished" } as never)
+          .update(updateData as never)
           .eq("id", savedOffer.id);
+
+        // Refresh the saved offer data to show updated metadata
+        const { data: updatedOffer } = await supabase
+          .from("offers")
+          .select("*")
+          .eq("id", savedOffer.id)
+          .single();
+
+        if (updatedOffer) {
+          setSavedOffer(updatedOffer as any);
+        }
       }
     } catch (error) {
       console.error("Error generating service card PDF:", error);
@@ -647,6 +686,7 @@ export function CreateOfferFormV2({
           vin_text: data.vinText || null,
           license_plate: data.carLicensePlate || null,
           mileage: data.carMileage ?? null,
+          mileage_unit: data.carMileageUnit || "km",
           car_year: data.carYear ?? null,
           created_by_name: data.createdByName,
           total_net: netTotal,
@@ -761,6 +801,7 @@ export function CreateOfferFormV2({
           vin_text: data.vinText || null,
           license_plate: data.carLicensePlate || null,
           mileage: data.carMileage ?? null,
+          mileage_unit: data.carMileageUnit || "km",
           car_year: data.carYear ?? null,
           created_by_name: data.createdByName,
           created_by: profile.id,
@@ -1023,7 +1064,7 @@ export function CreateOfferFormV2({
       (i) => i.type === "part"
     );
     return (
-      <div className="space-y-6 max-w-3xl">
+      <div className="space-y-6 max-w-95vw">
         {notifications.map((notification) => (
           <Toast
             key={notification.id}
@@ -1032,22 +1073,6 @@ export function CreateOfferFormV2({
             onClose={() => dismiss(notification.id)}
           />
         ))}
-
-        {/* Notes for Service - shown prominently */}
-        {savedOffer.notes_service && (
-          <Card className="bg-yellow-500/10 border-yellow-500/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg text-yellow-400">
-                {t("mechanicNote")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white whitespace-pre-wrap">
-                {savedOffer.notes_service}
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Car Data */}
         <Card className="bg-mb-anthracite border-mb-border">
@@ -1076,21 +1101,39 @@ export function CreateOfferFormV2({
                   {savedOffer.vin_text || "-"}
                 </p>
               </div>
+              <div>
+                <span className="text-mb-silver text-sm">{t("carMileage")}</span>
+                <p className="text-white">
+                  {savedOffer.mileage != null
+                    ? `${savedOffer.mileage} ${savedOffer.mileage_unit || "км"}`
+                    : "-"}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Repair Name */}
-        {savedOffer.repair_name && (
-          <Card className="bg-mb-anthracite border-mb-border">
-            <CardHeader>
-              <CardTitle className="text-lg">{t("repairName")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-white">{savedOffer.repair_name}</p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Repair Name + Mechanics note (side by side) */}
+        <Card className="bg-mb-anthracite border-mb-border">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <CardTitle className="text-lg mb-2">{t("repairName")}</CardTitle>
+                <p className="text-white">
+                  {savedOffer.repair_name || "-"}
+                </p>
+              </div>
+              <div>
+                <CardTitle className="text-lg mb-2">
+                  {t("notesService")}
+                </CardTitle>
+                <p className="text-white whitespace-pre-wrap">
+                  {savedOffer.notes_service || "-"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Parts - no prices, only names, numbers, quantities */}
         {offerParts.length > 0 && (
@@ -1147,8 +1190,12 @@ export function CreateOfferFormV2({
         onSubmit={handleSubmit(onSubmit, onInvalid)}
         className="flex flex-1 min-h-0 flex-col lg:flex-row"
       >
-        {/* Scrollable form content - max width so right summary stays visible */}
-        <div className="flex-1 min-w-0 max-w-4xl overflow-y-auto p-4 sm:p-6 space-y-6">
+        {/* Scrollable form content - full width in mechanic view, max-w-4xl when sidebar present */}
+        <div
+          className={`flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 space-y-6 ${
+            !isMechanicView ? "max-w-4xl" : ""
+          }`}
+        >
           {/* Client Info */}
           <Card className="bg-mb-anthracite border-mb-border">
             <CardContent className="pt-6">
@@ -1267,74 +1314,127 @@ export function CreateOfferFormV2({
           </Card>
         </div>
 
-        {/* Sidebar: fixed when scrolling (desktop), below form (mobile) */}
-        <div className="flex flex-col w-full lg:w-80 flex-shrink-0 p-4 sm:p-6 lg:border-l border-mb-border">
-          <div className="sticky top-4">
-            <FloatingSummary
-              prepayments={prepayments}
-              onRemovePrepayment={(i) =>
-                setPrepayments((p) => p.filter((_, j) => j !== i))
-              }
-            >
-              {/* Create Offer Button - only on create page (edit page uses auto-save) */}
-              {!isEditing && (
-                <Button
-                  type="submit"
-                  disabled={isSaving}
-                  className="w-full bg-mb-blue hover:bg-mb-blue/90"
-                >
-                  {isSaving ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
+        {/* Sidebar: only on admin create/edit (not in mechanic view) */}
+        {!isMechanicView && (
+          <div className="flex flex-col w-full lg:w-80 flex-shrink-0 p-4 sm:p-6 border-mb-border">
+            <div className="sticky top-4">
+              <FloatingSummary
+                prepayments={prepayments}
+                onRemovePrepayment={(i) =>
+                  setPrepayments((p) => p.filter((_, j) => j !== i))
+                }
+              >
+                {/* Create Offer Button - only on create page (edit page uses auto-save) */}
+                {!isEditing && (
+                  <Button
+                    type="submit"
+                    disabled={isSaving}
+                    className="w-full bg-mb-blue hover:bg-mb-blue/90"
+                  >
+                    {isSaving ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        {t("saving")}
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      {t("saving")}
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      {t("createOffer")}
-                    </>
-                  )}
-                </Button>
-              )}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {t("createOffer")}
+                      </>
+                    )}
+                  </Button>
+                )}
 
-              {/* Download Offer PDF (only when editing existing offer) */}
-              {isEditing && savedOffer && (
+                {/* Download Offer PDF (only when editing existing offer) */}
+                {isEditing && savedOffer && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-mb-border bg-green-600 hover:bg-green-700 text-white"
+                    disabled={pdfGenerating}
+                    onClick={() => generateOfferPDF(savedOffer)}
+                  >
+                    {pdfGenerating ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        {t("downloadOfferPdf")}
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {/* Service Card Button (always enabled for preview) */}
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full border-mb-border bg-green-600 hover:bg-green-700 text-white"
+                  className="w-full border-mb-border"
                   disabled={pdfGenerating}
-                  onClick={() => generateOfferPDF(savedOffer)}
+                  onClick={generateServiceCardPDF}
                 >
                   {pdfGenerating ? (
                     <>
@@ -1371,112 +1471,24 @@ export function CreateOfferFormV2({
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      {t("downloadOfferPdf")}
+                      {t("generateServiceCard")}
                     </>
                   )}
                 </Button>
-              )}
 
-              {/* Service Card Button (always enabled for preview) */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full border-mb-border"
-                disabled={pdfGenerating}
-                onClick={generateServiceCardPDF}
-              >
-                {pdfGenerating ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    {t("generateServiceCard")}
-                  </>
-                )}
-              </Button>
-
-              {/* Add Pre-payment Button */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full border-mb-border"
-                onClick={() => {
-                  setPrepaymentAmount("");
-                  setPrepaymentError("");
-                  setPrepaymentModalOpen(true);
-                }}
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {t("addPrePayment")}
-              </Button>
-
-              {/* Delete Button (only for existing offers) */}
-              {isEditing && savedOffer && (
+                {/* Add Pre-payment Button */}
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={async () => {
-                    if (confirm(t("errors.saveFailed"))) {
-                      await supabase
-                        .from("offers")
-                        .delete()
-                        .eq("id", savedOffer.id);
-                      const basePath = pathname.includes("/mb-admin")
-                        ? pathname.split("/mb-admin")[0] + "/mb-admin"
-                        : pathname.split("/mb-admin-mechanics")[0] +
-                          "/mb-admin-mechanics";
-                      router.push(`${basePath}/offers`);
-                    }
+                  className="w-full border-mb-border"
+                  onClick={() => {
+                    setPrepaymentAmount("");
+                    setPrepaymentError("");
+                    setPrepaymentModalOpen(true);
                   }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600"
                 >
                   <svg
                     className="w-4 h-4 mr-2"
@@ -1488,25 +1500,89 @@ export function CreateOfferFormV2({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  {t("deleteOffer")}
+                  {t("addPrePayment")}
                 </Button>
-              )}
 
-              {/* Cancel Button */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                className="w-full bg-red-500 hover:bg-red-600 text-white border-red-500"
-              >
-                {t("cancel")}
-              </Button>
-            </FloatingSummary>
+                {/* Delete Button (only for existing offers) */}
+                {isEditing && savedOffer && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      if (confirm(t("errors.saveFailed"))) {
+                        await supabase
+                          .from("offers")
+                          .delete()
+                          .eq("id", savedOffer.id);
+                        const basePath = pathname.includes("/mb-admin")
+                          ? pathname.split("/mb-admin")[0] + "/mb-admin"
+                          : pathname.split("/mb-admin-mechanics")[0] +
+                            "/mb-admin-mechanics";
+                        router.push(`${basePath}/offers`);
+                      }
+                    }}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    {t("deleteOffer")}
+                  </Button>
+                )}
+
+                {/* Offer Metadata Info */}
+                {isEditing && savedOffer && (
+                  <div className="w-full p-3 bg-mb-black/30 border border-mb-border rounded-lg text-xs text-mb-silver space-y-1.5">
+                    <div>
+                      <span className="font-medium">
+                        {t("offerCreatedAt")}:
+                      </span>{" "}
+                      {new Date(savedOffer.created_at).toLocaleDateString(
+                        "bg-BG",
+                        {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </div>
+                    {savedOffer.service_card_generated_at && (
+                      <div>
+                        <span className="font-medium">
+                          {t("serviceCardCreatedAt")}:
+                        </span>{" "}
+                        {new Date(
+                          savedOffer.service_card_generated_at
+                        ).toLocaleDateString("bg-BG", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </FloatingSummary>
+            </div>
           </div>
-        </div>
+        )}
       </form>
 
       {/* Prepayment modal */}

@@ -297,7 +297,11 @@ function AddEditServiceActionModal({
                                     (a) => a.id === selectedActivityId
                                   );
                                   return act
-                                    ? `${act.name} — €${act.priceEur.toFixed(2)} / ${(act.priceEur * EUR_TO_BGN).toFixed(2)} лв.`
+                                    ? `${act.name} — €${act.priceEur.toFixed(
+                                        2
+                                      )} / ${(
+                                        act.priceEur * EUR_TO_BGN
+                                      ).toFixed(2)} лв.`
                                     : t("selectFixedActivity");
                                 })()
                               : t("selectFixedActivity")}
@@ -509,6 +513,19 @@ function AddEditServiceActionModal({
                   placeholder="0.00"
                   className="bg-gray-100 text-gray-900 border-mb-border"
                 />
+                {(() => {
+                  const hours = parseTimeToHours(timeInput);
+                  const rate = Number(pricePerHour) || 0;
+                  if (hours <= 0 || rate <= 0) return null;
+                  const totalWithVat = rate * hours;
+                  const totalWithoutVat = totalWithVat / (1 + 0.2);
+                  return (
+                    <p className="text-sm mt-4 text-mb-silver">
+                      Обща стойност: €{totalWithVat.toFixed(2)} {t("withVat")} ·
+                      €{totalWithoutVat.toFixed(2)} {t("withoutVat")}
+                    </p>
+                  );
+                })()}
               </div>
             </>
           )}

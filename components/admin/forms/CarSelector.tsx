@@ -204,17 +204,23 @@ export function CarSelector() {
         {/* Mileage (Пробег) */}
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="carMileage">{t("carMileage")}</Label>
-          <div className="relative">
-            <Input
-              type="number"
-              min="0"
-              {...register("carMileage", { valueAsNumber: true })}
-              placeholder="0"
-              className="bg-gray-100 text-gray-900 border-mb-border pr-12 placeholder:text-gray-500"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver text-sm">
-              км
-            </span>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                type="number"
+                min="0"
+                {...register("carMileage", { valueAsNumber: true })}
+                placeholder="0"
+                className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+              />
+            </div>
+            <select
+              {...register("carMileageUnit")}
+              className="w-24 rounded-md bg-gray-100 text-gray-900 border-mb-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue"
+            >
+              <option value="km">км</option>
+              <option value="miles">мили</option>
+            </select>
           </div>
         </div>
       </div>

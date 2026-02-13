@@ -39,8 +39,8 @@ const createStyles = () => {
       borderBottom: "2px solid #000",
     },
     logo: {
-      width: 140,
-      height: 42,
+      width: 200,
+      height: 60,
       marginBottom: 8,
       objectFit: "contain",
     },
@@ -50,14 +50,13 @@ const createStyles = () => {
     headerRight: {
       width: "50%",
       alignItems: "flex-end",
-      paddingTop: 55,
+      paddingTop: 73,
     },
     companyName: {
       fontSize: 14,
       fontWeight: 700,
       marginTop: 5,
       marginBottom: 3,
-      textTransform: "uppercase",
       fontFamily: fontFamily,
     },
     companyInfo: {
@@ -79,7 +78,7 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     title: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: 700,
       textAlign: "center",
       marginTop: 10,
@@ -200,12 +199,15 @@ const createStyles = () => {
       fontWeight: 700,
       fontSize: 14.5,
     },
+    summaryTotalAmountText: {
+      fontSize: 11,
+      fontWeight: 700,
+      fontFamily: fontFamily,
+    },
     footer: {
       marginTop: 30,
       paddingTop: 10,
       borderTop: "1px solid #ccc",
-      fontSize: 7,
-      color: "#555",
       fontFamily: fontFamily,
     },
     footerRow: {
@@ -213,15 +215,21 @@ const createStyles = () => {
       justifyContent: "space-between",
       marginBottom: 4,
     },
+    footerRowText: {
+      fontSize: 10.5,
+      color: "#000",
+      fontFamily: fontFamily,
+    },
     footerText: {
-      fontSize: 7,
+      fontSize: 10.5,
+      color: "#000",
       marginTop: 2,
       fontFamily: fontFamily,
       lineHeight: 1.3,
     },
     disclaimer: {
       marginTop: 8,
-      fontSize: 6.5,
+      fontSize: 8.5,
       color: "#888",
       lineHeight: 1.3,
       fontFamily: fontFamily,
@@ -295,7 +303,7 @@ export function OfferPDFv3({ offer, locale }: OfferPDFv3Props) {
               src="/assets/logos/mbcenter-specialist.png"
               style={styles.logo}
             />
-            <Text style={styles.companyName}>ЕМ БИ ЦЕНТЪР ООД</Text>
+            <Text style={styles.companyName}>Ем Би Център ООД</Text>
             <Text style={styles.companyInfo}>
               ул. Околовръстен път 155, 1700 София
             </Text>
@@ -310,33 +318,36 @@ export function OfferPDFv3({ offer, locale }: OfferPDFv3Props) {
               {offer.customer_name || ""}
             </Text>
             <Text style={styles.customerInfo}>
+              <Text style={styles.customerInfoLabel}>Тел:</Text>{" "}
+              {offer.customer_phone || ""}
+            </Text>
+            <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Модел:</Text>{" "}
               {[offer.car_model_text, offer.car_model_detail]
                 .filter(Boolean)
                 .join(" ") || ""}
             </Text>
+            {offer.vin_text && (
+              <Text style={styles.customerInfo}>
+                <Text style={styles.customerInfoLabel}>VIN:</Text>{" "}
+                {offer.vin_text.toUpperCase()}
+              </Text>
+            )}
             <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Рег. номер:</Text>{" "}
               {offer.license_plate || ""}
             </Text>
             <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Пробег:</Text>{" "}
-              {offer.mileage ?? ""}
-            </Text>
-            <Text style={styles.customerInfo}>
-              <Text style={styles.customerInfoLabel}>Тел:</Text>{" "}
-              {offer.customer_phone || ""}
+              {offer.mileage
+                ? `${offer.mileage} ${offer.mileage_unit || "км"}`
+                : ""}
             </Text>
           </View>
         </View>
 
         {/* Title */}
         <Text style={styles.title}>Оферта №{offer.offer_number}</Text>
-        {offer.vin_text && (
-          <Text style={styles.vinText}>
-            VIN: {offer.vin_text.toUpperCase()}
-          </Text>
-        )}
 
         {/* Parts Table */}
         {parts.length > 0 && (
@@ -584,10 +595,12 @@ export function OfferPDFv3({ offer, locale }: OfferPDFv3Props) {
                 <Text style={styles.colTextCenter}>20%</Text>
               </View>
               <View style={styles.summaryCol4}>
-                <Text style={styles.colTextRight}>{formatDual(totalVat)}</Text>
+                <Text style={styles.colTextRight} />
               </View>
               <View style={styles.summaryCol5}>
-                <Text style={styles.colTextRight}>
+                <Text
+                  style={[styles.colTextRight, styles.summaryTotalAmountText]}
+                >
                   {formatDual(totalGross)}
                 </Text>
               </View>
@@ -598,8 +611,10 @@ export function OfferPDFv3({ offer, locale }: OfferPDFv3Props) {
         {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.footerRow}>
-            <Text>София</Text>
-            <Text>{new Date(offer.created_at).toLocaleString("bg-BG")}</Text>
+            <Text style={styles.footerRowText}>гр. София</Text>
+            <Text style={styles.footerRowText}>
+              {new Date(offer.created_at).toLocaleString("bg-BG")}
+            </Text>
           </View>
           {offer.created_by_name && (
             <Text style={styles.footerText}>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase/client";
@@ -41,7 +43,7 @@ export default function AdminLoginPage() {
         });
 
       if (authError) throw authError;
-      if (!authData?.user) throw new Error("Authentication failed");
+      if (!authData?.user) throw new Error("AUTH_FAILED");
 
       // Fetch user profile with role (minimal fields for faster response)
       const { data: profile, error: profileError } = await supabase
@@ -79,39 +81,49 @@ export default function AdminLoginPage() {
       router.replace(targetRoute);
     } catch (err) {
       console.error("Login error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const message =
+        err instanceof Error && err.message === "AUTH_FAILED"
+          ? t("login.errorAuthFailed")
+          : err instanceof Error
+          ? err.message
+          : t("login.errorDefault");
+      setError(message);
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-mb-black flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-mb-anthracite border-mb-border">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
-            <div className="w-16 h-16 bg-mb-blue rounded-full flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-            </div>
+    <div className="relative min-h-screen bg-mb-black flex flex-col items-center justify-center p-4 gap-6">
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/images/mb-pattern.webp"
+          alt=""
+          fill
+          className="object-cover opacity-15"
+          priority
+          sizes="100vw"
+        />
+      </div>
+      <Card className="relative z-10 w-full max-w-[420px] bg-mb-anthracite/95 border-mb-border rounded-2xl shadow-xl shadow-black/40 overflow-hidden">
+        <CardHeader className="text-center pb-2 pt-8">
+          <div className="relative mx-auto mb-5 w-60 h-14">
+            <Image
+              src="/assets/logos/mbc-logo-white.png"
+              alt="MB Center"
+              fill
+              className="object-contain object-center"
+              priority
+              unoptimized
+              sizes="240px"
+            />
           </div>
-          <CardTitle className="text-2xl text-white">MB Center Admin</CardTitle>
-          <CardDescription className="text-mb-silver">
-            Sign in to access the admin panel
+
+          <CardDescription className="text-mb-silver text-sm mt-1.5">
+            {t("login.signInSubtitle")}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+        <CardContent className="pt-2 pb-8 px-8">
+          <form onSubmit={handleLogin} className="space-y-5">
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
                 {error}
@@ -119,7 +131,9 @@ export default function AdminLoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-mb-silver">
+                {t("login.email")}
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -132,7 +146,9 @@ export default function AdminLoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-mb-silver">
+                {t("login.password")}
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -147,7 +163,7 @@ export default function AdminLoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-mb-blue hover:bg-mb-blue/90"
+              className="w-full bg-mb-blue hover:bg-mb-blue/90 h-11 rounded-lg font-medium"
             >
               {isLoading ? (
                 <>
@@ -170,15 +186,34 @@ export default function AdminLoginPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Signing in...
+                  {t("login.signingIn")}
                 </>
               ) : (
-                "Sign In"
+                t("login.signIn")
               )}
             </Button>
           </form>
         </CardContent>
       </Card>
+      <Link
+        href={locale ? `/${locale}` : "/"}
+        className="relative z-10 text-sm text-mb-silver hover:text-white transition-colors flex items-center gap-2"
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 19l-7-7m0 0l7-7m-7 7h18"
+          />
+        </svg>
+        {t("sidebar.backToSite")}
+      </Link>
     </div>
   );
 }

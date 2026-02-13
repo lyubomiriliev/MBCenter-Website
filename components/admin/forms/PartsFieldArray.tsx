@@ -258,7 +258,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_88px_88px_72px] gap-3 items-center py-1.5 px-2 rounded border border-mb-border bg-mb-anthracite/50 even:bg-mb-anthracite/30"
+      className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_112px_88px_72px] gap-3 items-center py-1.5 px-2 rounded border border-mb-border bg-mb-anthracite/50 even:bg-mb-anthracite/30"
     >
       <button
         type="button"
@@ -469,7 +469,7 @@ export function PartsFieldArray() {
           </div>
         ) : (
           <div className="min-w-0 -mx-1 px-1">
-            <div className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_88px_88px_72px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
+            <div className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_112px_88px_72px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
               <div />
               <div className="flex items-center justify-center">#</div>
               <div className="flex items-center justify-start min-w-0">
@@ -485,7 +485,9 @@ export function PartsFieldArray() {
               <div className="flex items-center justify-end">
                 {t("unitPrice")}
               </div>
-              <div className="flex items-center justify-end">{t("total")}</div>
+              <div className="flex items-center justify-end">
+                {t("lineTotal")}
+              </div>
               <div />
             </div>
             <DndContext

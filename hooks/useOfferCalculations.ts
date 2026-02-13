@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import type { OfferFormData } from "@/lib/schemas/offer";
-import { VAT_RATE, EUR_TO_BGN } from "@/lib/schemas/offer";
+import { EUR_TO_BGN } from "@/lib/schemas/offer";
 import { parseTimeToHours } from "@/lib/utils";
 
 interface CalculationResult {
@@ -81,29 +81,25 @@ export function useOfferCalculations(
       return sum + hours * price;
     }, 0);
 
-    // Calculate gross for parts and services (add VAT)
-    const partsGross = partsSubtotal * (1 + VAT_RATE);
-    const servicesGross = laborSubtotal * (1 + VAT_RATE);
-
-    // Discounts are applied to gross amounts (with VAT)
-    const partsDiscountAmount = partsGross * (discountPartsPercent / 100);
+    // Discounts applied to subtotals (prices already include VAT)
+    const partsDiscountAmount = partsSubtotal * (discountPartsPercent / 100);
     const servicesDiscountAmount =
-      servicesGross * (discountServicesPercent / 100);
+      laborSubtotal * (discountServicesPercent / 100);
     const totalDiscountAmount = partsDiscountAmount + servicesDiscountAmount;
 
+    // Prices are already with VAT; no separate VAT added
     const subtotal = partsSubtotal + laborSubtotal;
-    const grossBeforeDiscount = partsGross + servicesGross;
+    const grossBeforeDiscount = subtotal;
     const grossTotal = grossBeforeDiscount - totalDiscountAmount;
-    const netTotal = grossTotal / (1 + VAT_RATE);
-    const vatAmount = grossTotal - netTotal;
+    const netTotal = grossTotal;
+    const vatAmount = 0;
 
-    // Convert to BGN
     const subtotalBGN = subtotal * EUR_TO_BGN;
     const partsDiscountAmountBGN = partsDiscountAmount * EUR_TO_BGN;
     const servicesDiscountAmountBGN = servicesDiscountAmount * EUR_TO_BGN;
     const discountAmountBGN = totalDiscountAmount * EUR_TO_BGN;
-    const netTotalBGN = netTotal * EUR_TO_BGN;
-    const vatAmountBGN = vatAmount * EUR_TO_BGN;
+    const netTotalBGN = grossTotal * EUR_TO_BGN;
+    const vatAmountBGN = 0;
     const grossTotalBGN = grossTotal * EUR_TO_BGN;
 
     return {

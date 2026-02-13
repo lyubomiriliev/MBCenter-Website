@@ -74,7 +74,7 @@ export function FloatingSummary({
 
           <Separator className="bg-mb-border" />
 
-          {/* Subtotal */}
+          {/* Subtotal (before discounts) */}
           <div className="flex justify-between items-center">
             <span className="text-mb-silver">{t("subtotal")}</span>
             <div className="text-right">
@@ -116,32 +116,6 @@ export function FloatingSummary({
               </div>
             </div>
           )}
-
-          {/* Net Total */}
-          <div className="flex justify-between items-center">
-            <span className="text-mb-silver">{t("netTotal")}</span>
-            <div className="text-right">
-              <div className="text-white">
-                {calculations.formatted.netTotal}
-              </div>
-              <div className="text-xs text-mb-silver">
-                {calculations.formatted.netTotalBGN}
-              </div>
-            </div>
-          </div>
-
-          {/* VAT */}
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-mb-silver">{t("vat")}</span>
-            <div className="text-right">
-              <div className="text-white">
-                {calculations.formatted.vatAmount}
-              </div>
-              <div className="text-xs text-mb-silver">
-                {calculations.formatted.vatAmountBGN}
-              </div>
-            </div>
-          </div>
 
           <Separator className="bg-mb-border" />
 

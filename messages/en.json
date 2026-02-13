@@ -1208,6 +1208,15 @@
     }
   },
   "admin": {
+    "login": {
+      "signInSubtitle": "Sign in to access the admin panel",
+      "email": "Email",
+      "password": "Password",
+      "signIn": "Sign In",
+      "signingIn": "Signing in...",
+      "errorDefault": "An error occurred",
+      "errorAuthFailed": "Authentication failed"
+    },
     "sidebar": {
       "dashboard": "Dashboard",
       "offers": "Offers",
@@ -1242,6 +1251,7 @@
         "offerNumber": "Offer #",
         "client": "Client",
         "car": "Vehicle",
+        "licensePlate": "Reg. Number",
         "status": "Status",
         "total": "Total",
         "date": "Date",
@@ -1303,7 +1313,7 @@
       "partNumber": "Part Number",
       "qty": "Qty",
       "unitPrice": "Unit Price (EUR)",
-      "total": "Total",
+      "lineTotal": "Total",
       "remove": "Remove",
       "parts": "Parts",
       "labor": "Labor",
@@ -1319,7 +1329,9 @@
       "timeFormat": "Format",
       "timeFormatDecimal": "0.5 = 30 min, 1 = 1 h",
       "timeFormatExamples": "Examples: 1 (1h), 0:30 (30min), 1:30 (1h 30min)",
-      "pricePerHour": "Price/Hour (EUR)",
+      "pricePerHour": "Price/Hour (EUR) (with VAT)",
+      "withVat": "with VAT",
+      "withoutVat": "without VAT (-20%)",
       "itemDescription": "Description",
       "additionalInfo": "Additional Information",
       "discount": "Discount",
@@ -1346,6 +1358,8 @@
       "prepayment": "Advance Payment",
       "downloadOfferPdf": "Download Offer",
       "deleteOffer": "Delete",
+      "offerCreatedAt": "Offer created at",
+      "serviceCardCreatedAt": "Service card created at",
       "fixedPrice": "Fixed Price",
       "pricePerHourLabel": "Price per Hour",
       "selectFixedActivity": "select activity",

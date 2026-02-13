@@ -114,6 +114,7 @@ export interface Database {
           vin_text: string | null;
           license_plate: string | null;
           mileage: number | null;
+          mileage_unit: string;
           car_year: number | null;
           created_by_name: string | null;
           status: OfferStatus;
@@ -127,6 +128,8 @@ export interface Database {
           notes: string | null;
           notes_internal: string | null;
           notes_service: string | null;
+          service_card_number: string | null;
+          service_card_generated_at: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -145,6 +148,7 @@ export interface Database {
           vin_text?: string | null;
           license_plate?: string | null;
           mileage?: number | null;
+          mileage_unit?: string;
           car_year?: number | null;
           created_by_name?: string | null;
           status?: OfferStatus;
@@ -158,6 +162,8 @@ export interface Database {
           notes?: string | null;
           notes_internal?: string | null;
           notes_service?: string | null;
+          service_card_number?: string | null;
+          service_card_generated_at?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -176,6 +182,7 @@ export interface Database {
           vin_text?: string | null;
           license_plate?: string | null;
           mileage?: number | null;
+          mileage_unit?: string;
           car_year?: number | null;
           created_by_name?: string | null;
           status?: OfferStatus;
@@ -189,6 +196,8 @@ export interface Database {
           notes?: string | null;
           notes_internal?: string | null;
           notes_service?: string | null;
+          service_card_number?: string | null;
+          service_card_generated_at?: string | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;

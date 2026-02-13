@@ -200,37 +200,29 @@ export function OffersTable({
       ),
       size: 40,
     }),
-    columnHelper.accessor("offer_number", {
-      header: () => t("offers.columns.offerNumber"),
-      cell: (info) => (
-        <Link
-          href={`${basePath}/offers/${info.row.original.id}`.replace(
-            /\/+$/,
-            ""
-          )}
-          className="text-mb-blue hover:underline font-medium"
-        >
-          {info.getValue()}
-        </Link>
-      ),
-    }),
+    columnHelper.accessor(
+      (row) => row.service_card_number || row.offer_number,
+      {
+        id: "offer_number",
+        header: () => t("offers.columns.offerNumber"),
+        cell: (info) => (
+          <Link
+            href={`${basePath}/offers/${info.row.original.id}`.replace(
+              /\/+$/,
+              ""
+            )}
+            className="text-mb-blue hover:underline font-medium"
+          >
+            {info.getValue()}
+          </Link>
+        ),
+      }
+    ),
     columnHelper.accessor((row) => row.customer_name || row.client?.name, {
       id: "client",
       header: () => t("offers.columns.client"),
       cell: (info) => info.getValue() || "-",
     }),
-    columnHelper.accessor(
-      (row) => (row as { repair_name?: string | null }).repair_name ?? "",
-      {
-        id: "repairName",
-        header: () => t("form.repairName"),
-        cell: (info) => {
-          const v = info.getValue();
-          if (!v) return "-";
-          return v.length > 40 ? `${v.slice(0, 40)}…` : v;
-        },
-      }
-    ),
     columnHelper.accessor(
       (row) => {
         const model =
@@ -244,6 +236,26 @@ export function OffersTable({
         id: "car",
         header: () => t("offers.columns.car"),
         cell: (info) => info.getValue() || "-",
+      }
+    ),
+    columnHelper.accessor(
+      (row) => row.license_plate || row.car?.license_plate,
+      {
+        id: "licensePlate",
+        header: () => t("offers.columns.licensePlate"),
+        cell: (info) => info.getValue() || "-",
+      }
+    ),
+    columnHelper.accessor(
+      (row) => (row as { repair_name?: string | null }).repair_name ?? "",
+      {
+        id: "repairName",
+        header: () => t("form.repairName"),
+        cell: (info) => {
+          const v = info.getValue();
+          if (!v) return "-";
+          return v.length > 40 ? `${v.slice(0, 40)}…` : v;
+        },
       }
     ),
     columnHelper.accessor("status", {
@@ -276,10 +288,14 @@ export function OffersTable({
         );
       },
     }),
-    columnHelper.accessor("created_at", {
-      header: () => t("offers.columns.date"),
-      cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
-    }),
+    columnHelper.accessor(
+      (row) => row.service_card_generated_at || row.created_at,
+      {
+        id: "created_at",
+        header: () => t("offers.columns.date"),
+        cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
+      }
+    ),
     columnHelper.display({
       id: "actions",
       header: () => t("offers.columns.actions"),

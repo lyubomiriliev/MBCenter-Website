@@ -55,6 +55,7 @@ const navItems: NavItem[] = [
         />
       </svg>
     ),
+    adminOnly: true,
   },
   // {
   //   href: '/clients',

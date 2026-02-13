@@ -53,6 +53,7 @@ export const offerFormSchema = z
     vinText: z.string().optional(),
     carLicensePlate: z.string().optional(),
     carMileage: z.number().min(0, "Mileage must be positive").optional(),
+    carMileageUnit: z.enum(["km", "miles"]).default("km"),
     carId: z.string().optional(),
 
     createdByName: z.string().min(1, "Creator name is required"),
@@ -89,6 +90,7 @@ export const defaultOfferFormValues: Partial<OfferFormData> = {
   vinText: "",
   carLicensePlate: "",
   carMileage: 0,
+  carMileageUnit: "km",
   createdByName: "",
   discountPercent: 0,
   discountPartsPercent: 0,
