@@ -13,7 +13,7 @@ export default function CreateOfferPage() {
         title={t("offers.createOffer")}
         subtitle={t("offers.createOfferSubtitle")}
       />
-      <div className="flex-1 min-w-0 min-h-0 flex">
+      <div className="flex flex-1 min-w-0 min-h-0 overflow-hidden">
         <CreateOfferFormV2 />
       </div>
     </div>

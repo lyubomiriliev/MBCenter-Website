@@ -591,7 +591,7 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[auto_32px_1fr_80px_350px_60px_auto] gap-3 items-center py-1.5 px-2 rounded border border-mb-border bg-mb-anthracite/50 even:bg-mb-anthracite/30 min-w-[560px]"
+      className="grid min-w-[820px] grid-cols-[32px_24px_minmax(220px,1fr)_140px_180px_140px_80px] gap-3 items-center rounded border border-mb-border bg-mb-anthracite/50 px-2 py-1.5 even:bg-mb-anthracite/30"
     >
       <button
         type="button"
@@ -617,7 +617,7 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
       <div className="text-mb-silver text-sm flex items-center justify-center">
         {index + 1}
       </div>
-      <div className="text-white text-sm truncate text-left" title={actionName}>
+      <div className="min-w-0 text-white text-sm truncate text-left" title={actionName}>
         {actionName || "—"}
         {isFixed && (
           <span className="ml-1 text-xs text-orange-400">(фикс.)</span>
@@ -629,10 +629,10 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
       >
         {isFixed ? "" : timeRequired || "—"}
       </div>
-      <div className="text-white text-sm tabular-nums flex items-center justify-center">
+      <div className="text-white text-sm tabular-nums flex items-center justify-end">
         {isFixed ? "" : `€${Number(pricePerHour).toFixed(2)}`}
       </div>
-      <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-center">
+      <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-end">
         €{total.toFixed(2)}
       </div>
       <div className="flex items-center gap-1">
@@ -797,19 +797,19 @@ export function ServiceActionsFieldArray() {
           </div>
         ) : (
           <div className="overflow-x-auto -mx-1 px-1 min-w-0">
-            <div className="grid grid-cols-[auto_32px_1fr_200px_200px_200px_auto] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1 min-w-[560px]">
+            <div className="grid min-w-[820px] grid-cols-[32px_24px_minmax(220px,1fr)_140px_180px_140px_80px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
               <div />
               <div className="flex items-center justify-center">#</div>
-              <div className="flex items-center justify-start">
+              <div className="flex min-w-0 items-center justify-start leading-tight">
                 {t("serviceActionName")}
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center text-center leading-tight">
                 {t("timeRequired")}
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-end text-right leading-tight">
                 {t("pricePerHour")}
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-end text-right leading-tight">
                 {t("total")}
               </div>
               <div />

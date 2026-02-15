@@ -387,7 +387,7 @@ export function CreateOfferFormV2({
             formData,
             prepayments,
             timestamp: new Date().toISOString(),
-          })
+          }),
         );
       } catch (err) {
         console.error("Error saving draft:", err);
@@ -421,6 +421,29 @@ export function CreateOfferFormV2({
     serviceActions,
   ]);
 
+  const fetchOfferWithRelations = async (
+    id: string,
+  ): Promise<OfferWithRelations | null> => {
+    const { data, error } = await supabase
+      .from("offers")
+      .select(
+        `
+          *,
+          items:offer_items(*),
+          service_actions(*)
+        `,
+      )
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      console.error("Error refreshing offer with relations:", error);
+      return null;
+    }
+
+    return data as OfferWithRelations;
+  };
+
   const generateOfferPDF = async (offerData: OfferWithRelations) => {
     setPdfGenerating(true);
     try {
@@ -441,7 +464,7 @@ export function CreateOfferFormV2({
       const blob = await Promise.race([
         pdf(PDFComponent).toBlob(),
         new Promise<Blob>((_, reject) =>
-          setTimeout(() => reject(new Error("PDF generation timeout")), 30000)
+          setTimeout(() => reject(new Error("PDF generation timeout")), 30000),
         ),
       ]);
 
@@ -468,12 +491,8 @@ export function CreateOfferFormV2({
           .from("offers")
           .update({ status: "sent" } as never)
           .eq("id", offerData.id);
-        const { data: updated } = await supabase
-          .from("offers")
-          .select("*")
-          .eq("id", offerData.id)
-          .single();
-        if (updated) setSavedOffer(updated as any);
+        const refreshedOffer = await fetchOfferWithRelations(offerData.id);
+        if (refreshedOffer) setSavedOffer(refreshedOffer);
       }
 
       console.log("PDF download triggered");
@@ -574,9 +593,8 @@ export function CreateOfferFormV2({
 
       // Register fonts before generating PDF
       const { registerPDFFonts } = await import("@/lib/pdf-fonts");
-      const { setFontRegistered } = await import(
-        "@/components/pdf/ServiceCardPDFv3"
-      );
+      const { setFontRegistered } =
+        await import("@/components/pdf/ServiceCardPDFv3");
       const fontsReady = await registerPDFFonts();
       setFontRegistered(fontsReady);
 
@@ -595,10 +613,13 @@ export function CreateOfferFormV2({
       link.download = savedOffer
         ? `service-card-${savedOffer.offer_number}.pdf`
         : "service-card-draft.pdf";
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
 
       // Auto-set status to "finished" and save service card generation metadata
       if (savedOffer && savedOffer.id !== "temp") {
@@ -615,16 +636,8 @@ export function CreateOfferFormV2({
           .update(updateData as never)
           .eq("id", savedOffer.id);
 
-        // Refresh the saved offer data to show updated metadata
-        const { data: updatedOffer } = await supabase
-          .from("offers")
-          .select("*")
-          .eq("id", savedOffer.id)
-          .single();
-
-        if (updatedOffer) {
-          setSavedOffer(updatedOffer as any);
-        }
+        const refreshedOffer = await fetchOfferWithRelations(savedOffer.id);
+        if (refreshedOffer) setSavedOffer(refreshedOffer);
       }
     } catch (error) {
       console.error("Error generating service card PDF:", error);
@@ -764,18 +777,18 @@ export function CreateOfferFormV2({
             ) {
               throw new Error(
                 "Функцията за генериране на номер на оферта не съществува в базата данни.\n\n" +
-                  "Моля изпълнете SQL скрипта от supabase/schema.sql в Supabase SQL Editor."
+                  "Моля изпълнете SQL скрипта от supabase/schema.sql в Supabase SQL Editor.",
               );
             }
 
             throw new Error(
-              `Грешка при генериране на номер: ${offerNumberError.message}`
+              `Грешка при генериране на номер: ${offerNumberError.message}`,
             );
           }
 
           if (!rpcResult) {
             throw new Error(
-              "Не беше генериран номер на оферта. Моля опитайте отново."
+              "Не беше генериран номер на оферта. Моля опитайте отново.",
             );
           }
 
@@ -870,7 +883,7 @@ export function CreateOfferFormV2({
               : null,
             sort_order: index,
           };
-        }
+        },
       );
 
       // Insert parts and service actions in parallel
@@ -886,7 +899,7 @@ export function CreateOfferFormV2({
               if (error)
                 throw new Error(`Failed to insert parts: ${error.message}`);
               console.log("Parts inserted successfully");
-            })
+            }),
         );
       }
 
@@ -899,10 +912,10 @@ export function CreateOfferFormV2({
             .then(({ error }) => {
               if (error)
                 throw new Error(
-                  `Failed to insert service actions: ${error.message}`
+                  `Failed to insert service actions: ${error.message}`,
                 );
               console.log("Service actions inserted successfully");
-            })
+            }),
         );
       }
 
@@ -919,7 +932,7 @@ export function CreateOfferFormV2({
             *,
             items:offer_items(*),
             service_actions(*)
-          `
+          `,
         )
         .eq("id", offer.id)
         .single();
@@ -943,7 +956,7 @@ export function CreateOfferFormV2({
         } catch (pdfError) {
           console.error(
             "PDF generation failed, but offer was saved:",
-            pdfError
+            pdfError,
           );
           // Don't throw - offer is saved, just PDF failed
           showError(t("errors.pdfFailedButSaved"));
@@ -986,20 +999,20 @@ export function CreateOfferFormV2({
     } catch (error) {
       clearTimeout(timeoutId);
       console.error(
-        `=== ERROR ${isEditing ? "UPDATING" : "CREATING"} OFFER ===`
+        `=== ERROR ${isEditing ? "UPDATING" : "CREATING"} OFFER ===`,
       );
       console.error("Error details:", error);
       console.error(
         "Error stack:",
-        error instanceof Error ? error.stack : "No stack"
+        error instanceof Error ? error.stack : "No stack",
       );
 
       const errorMessage =
         error instanceof Error
           ? error.message
           : typeof error === "string"
-          ? error
-          : `Failed to ${isEditing ? "update" : "create"} offer`;
+            ? error
+            : `Failed to ${isEditing ? "update" : "create"} offer`;
 
       showError(isEditing ? t("errors.updateFailed") : t("errors.saveFailed"));
       setIsSaving(false);
@@ -1061,7 +1074,7 @@ export function CreateOfferFormV2({
   // Mechanic limited view
   if (isMechanicView && isEditing && savedOffer) {
     const offerParts = (savedOffer.items || []).filter(
-      (i) => i.type === "part"
+      (i) => i.type === "part",
     );
     return (
       <div className="space-y-6 max-w-95vw">
@@ -1102,7 +1115,9 @@ export function CreateOfferFormV2({
                 </p>
               </div>
               <div>
-                <span className="text-mb-silver text-sm">{t("carMileage")}</span>
+                <span className="text-mb-silver text-sm">
+                  {t("carMileage")}
+                </span>
                 <p className="text-white">
                   {savedOffer.mileage != null
                     ? `${savedOffer.mileage} ${savedOffer.mileage_unit || "км"}`
@@ -1118,10 +1133,10 @@ export function CreateOfferFormV2({
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <CardTitle className="text-lg mb-2">{t("repairName")}</CardTitle>
-                <p className="text-white">
-                  {savedOffer.repair_name || "-"}
-                </p>
+                <CardTitle className="text-lg mb-2">
+                  {t("repairName")}
+                </CardTitle>
+                <p className="text-white">{savedOffer.repair_name || "-"}</p>
               </div>
               <div>
                 <CardTitle className="text-lg mb-2">
@@ -1188,14 +1203,10 @@ export function CreateOfferFormV2({
 
       <form
         onSubmit={handleSubmit(onSubmit, onInvalid)}
-        className="flex flex-1 min-h-0 flex-col lg:flex-row"
+        className="flex w-full flex-1 min-h-0 min-w-0 flex-col gap-6 overflow-y-auto p-4 sm:p-6 lg:flex-row lg:items-start lg:gap-8 lg:p-8"
       >
-        {/* Scrollable form content - full width in mechanic view, max-w-4xl when sidebar present */}
-        <div
-          className={`flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 space-y-6 ${
-            !isMechanicView ? "max-w-4xl" : ""
-          }`}
-        >
+        {/* Scrollable form content */}
+        <div className="flex-1 min-w-0 space-y-6">
           {/* Client Info */}
           <Card className="bg-mb-anthracite border-mb-border">
             <CardContent className="pt-6">
@@ -1316,8 +1327,8 @@ export function CreateOfferFormV2({
 
         {/* Sidebar: only on admin create/edit (not in mechanic view) */}
         {!isMechanicView && (
-          <div className="flex flex-col w-full lg:w-80 flex-shrink-0 p-4 sm:p-6 border-mb-border">
-            <div className="sticky top-4">
+          <div className="flex w-full flex-col lg:shrink-0 lg:w-[20rem] xl:w-[22rem] min-[2200px]:w-[28rem] min-[3000px]:w-[34rem]">
+            <div className="w-full lg:sticky lg:top-6">
               <FloatingSummary
                 prepayments={prepayments}
                 onRemovePrepayment={(i) =>
@@ -1558,7 +1569,7 @@ export function CreateOfferFormV2({
                           day: "2-digit",
                           hour: "2-digit",
                           minute: "2-digit",
-                        }
+                        },
                       )}
                     </div>
                     {savedOffer.service_card_generated_at && (
@@ -1567,7 +1578,7 @@ export function CreateOfferFormV2({
                           {t("serviceCardCreatedAt")}:
                         </span>{" "}
                         {new Date(
-                          savedOffer.service_card_generated_at
+                          savedOffer.service_card_generated_at,
                         ).toLocaleDateString("bg-BG", {
                           year: "numeric",
                           month: "2-digit",

@@ -258,7 +258,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_112px_88px_72px] gap-3 items-center py-1.5 px-2 rounded border border-mb-border bg-mb-anthracite/50 even:bg-mb-anthracite/30"
+      className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,1fr)_120px_120px_60px_130px_120px_80px] gap-3 items-center rounded border border-mb-border bg-mb-anthracite/50 px-2 py-1.5 even:bg-mb-anthracite/30"
     >
       <button
         type="button"
@@ -291,13 +291,13 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
         {description || "—"}
       </div>
       <div
-        className="text-mb-silver text-sm truncate flex items-center justify-center"
+        className="min-w-0 text-mb-silver text-sm truncate flex items-center justify-center"
         title={brand}
       >
         {brand || "—"}
       </div>
       <div
-        className="text-mb-silver text-sm truncate font-mono flex items-center justify-center"
+        className="min-w-0 text-mb-silver text-sm truncate font-mono flex items-center justify-center"
         title={partNumber}
       >
         {partNumber || "—"}
@@ -468,17 +468,17 @@ export function PartsFieldArray() {
             {t("noPartsAdded")}
           </div>
         ) : (
-          <div className="min-w-0 -mx-1 px-1">
-            <div className="grid grid-cols-[32px_24px_minmax(0,1fr)_100px_100px_48px_112px_88px_72px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
+          <div className="min-w-0 overflow-x-auto -mx-1 px-1">
+            <div className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,1fr)_120px_120px_60px_130px_120px_80px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
               <div />
               <div className="flex items-center justify-center">#</div>
-              <div className="flex items-center justify-start min-w-0">
+              <div className="flex min-w-0 items-center justify-start leading-tight">
                 {t("productName")}
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex min-w-0 items-center justify-center text-center leading-tight">
                 {t("brand")}
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex min-w-0 items-center justify-center text-center leading-tight">
                 {t("partNumber")}
               </div>
               <div className="flex items-center justify-end">{t("qty")}</div>

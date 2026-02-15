@@ -1,25 +1,45 @@
-'use client';
+"use client";
 
-import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { CreateOfferFormV2 } from '@/components/admin/forms/CreateOfferFormV2';
+import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { CreateOfferFormV2 } from "@/components/admin/forms/CreateOfferFormV2";
+import Image from "next/image";
 
 export default function EditOfferPage() {
   const params = useParams();
-  const t = useTranslations('admin');
+  const t = useTranslations("admin");
   const offerId = params.id as string;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex relative flex-col flex-1 min-h-0">
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/images/mb-pattern.webp"
+          alt=""
+          fill
+          className="object-cover translate-x-[62%] hidden min-[3000px]:block opacity-10"
+          priority
+          sizes="100vw"
+        />
+      </div>
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/assets/images/mb-pattern.webp"
+          alt=""
+          fill
+          className="object-cover -translate-x-[79%] hidden min-[3000px]:block opacity-10"
+          priority
+          sizes="100vw"
+        />
+      </div>
       <AdminHeader
-        title={t('offers.editOffer')}
+        title={t("offers.editOffer")}
         subtitle={offerId ? `ID: ${offerId}` : undefined}
       />
-      <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6">
+      <div className="flex bg-black max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
         <CreateOfferFormV2 offerId={offerId} />
       </div>
     </div>
   );
 }
-
