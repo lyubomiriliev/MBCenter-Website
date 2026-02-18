@@ -41,7 +41,7 @@ export function VideoHero({
             duration: 1,
             ease: "power3.out",
           },
-          "-=0.6"
+          "-=0.6",
         )
         .from(
           ctaRef.current,
@@ -51,7 +51,7 @@ export function VideoHero({
             duration: 0.8,
             ease: "power2.out",
           },
-          "-=0.4"
+          "-=0.4",
         );
     });
 
@@ -61,7 +61,7 @@ export function VideoHero({
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden -mt-0 pt-0">
       {/* Video Background */}
-      <div className="absolute inset-0 z-0 -top-0">
+      <div className="absolute inset-0 z-0 select-none hidden min-[2550px]:block -top-0">
         <video
           autoPlay
           loop

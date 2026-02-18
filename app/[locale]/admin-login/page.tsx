@@ -85,8 +85,8 @@ export default function AdminLoginPage() {
         err instanceof Error && err.message === "AUTH_FAILED"
           ? t("login.errorAuthFailed")
           : err instanceof Error
-          ? err.message
-          : t("login.errorDefault");
+            ? err.message
+            : t("login.errorDefault");
       setError(message);
       setIsLoading(false);
     }
@@ -94,12 +94,12 @@ export default function AdminLoginPage() {
 
   return (
     <div className="relative min-h-screen bg-mb-black flex flex-col items-center justify-center p-4 gap-6">
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 select-none overflow-hidden">
         <Image
           src="/assets/images/mb-pattern.webp"
           alt=""
           fill
-          className="object-cover opacity-15"
+          className="object-cover opacity-15 pointer-events-none"
           priority
           sizes="100vw"
         />

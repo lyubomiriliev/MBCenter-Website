@@ -77,7 +77,7 @@ function AddEditPartModal({
 
   const handleOpen = useCallback(
     (isOpen: boolean) => onOpenChange(isOpen),
-    [onOpenChange]
+    [onOpenChange],
   );
 
   const handleOk = () => {
@@ -258,7 +258,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,1fr)_120px_120px_60px_130px_120px_80px] gap-3 items-center rounded border border-mb-border bg-mb-anthracite/50 px-2 py-1.5 even:bg-mb-anthracite/30"
+      className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,28rem)_120px_120px_60px_130px_120px_80px] gap-3 items-center rounded border border-mb-border bg-mb-anthracite/50 px-2 py-1.5 even:bg-mb-anthracite/30 shrink-0"
     >
       <button
         type="button"
@@ -308,10 +308,10 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
       <div className="text-white text-sm tabular-nums flex items-center justify-end">
         €{Number(unitPrice).toFixed(2)}
       </div>
-      <div className="text-mb-blue text-sm font-medium tabular-nums flex items-center justify-end">
+      <div className="text-mb-blue text-sm font-medium tabular-nums flex items-center justify-end shrink-0">
         €{total.toFixed(2)}
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 justify-end shrink-0">
         <Button
           type="button"
           variant="ghost"
@@ -372,12 +372,14 @@ export function PartsFieldArray() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [modalInitial, setModalInitial] = useState<PartItemFormData | null>(
-    null
+    null,
   );
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -407,7 +409,7 @@ export function PartsFieldArray() {
             unitPrice: Number(p.unitPrice) ?? 0,
             quantity: Number(p.quantity) ?? 1,
           }
-        : null
+        : null,
     );
     setModalOpen(true);
   };
@@ -468,8 +470,8 @@ export function PartsFieldArray() {
             {t("noPartsAdded")}
           </div>
         ) : (
-          <div className="min-w-0 overflow-x-auto -mx-1 px-1">
-            <div className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,1fr)_120px_120px_60px_130px_120px_80px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1">
+          <div className="min-w-0 overflow-x-auto -mx-1 px-1 pb-1">
+            <div className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,28rem)_120px_120px_60px_130px_120px_80px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1 shrink-0">
               <div />
               <div className="flex items-center justify-center">#</div>
               <div className="flex min-w-0 items-center justify-start leading-tight">

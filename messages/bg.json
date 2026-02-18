@@ -1209,7 +1209,7 @@
   },
   "admin": {
     "login": {
-      "signInSubtitle": "Влезте за достъп до админ панела",
+      "signInSubtitle": "Въведете вашите данни за вход",
       "email": "Имейл",
       "password": "Парола",
       "signIn": "Вход",
@@ -1227,7 +1227,7 @@
     },
     "roles": {
       "admin": "Администратор",
-      "mechanic": "Механик"
+      "mechanic": "Сервиз"
     },
     "offers": {
       "title": "Оферти",
@@ -1331,6 +1331,7 @@
       "timeFormatExamples": "Примери: 1 (1ч), 0:30 (30мин), 1:30 (1ч 30мин)",
       "pricePerHour": "Цена/час (€) (с ДДС)",
       "withVat": "с ДДС",
+      "inclVat": "с вкл ДДС",
       "withoutVat": "без ДДС",
       "itemDescription": "Описание",
       "additionalInfo": "Допълнителна информация",
@@ -1341,12 +1342,12 @@
       "notesPlaceholder": "Добавете допълнителни бележки или коментари...",
       "notesInternal": "Бележки за мен",
       "notesInternalPlaceholder": "Вътрешни бележки (не се виждат от механици)...",
-      "notesService": "Бележки за механика",
-      "notesServicePlaceholder": "Бележки видими за сервизния екип...",
+      "notesService": "Забележки",
+      "notesServicePlaceholder": "Забележки видими за сервизния екип...",
       "summary": "Обобщение",
       "subtotal": "Междинна сума",
       "netTotal": "Нето сума",
-      "vat": "ДДС (20%)",
+      "vat": "ДДС",
       "total": "Общо",
       "createOffer": "Създай оферта",
       "updateOffer": "Обнови оферта",

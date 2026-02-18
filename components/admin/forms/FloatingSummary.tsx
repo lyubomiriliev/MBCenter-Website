@@ -57,7 +57,8 @@ export function FloatingSummary({
               {t("parts")} ({calculations.partsCount})
             </span>
             <span className="text-white">
-              {calculations.formatted.partsSubtotal}
+              {calculations.formatted.partsSubtotal}{" "}
+              <span className="text-mb-silver text-xs">({t("inclVat")})</span>
             </span>
           </div>
 
@@ -68,23 +69,9 @@ export function FloatingSummary({
               {t("labor")} ({calculations.laborCount})
             </span>
             <span className="text-white">
-              {calculations.formatted.laborSubtotal}
+              {calculations.formatted.laborSubtotal}{" "}
+              <span className="text-mb-silver text-xs">({t("inclVat")})</span>
             </span>
-          </div>
-
-          <Separator className="bg-mb-border" />
-
-          {/* Subtotal (before discounts) */}
-          <div className="flex justify-between items-center">
-            <span className="text-mb-silver">{t("subtotal")}</span>
-            <div className="text-right">
-              <div className="text-white">
-                {calculations.formatted.subtotal}
-              </div>
-              <div className="text-xs text-mb-silver">
-                {calculations.formatted.subtotalBGN}
-              </div>
-            </div>
           </div>
 
           {/* Parts Discount */}
@@ -118,6 +105,17 @@ export function FloatingSummary({
           )}
 
           <Separator className="bg-mb-border" />
+
+          {/* VAT Breakdown (20% of total) */}
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-mb-silver">СТАВКА {t("vat")} (20%)</span>
+            <div className="text-right text-mb-silver">
+              <div>€{(calculations.grossTotal / 6).toFixed(2)}</div>
+              <div className="text-xs">
+                {((calculations.grossTotal / 6) * EUR_TO_BGN).toFixed(2)} лв.
+              </div>
+            </div>
+          </div>
 
           {/* Grand Total */}
           <div className="flex justify-between items-center">

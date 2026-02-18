@@ -10,11 +10,7 @@ export default function CreateOfferPage() {
 
   return (
     <div className="flex relative flex-col flex-1 min-h-0">
-      <AdminHeader
-        title={t("offers.createOffer")}
-        subtitle={t("offers.createOfferSubtitle")}
-      />
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 select-none hidden min-[2550px]:block">
         <Image
           src="/assets/images/mb-pattern.webp"
           alt=""
@@ -24,9 +20,14 @@ export default function CreateOfferPage() {
           sizes="100vw"
         />
       </div>
-
-      <div className="flex bg-black max-w-[2560px] flex-1 min-w-0 min-h-0 overflow-hidden">
-        <CreateOfferFormV2 />
+      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+        <AdminHeader
+          title={t("offers.createOffer")}
+          subtitle={t("offers.createOfferSubtitle")}
+        />
+        <div className="flex bg-black max-w-[2560px] flex-1 min-w-0 min-h-0 overflow-hidden">
+          <CreateOfferFormV2 />
+        </div>
       </div>
     </div>
   );

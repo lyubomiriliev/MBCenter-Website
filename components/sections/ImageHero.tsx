@@ -42,7 +42,7 @@ export function ImageHero({
             duration: 1,
             ease: "power3.out",
           },
-          "-=0.6"
+          "-=0.6",
         )
         .from(
           ctaRef.current,
@@ -52,7 +52,7 @@ export function ImageHero({
             duration: 0.8,
             ease: "power2.out",
           },
-          "-=0.4"
+          "-=0.4",
         );
     });
 
@@ -62,7 +62,7 @@ export function ImageHero({
   return (
     <section className="relative h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden -mb-32">
       {/* Image Background */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 select-none hidden min-[2550px]:block">
         <Image src={imageSrc} alt="" fill className="object-cover" priority />
         {/* Gradient overlay that blends with dark background below */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/95"></div>

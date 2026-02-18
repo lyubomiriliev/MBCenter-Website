@@ -130,6 +130,7 @@ export interface Database {
           notes_service: string | null;
           service_card_number: string | null;
           service_card_generated_at: string | null;
+          prepayments_eur: number[] | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -164,6 +165,7 @@ export interface Database {
           notes_service?: string | null;
           service_card_number?: string | null;
           service_card_generated_at?: string | null;
+          prepayments_eur?: number[] | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -198,6 +200,7 @@ export interface Database {
           notes_service?: string | null;
           service_card_number?: string | null;
           service_card_generated_at?: string | null;
+          prepayments_eur?: number[] | null;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;

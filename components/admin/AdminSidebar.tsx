@@ -82,7 +82,7 @@ export function AdminSidebar({ basePath }: AdminSidebarProps) {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = `/${locale}`;
+    window.location.href = `/${locale}/admin-login`;
   };
 
   const close = () => setOpen(false);

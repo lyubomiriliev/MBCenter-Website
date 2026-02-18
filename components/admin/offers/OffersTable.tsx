@@ -12,6 +12,7 @@ import {
   flexRender,
   createColumnHelper,
   RowSelectionState,
+  ColumnDef,
 } from "@tanstack/react-table";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -180,7 +181,7 @@ export function OffersTable({
   const selectedCount = Object.values(rowSelection).filter(Boolean).length;
 
   const columns = [
-    columnHelper.display({
+    !isMechanicView && columnHelper.display({
       id: "select",
       header: ({ table }) => (
         <input
@@ -273,7 +274,7 @@ export function OffersTable({
         </button>
       ),
     }),
-    columnHelper.accessor("total_gross", {
+    !isMechanicView && columnHelper.accessor("total_gross", {
       header: () => (
         <div className="text-center">{t("offers.columns.total")}</div>
       ),
@@ -296,7 +297,7 @@ export function OffersTable({
         cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
       }
     ),
-    columnHelper.display({
+    !isMechanicView && columnHelper.display({
       id: "actions",
       header: () => t("offers.columns.actions"),
       cell: (info) => (
@@ -402,13 +403,13 @@ export function OffersTable({
 
   const table = useReactTable({
     data: data?.offers || [],
-    columns,
+    columns: columns.filter(Boolean) as ColumnDef<OfferWithRelations, any>[],
     state: { sorting, rowSelection },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    enableRowSelection: true,
+    enableRowSelection: !isMechanicView,
   });
 
   if (isLoading) {
@@ -423,7 +424,7 @@ export function OffersTable({
 
   return (
     <>
-      {selectedCount > 0 && (
+      {!isMechanicView && selectedCount > 0 && (
         <div className="flex items-center gap-3 mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
           <span className="text-sm text-white">{selectedCount} избрани</span>
           <Button
@@ -459,7 +460,14 @@ export function OffersTable({
                 className="border-mb-border hover:bg-transparent"
               >
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-mb-silver">
+                  <TableHead
+                    key={header.id}
+                    className={
+                      header.column.id === "licensePlate"
+                        ? "text-mb-silver whitespace-nowrap min-w-[5rem]"
+                        : "text-mb-silver"
+                    }
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(

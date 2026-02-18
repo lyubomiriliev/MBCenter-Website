@@ -13,7 +13,7 @@ export default function EditOfferPage() {
 
   return (
     <div className="flex relative flex-col flex-1 min-h-0">
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 select-none hidden min-[2550px]:block">
         <Image
           src="/assets/images/mb-pattern.webp"
           alt=""
@@ -23,7 +23,7 @@ export default function EditOfferPage() {
           sizes="100vw"
         />
       </div>
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 select-none hidden min-[2550px]:block">
         <Image
           src="/assets/images/mb-pattern.webp"
           alt=""
@@ -33,12 +33,14 @@ export default function EditOfferPage() {
           sizes="100vw"
         />
       </div>
-      <AdminHeader
-        title={t("offers.editOffer")}
-        subtitle={offerId ? `ID: ${offerId}` : undefined}
-      />
-      <div className="flex bg-black max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
-        <CreateOfferFormV2 offerId={offerId} />
+      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+        <AdminHeader
+          title={t("offers.editOffer")}
+          subtitle={offerId ? `ID: ${offerId}` : undefined}
+        />
+        <div className="flex  max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
+          <CreateOfferFormV2 offerId={offerId} />
+        </div>
       </div>
     </div>
   );

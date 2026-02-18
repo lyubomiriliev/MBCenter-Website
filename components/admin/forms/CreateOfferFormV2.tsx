@@ -104,6 +104,10 @@ export function CreateOfferFormV2({
   useEffect(() => {
     if (!existingOffer || !isEditing) return;
     setSavedOffer(existingOffer);
+    const savedPrepayments = (existingOffer as { prepayments_eur?: number[] | null }).prepayments_eur;
+    if (Array.isArray(savedPrepayments) && savedPrepayments.length > 0) {
+      setPrepayments(savedPrepayments);
+    }
 
     const yearFallback = existingOffer.created_at
       ? new Date(existingOffer.created_at).getFullYear()
@@ -171,16 +175,21 @@ export function CreateOfferFormV2({
       }, 0);
     }
     formLoadedRef.current = true;
-    lastAutoSaveRef.current = JSON.stringify(methods.getValues());
+    const loadedPrepayments = (existingOffer as { prepayments_eur?: number[] | null }).prepayments_eur;
+    const initialPrepayments = Array.isArray(loadedPrepayments) ? loadedPrepayments : [];
+    lastAutoSaveRef.current = JSON.stringify({
+      form: methods.getValues(),
+      prepayments: initialPrepayments,
+    });
   }, [existingOffer, isEditing, methods]);
 
-  // Debounced auto-save when editing
+  // Debounced auto-save when editing (trigger on form or prepayments change)
   const watchedValues = watch();
   useEffect(() => {
     if (!isEditing || !offerId || !formLoadedRef.current || !existingOffer)
       return;
 
-    const snapshot = JSON.stringify(watchedValues);
+    const snapshot = JSON.stringify({ form: watchedValues, prepayments });
     if (lastAutoSaveRef.current === snapshot) return;
 
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
@@ -191,8 +200,8 @@ export function CreateOfferFormV2({
       if (!isValid) return;
 
       const data = getValues();
-      const dataSnapshot = JSON.stringify(data);
-      if (lastAutoSaveRef.current === dataSnapshot) return;
+      const currentSnapshot = JSON.stringify({ form: data, prepayments });
+      if (lastAutoSaveRef.current === currentSnapshot) return;
 
       try {
         let partsTotal = 0;
@@ -236,6 +245,7 @@ export function CreateOfferFormV2({
           notes: data.notes || null,
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
+          prepayments_eur: prepayments.length > 0 ? prepayments : null,
         };
 
         const offerRes = await supabase
@@ -294,7 +304,7 @@ export function CreateOfferFormV2({
             .insert(serviceInserts as never);
         }
 
-        lastAutoSaveRef.current = dataSnapshot;
+        lastAutoSaveRef.current = currentSnapshot;
         queryClient.invalidateQueries({ queryKey: ["offers"] });
         queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
         const refreshed = await refetchOffer();
@@ -310,6 +320,7 @@ export function CreateOfferFormV2({
     };
   }, [
     watchedValues,
+    prepayments,
     isEditing,
     offerId,
     existingOffer,
@@ -459,7 +470,13 @@ export function CreateOfferFormV2({
         console.warn("Fonts not loaded, PDF will use Helvetica fallback");
       }
 
-      const PDFComponent = <OfferPDFv3 offer={offerData} locale={locale} />;
+      const PDFComponent = (
+        <OfferPDFv3
+          offer={offerData}
+          locale={locale}
+          prepayments={prepayments}
+        />
+      );
 
       const blob = await Promise.race([
         pdf(PDFComponent).toBlob(),
@@ -547,6 +564,7 @@ export function CreateOfferFormV2({
         notes_service: methods.watch("notesService") || null,
         service_card_number: null,
         service_card_generated_at: null,
+        prepayments_eur: prepayments.length > 0 ? prepayments : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         client_id: null,
@@ -603,7 +621,11 @@ export function CreateOfferFormV2({
       }
 
       const PDFComponent = (
-        <ServiceCardPDFv3 offer={offerData} locale={locale} />
+        <ServiceCardPDFv3
+          offer={offerData}
+          locale={locale}
+          prepayments={prepayments}
+        />
       );
       const blob = await pdf(PDFComponent).toBlob();
 
@@ -711,6 +733,7 @@ export function CreateOfferFormV2({
           notes: data.notes || null,
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
+          prepayments_eur: prepayments.length > 0 ? prepayments : null,
         };
 
         const offerRes = await supabase
@@ -829,6 +852,7 @@ export function CreateOfferFormV2({
           notes: data.notes || null,
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
+          prepayments_eur: prepayments.length > 0 ? prepayments : null,
         };
 
         const offerRes = await supabase
@@ -1111,7 +1135,9 @@ export function CreateOfferFormV2({
               <div>
                 <span className="text-mb-silver text-sm">{t("carVin")}</span>
                 <p className="text-white font-mono">
-                  {savedOffer.vin_text || "-"}
+                  {savedOffer.vin_text
+                    ? savedOffer.vin_text.toUpperCase()
+                    : "-"}
                 </p>
               </div>
               <div>
@@ -1160,7 +1186,7 @@ export function CreateOfferFormV2({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="grid grid-cols-[40px_1fr_120px_80px] gap-2 text-xs text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
+                <div className="grid grid-cols-[40px_minmax(0,24rem)_120px_80px] gap-3 text-xs text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
                   <div>#</div>
                   <div>{t("productName")}</div>
                   <div>{t("partNumber")}</div>
@@ -1171,7 +1197,7 @@ export function CreateOfferFormV2({
                   .map((part, i) => (
                     <div
                       key={part.id}
-                      className="grid grid-cols-[40px_1fr_120px_80px] gap-2 text-sm py-1.5 border-b border-mb-border/50"
+                      className="grid grid-cols-[40px_minmax(0,24rem)_120px_80px] gap-3 text-sm py-1.5 border-b border-mb-border/50"
                     >
                       <div className="text-mb-silver">{i + 1}</div>
                       <div className="text-white">{part.description}</div>

@@ -1331,6 +1331,7 @@
       "timeFormatExamples": "Examples: 1 (1h), 0:30 (30min), 1:30 (1h 30min)",
       "pricePerHour": "Price/Hour (EUR) (with VAT)",
       "withVat": "with VAT",
+      "inclVat": "incl. VAT",
       "withoutVat": "without VAT (-20%)",
       "itemDescription": "Description",
       "additionalInfo": "Additional Information",

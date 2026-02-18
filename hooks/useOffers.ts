@@ -184,6 +184,7 @@ export function useOffer(id: string | undefined) {
           notes,
           notes_internal,
           notes_service,
+          prepayments_eur,
           status,
           total_net,
           total_gross,

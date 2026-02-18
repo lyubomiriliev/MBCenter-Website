@@ -135,7 +135,7 @@ function AddEditServiceActionModal({
         (a) =>
           a.name === vals.actionName &&
           (vals.fixedPriceAmount == null ||
-            a.priceEur === vals.fixedPriceAmount)
+            a.priceEur === vals.fixedPriceAmount),
       );
       setSelectedActivityId(match?.id ?? "");
     } else {
@@ -294,11 +294,11 @@ function AddEditServiceActionModal({
                             {selectedActivityId
                               ? (() => {
                                   const act = fixedActivities.find(
-                                    (a) => a.id === selectedActivityId
+                                    (a) => a.id === selectedActivityId,
                                   );
                                   return act
                                     ? `${act.name} — €${act.priceEur.toFixed(
-                                        2
+                                        2,
                                       )} / ${(
                                         act.priceEur * EUR_TO_BGN
                                       ).toFixed(2)} лв.`
@@ -452,7 +452,7 @@ function AddEditServiceActionModal({
                       setFixedPriceInput(val);
                       const numVal = val.replace(",", ".");
                       setFixedPriceAmount(
-                        numVal === "" ? 0 : Number(numVal) || 0
+                        numVal === "" ? 0 : Number(numVal) || 0,
                       );
                     }
                   }}
@@ -617,7 +617,10 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
       <div className="text-mb-silver text-sm flex items-center justify-center">
         {index + 1}
       </div>
-      <div className="min-w-0 text-white text-sm truncate text-left" title={actionName}>
+      <div
+        className="min-w-0 text-white text-sm truncate text-left"
+        title={actionName}
+      >
         {actionName || "—"}
         {isFixed && (
           <span className="ml-1 text-xs text-orange-400">(фикс.)</span>
@@ -700,7 +703,9 @@ export function ServiceActionsFieldArray() {
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -729,7 +734,7 @@ export function ServiceActionsFieldArray() {
             isFixedPrice: a.isFixedPrice ?? false,
             fixedPriceAmount: a.fixedPriceAmount ?? undefined,
           }
-        : null
+        : null,
     );
     setModalOpen(true);
   };

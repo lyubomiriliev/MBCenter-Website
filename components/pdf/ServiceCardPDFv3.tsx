@@ -237,12 +237,22 @@ const createStyles = () => {
       lineHeight: 1.3,
       fontFamily: fontFamily,
     },
+    stampField: {
+      width: 160,
+      height: 80,
+      marginTop: 12,
+      alignSelf: "flex-end",
+      borderWidth: 1,
+      borderStyle: "solid",
+      borderColor: "#000",
+    },
   });
 };
 
 interface ServiceCardPDFv3Props {
   offer: OfferWithRelations;
   locale: "bg" | "en";
+  prepayments?: number[];
 }
 
 function formatTimeDisplay(timeText: string | null): string {
@@ -259,7 +269,11 @@ function formatTimeDisplay(timeText: string | null): string {
   return "-";
 }
 
-export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
+export function ServiceCardPDFv3({
+  offer,
+  locale,
+  prepayments = [],
+}: ServiceCardPDFv3Props) {
   const styles = createStyles();
 
   const formatDual = (eurValue: number) => {
@@ -268,32 +282,32 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
     return `${eurValue.toFixed(2)} EUR / ${bgnValue.toFixed(2)} BGN`;
   };
 
-  // Calculate parts total (with VAT) - use unit_price * quantity when total not fetched
-  const partsNet = (offer.items || [])
+  // Calculate parts total - input prices already include VAT (gross)
+  const partsGross = (offer.items || [])
     .filter((item) => item.type === "part")
     .reduce(
       (sum, item) =>
         sum + (item.total ?? item.unit_price * (item.quantity ?? 0)),
-      0
+      0,
     );
-  const partsVat = partsNet * VAT_RATE;
-  const partsGross = partsNet + partsVat;
+  const partsNet = partsGross / 1.2; // Net = Gross / 1.2
+  const partsVat = partsGross - partsNet; // VAT = Gross - Net
 
-  // Calculate service actions total (with VAT)
-  const serviceNet = (offer.service_actions || []).reduce(
-    (sum, action) => sum + action.total_eur_net,
-    0
+  // Calculate service actions total - input prices already include VAT (gross)
+  const serviceGross = (offer.service_actions || []).reduce(
+    (sum, action) => sum + action.total_eur_net, // Note: despite the name, this is actually gross
+    0,
   );
-  const serviceVat = serviceNet * VAT_RATE;
-  const serviceGross = serviceNet + serviceVat;
+  const serviceNet = serviceGross / 1.2; // Net = Gross / 1.2
+  const serviceVat = serviceGross - serviceNet; // VAT = Gross - Net
 
   // Grand total
+  const totalGross = partsGross + serviceGross;
   const totalNet = partsNet + serviceNet;
   const totalVat = partsVat + serviceVat;
-  const totalGross = partsGross + serviceGross;
   const partsItems = (offer.items || []).filter((item) => item.type === "part");
   const sortedParts = [...partsItems].sort(
-    (a, b) => a.sort_order - b.sort_order
+    (a, b) => a.sort_order - b.sort_order,
   );
 
   return (
@@ -399,10 +413,10 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
                 </View>
               </View>
               {sortedParts.map((item, index) => {
-                const unitPriceGross = item.unit_price * (1 + VAT_RATE);
-                const lineTotalNet =
+                // Input prices already include VAT
+                const unitPriceGross = item.unit_price;
+                const totalGross =
                   item.total ?? item.unit_price * (item.quantity ?? 0);
-                const totalGross = lineTotalNet * (1 + VAT_RATE);
                 return (
                   <View
                     key={item.id}
@@ -449,9 +463,9 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
           </>
         )}
 
-        {/* Service Actions Table */}
+        {/* Service Actions Table - start on new page when 10+ parts to avoid header glitch */}
         {offer.service_actions && offer.service_actions.length > 0 && (
-          <>
+          <View break={sortedParts.length >= 10}>
             <Text style={styles.sectionTitle}>Сервизни активности</Text>
             <View style={styles.table} wrap={true}>
               <View style={styles.tableHeader} wrap={false}>
@@ -484,9 +498,9 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
               {offer.service_actions
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((action, index) => {
-                  const hourlyRateGross =
-                    action.price_per_hour_eur_net * (1 + VAT_RATE);
-                  const totalGross = action.total_eur_net * (1 + VAT_RATE);
+                  // Input prices already include VAT
+                  const hourlyRateGross = action.price_per_hour_eur_net; // Note: despite name, this is gross
+                  const totalGross = action.total_eur_net; // Note: despite name, this is gross
                   return (
                     <View
                       key={action.id}
@@ -526,7 +540,7 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
                   );
                 })}
             </View>
-          </>
+          </View>
         )}
 
         {/* Summary */}
@@ -622,6 +636,62 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
                 </Text>
               </View>
             </View>
+            {/* Advance Payments (if any) */}
+            {prepayments.map((prepayment, index) => (
+              <View key={index} style={styles.summaryRow}>
+                <View style={styles.summaryCol1}>
+                  <Text style={styles.colTextLeft}>
+                    Авансово плащане{" "}
+                    {prepayments.length > 1 ? `${index + 1}` : ""}
+                  </Text>
+                </View>
+                <View style={styles.summaryCol2}>
+                  <Text style={styles.colTextRight}>
+                    -{formatDual(prepayment)}
+                  </Text>
+                </View>
+                <View style={styles.summaryCol3}>
+                  <Text style={styles.colTextCenter} />
+                </View>
+                <View style={styles.summaryCol4}>
+                  <Text style={styles.colTextRight} />
+                </View>
+                <View style={styles.summaryCol5}>
+                  <Text style={styles.colTextRight}>
+                    -{formatDual(prepayment)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+            {/* Amount Due (if there are prepayments) */}
+            {prepayments.length > 0 && (
+              <View style={[styles.summaryRow, styles.summaryTotalRow]}>
+                <View style={styles.summaryCol1}>
+                  <Text style={styles.colTextLeft}>Сума за плащане</Text>
+                </View>
+                <View style={styles.summaryCol2}>
+                  <Text style={styles.colTextRight} />
+                </View>
+                <View style={styles.summaryCol3}>
+                  <Text style={styles.colTextCenter} />
+                </View>
+                <View style={styles.summaryCol4}>
+                  <Text style={styles.colTextRight} />
+                </View>
+                <View style={styles.summaryCol5}>
+                  <Text
+                    style={[styles.colTextRight, styles.summaryTotalAmountText]}
+                  >
+                    {formatDual(
+                      Math.max(
+                        0,
+                        totalGross - prepayments.reduce((a, b) => a + b, 0),
+                      ),
+                    )}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
@@ -644,6 +714,7 @@ export function ServiceCardPDFv3({ offer, locale }: ServiceCardPDFv3Props) {
             създаване. Възможни са промени поради непредвидени увеличения на
             разходите за ремонта, частите, валутни колебания или други причини.
           </Text>
+          <View style={styles.stampField} />
         </View>
       </Page>
     </Document>
