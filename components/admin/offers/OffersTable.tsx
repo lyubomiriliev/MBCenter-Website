@@ -208,10 +208,7 @@ export function OffersTable({
         header: () => t("offers.columns.offerNumber"),
         cell: (info) => (
           <Link
-            href={`${basePath}/offers/${info.row.original.id}`.replace(
-              /\/+$/,
-              ""
-            )}
+            href={`${basePath}/offers/edit?id=${info.row.original.id}`}
             className="text-mb-blue hover:underline font-medium"
           >
             {info.getValue()}
@@ -354,7 +351,7 @@ export function OffersTable({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                router.push(`${basePath}/offers/${info.row.original.id}`)
+                router.push(`${basePath}/offers/edit?id=${info.row.original.id}`)
               }
               className="cursor-pointer text-white hover:bg-mb-black hover:text-white focus:bg-mb-black focus:text-white"
             >
@@ -403,7 +400,9 @@ export function OffersTable({
 
   const table = useReactTable({
     data: data?.offers || [],
-    columns: columns.filter(Boolean) as ColumnDef<OfferWithRelations, any>[],
+    columns: columns.filter(
+      (c): c is ColumnDef<OfferWithRelations, any> => Boolean(c),
+    ),
     state: { sorting, rowSelection },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,

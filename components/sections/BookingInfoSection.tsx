@@ -82,7 +82,7 @@ export function BookingInfoSection({ locale }: BookingInfoSectionProps) {
               <div className="absolute inset-0">
                 <Image
                   src="/assets/images/gallery/w223.jpg"
-                  alt="Viber"
+                  alt="Viber контакт"
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />

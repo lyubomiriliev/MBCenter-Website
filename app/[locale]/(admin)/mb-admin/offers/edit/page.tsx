@@ -1,15 +1,27 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CreateOfferFormV2 } from "@/components/admin/forms/CreateOfferFormV2";
 import Image from "next/image";
 
 export default function EditOfferPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const params = useParams();
   const t = useTranslations("admin");
-  const offerId = params.id as string;
+  const offerId = searchParams.get("id");
+  const locale = params.locale as string;
+
+  useEffect(() => {
+    if (!offerId) {
+      router.replace(`/${locale}/mb-admin/offers`);
+    }
+  }, [offerId, locale, router]);
+
+  if (!offerId) return null;
 
   return (
     <div className="flex relative flex-col flex-1 min-h-0">
@@ -36,9 +48,9 @@ export default function EditOfferPage() {
       <div className="relative z-10 flex flex-col flex-1 min-h-0">
         <AdminHeader
           title={t("offers.editOffer")}
-          subtitle={offerId ? `ID: ${offerId}` : undefined}
+          subtitle={`ID: ${offerId}`}
         />
-        <div className="flex  max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
+        <div className="flex max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
           <CreateOfferFormV2 offerId={offerId} />
         </div>
       </div>

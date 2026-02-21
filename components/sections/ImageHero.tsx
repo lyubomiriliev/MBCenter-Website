@@ -62,7 +62,7 @@ export function ImageHero({
   return (
     <section className="relative h-[60vh] sm:h-[70vh] flex items-center justify-center overflow-hidden -mb-32">
       {/* Image Background */}
-      <div className="absolute inset-0 z-0 select-none hidden min-[2550px]:block">
+      <div className="absolute inset-0 z-0 select-none">
         <Image src={imageSrc} alt="" fill className="object-cover" priority />
         {/* Gradient overlay that blends with dark background below */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/95"></div>

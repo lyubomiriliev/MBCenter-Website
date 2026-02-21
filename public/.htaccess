@@ -1,0 +1,10 @@
+# 301 redirects: old WordPress URLs → new Next.js paths (for static export in public_html)
+RewriteEngine On
+RewriteBase /
+RewriteCond %{QUERY_STRING} ^page_id=3122$ [NC]
+RewriteRule ^$ /bg/contacts? [R=301,L]
+RewriteRule ^home/?$ /bg [R=301,L]
+RewriteRule ^about-us/?$ /bg/about [R=301,L]
+RewriteRule ^contact-us/?$ /bg/contacts [R=301,L]
+RewriteRule ^terms/?$ /bg/terms [R=301,L]
+RewriteRule ^$ /bg [R=301,L]
