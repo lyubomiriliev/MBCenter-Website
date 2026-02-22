@@ -36,6 +36,7 @@ export async function generateMetadata({
 }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "seo.home" });
   const alternateLinks = generateAlternateLinks(locale);
+  const ogImageUrl = `${SITE_CONFIG.baseUrl}/og-image.jpg`;
 
   return {
     metadataBase: new URL(SITE_CONFIG.baseUrl),
@@ -66,10 +67,11 @@ export async function generateMetadata({
       description: t("description"),
       images: [
         {
-          url: "/og-image.jpg", // Placeholder - add actual image
+          url: ogImageUrl,
           width: 1200,
           height: 630,
           alt: SITE_CONFIG.name,
+          type: "image/jpeg",
         },
       ],
     },
@@ -77,7 +79,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: t("title"),
       description: t("description"),
-      images: ["/og-image.jpg"], // Placeholder - add actual image
+      images: [ogImageUrl],
     },
     robots: {
       index: true,
