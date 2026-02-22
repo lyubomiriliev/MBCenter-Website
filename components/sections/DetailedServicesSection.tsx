@@ -20,6 +20,25 @@ type DetailedServicesSectionProps = {
   categories: ServiceCategory[];
 };
 
+const iconByKey: Record<string, JSX.Element> = {
+  gauge: (
+    <svg className="w-6 h-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+      <path d="M12 15l3.5-3.5" />
+      <path d="M20.3 18c.4-1 .7-2.2.7-3.4C21 9.8 17 6 12 6s-9 3.8-9 8.6c0 1.2.3 2.4.7 3.4" />
+    </svg>
+  ),
+  wrench: (
+    <svg className="w-6 h-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+    </svg>
+  ),
+  language: (
+    <svg className="w-6 h-6" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+      <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+    </svg>
+  ),
+};
+
 const ServiceIcon = ({ index }: { index: number }) => {
   const icons = [
     // Diagnostic icons
@@ -57,7 +76,8 @@ const ServiceIcon = ({ index }: { index: number }) => {
       viewBox="0 0 24 24"
       stroke="currentColor"
     >
-      <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      <path d="M12 15l3.5-3.5" />
+      <path d="M20.3 18c.4-1 .7-2.2.7-3.4C21 9.8 17 6 12 6s-9 3.8-9 8.6c0 1.2.3 2.4.7 3.4" />
     </svg>,
     // Coding icons
     <svg
@@ -311,9 +331,11 @@ export function DetailedServicesSection({
                               <div className="relative flex-shrink-0">
                                 <div className="w-12 h-12 bg-gradient-to-br from-mb-blue/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-mb-blue/30 group-hover/item:border-mb-blue group-hover/item:shadow-lg group-hover/item:shadow-mb-blue/30 transition-all duration-300">
                                   <div className="text-mb-blue group-hover/item:scale-110 transition-transform duration-300">
-                                    <ServiceIcon
-                                      index={categoryIndex * 10 + serviceIndex}
-                                    />
+                                    {iconByKey[service.icon] ?? (
+                                      <ServiceIcon
+                                        index={categoryIndex * 10 + serviceIndex}
+                                      />
+                                    )}
                                   </div>
                                 </div>
                                 {/* Glow effect */}

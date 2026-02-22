@@ -29,7 +29,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
           />
         </svg>
       ),
-      services: ["s1", "s2", "s3", "s4"],
+      services: ["s1", "s2", "s3", "s4", "s5"],
     },
     {
       key: "engine",
@@ -49,7 +49,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
           />
         </svg>
       ),
-      services: ["s1", "s2", "s3", "s4", "s5", "s6"],
+      services: ["s1", "s2", "s4", "s5", "s6"],
       note: true,
     },
     {
@@ -121,7 +121,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
     },
   ];
 
-  const additionalServices = ["add1", "add2"];
+  const additionalServices = ["add1"];
 
   return (
     <section className="py-16 md:py-32 bg-gradient-to-b from-mb-black via-mb-anthracite to-mb-black relative overflow-hidden section-content-visibility">
@@ -251,7 +251,15 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
         {/* Additional Services */}
         <AnimatedSection from="bottom" delay={0.4}>
           <div className="relative overflow-hidden rounded-2xl border border-mb-border bg-gradient-to-br from-mb-anthracite/80 to-mb-black/80 p-8 md:p-12">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-mb-blue/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <div className="absolute inset-0 z-0">
+              <Image
+                src="/mb-windshield.jpg"
+                alt=""
+                fill
+                className="object-cover object-[center_35%] opacity-60"
+              />
+            </div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-mb-blue/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 z-[1]"></div>
             <div className="relative z-10">
               <h3 className="text-2xl md:text-3xl font-bold text-white mb-6 flex items-center gap-3">
                 <svg
@@ -269,7 +277,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
                 </svg>
                 {t("additional.title")}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="w-full">
                 {additionalServices.map((service) => (
                   <div
                     key={service}

@@ -301,7 +301,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
           description: t("detailed.diagnostic.s2.desc"),
         },
         {
-          icon: "📊",
+          icon: "gauge",
           title: t("detailed.diagnostic.s3.title"),
           description: t("detailed.diagnostic.s3.desc"),
         },
@@ -348,7 +348,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
       image: "/assets/images/servicing-2.jpg",
       services: [
         {
-          icon: "⚙️",
+          icon: "wrench",
           title: t("detailed.transmission.s1.title"),
           description: t("detailed.transmission.s1.desc"),
         },
@@ -378,7 +378,7 @@ export default function ServicesPage({ params: { locale } }: Props) {
           description: t("detailed.universal.s2.desc"),
         },
         {
-          icon: "🗣️",
+          icon: "language",
           title: t("detailed.universal.s3.title"),
           description: t("detailed.universal.s3.desc"),
         },

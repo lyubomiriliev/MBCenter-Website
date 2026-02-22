@@ -37,7 +37,7 @@ import { parseTimeToHours } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
-import { useOffer } from "@/hooks/useOffers";
+import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
 import type {
   OfferWithRelations,
   Profile,
@@ -73,6 +73,10 @@ export function CreateOfferFormV2({
   const [prepaymentModalOpen, setPrepaymentModalOpen] = useState(false);
   const [prepaymentAmount, setPrepaymentAmount] = useState("");
   const [prepaymentError, setPrepaymentError] = useState("");
+  const [performedBySelection, setPerformedBySelection] = useState("");
+  const [performedBySaving, setPerformedBySaving] = useState(false);
+
+  const updateOfferMutation = useUpdateOffer();
 
   const { notifications, dismiss, showError, showSuccess } = useNotification();
 
@@ -100,11 +104,17 @@ export function CreateOfferFormV2({
   const lastAutoSaveRef = useRef<string | null>(null);
   const formLoadedRef = useRef(false);
 
+  useEffect(() => {
+    if (savedOffer) setPerformedBySelection(savedOffer.performed_by ?? "");
+  }, [savedOffer?.id, savedOffer?.performed_by]);
+
   // Load existing offer data into form when editing
   useEffect(() => {
     if (!existingOffer || !isEditing) return;
     setSavedOffer(existingOffer);
-    const savedPrepayments = (existingOffer as { prepayments_eur?: number[] | null }).prepayments_eur;
+    const savedPrepayments = (
+      existingOffer as { prepayments_eur?: number[] | null }
+    ).prepayments_eur;
     if (Array.isArray(savedPrepayments) && savedPrepayments.length > 0) {
       setPrepayments(savedPrepayments);
     }
@@ -175,8 +185,12 @@ export function CreateOfferFormV2({
       }, 0);
     }
     formLoadedRef.current = true;
-    const loadedPrepayments = (existingOffer as { prepayments_eur?: number[] | null }).prepayments_eur;
-    const initialPrepayments = Array.isArray(loadedPrepayments) ? loadedPrepayments : [];
+    const loadedPrepayments = (
+      existingOffer as { prepayments_eur?: number[] | null }
+    ).prepayments_eur;
+    const initialPrepayments = Array.isArray(loadedPrepayments)
+      ? loadedPrepayments
+      : [];
     lastAutoSaveRef.current = JSON.stringify({
       form: methods.getValues(),
       prepayments: initialPrepayments,
@@ -564,6 +578,7 @@ export function CreateOfferFormV2({
         notes_service: methods.watch("notesService") || null,
         service_card_number: null,
         service_card_generated_at: null,
+        performed_by: null,
         prepayments_eur: prepayments.length > 0 ? prepayments : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -1154,10 +1169,10 @@ export function CreateOfferFormV2({
           </CardContent>
         </Card>
 
-        {/* Repair Name + Mechanics note (side by side) */}
+        {/* Repair Name + Mechanics note + Performed by (side by side) */}
         <Card className="bg-mb-anthracite border-mb-border">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <CardTitle className="text-lg mb-2">
                   {t("repairName")}
@@ -1171,6 +1186,54 @@ export function CreateOfferFormV2({
                 <p className="text-white whitespace-pre-wrap">
                   {savedOffer.notes_service || "-"}
                 </p>
+              </div>
+              <div>
+                <CardTitle className="text-lg mb-2">
+                  {t("performedBy")}
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={performedBySelection}
+                    onChange={(e) => setPerformedBySelection(e.target.value)}
+                    className="bg-mb-anthracite/20 border border-mb-border text-white rounded-lg px-4 py-2.5 text-sm w-full max-w-[200px] focus:outline-none focus:ring-2 focus:ring-mb-blue/50 focus:border-mb-blue/50 transition-colors"
+                  >
+                    <option value="">{t("performedByChoose")}</option>
+                    <option value="50:50">50:50</option>
+                    <option value="Жоро">Жоро</option>
+                    <option value="Любо">Любо</option>
+                  </select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={performedBySaving}
+                    onClick={async () => {
+                      if (!savedOffer?.id) return;
+                      setPerformedBySaving(true);
+                      try {
+                        await updateOfferMutation.mutateAsync({
+                          id: savedOffer.id,
+                          offer: {
+                            performed_by: performedBySelection.trim() || null,
+                          },
+                        });
+                        queryClient.invalidateQueries({
+                          queryKey: ["offer", savedOffer.id],
+                        });
+                        showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                      } catch {
+                        showError(
+                          locale === "bg"
+                            ? "Грешка при запазване."
+                            : "Error saving.",
+                        );
+                      } finally {
+                        setPerformedBySaving(false);
+                      }
+                    }}
+                  >
+                    {performedBySaving ? "…" : t("performedBySave")}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1580,14 +1643,16 @@ export function CreateOfferFormV2({
                   </Button>
                 )}
 
-                {/* Offer Metadata Info */}
-                {isEditing && savedOffer && (
+                {/* Offer Metadata Info - use existingOffer so it shows on first load before effect sets savedOffer */}
+                {isEditing && (existingOffer ?? savedOffer) && (() => {
+                  const metaOffer = existingOffer ?? savedOffer!;
+                  return (
                   <div className="w-full p-3 bg-mb-black/30 border border-mb-border rounded-lg text-xs text-mb-silver space-y-1.5">
                     <div>
                       <span className="font-medium">
                         {t("offerCreatedAt")}:
                       </span>{" "}
-                      {new Date(savedOffer.created_at).toLocaleDateString(
+                      {new Date(metaOffer.created_at).toLocaleDateString(
                         "bg-BG",
                         {
                           year: "numeric",
@@ -1598,13 +1663,13 @@ export function CreateOfferFormV2({
                         },
                       )}
                     </div>
-                    {savedOffer.service_card_generated_at && (
+                    {metaOffer.service_card_generated_at && (
                       <div>
                         <span className="font-medium">
                           {t("serviceCardCreatedAt")}:
                         </span>{" "}
                         {new Date(
-                          savedOffer.service_card_generated_at,
+                          metaOffer.service_card_generated_at,
                         ).toLocaleDateString("bg-BG", {
                           year: "numeric",
                           month: "2-digit",
@@ -1614,8 +1679,15 @@ export function CreateOfferFormV2({
                         })}
                       </div>
                     )}
+                    {metaOffer.performed_by && (
+                      <div>
+                        <span className="font-medium">{t("performedBy")}:</span>{" "}
+                        {metaOffer.performed_by}
+                      </div>
+                    )}
                   </div>
-                )}
+                  );
+                })()}
               </FloatingSummary>
             </div>
           </div>

@@ -5,19 +5,20 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { NAV_ITEMS, SITE_CONFIG } from "@/lib/constants";
+import { NAV_ITEMS, getSiteConfig } from "@/lib/constants";
 
 export function Header() {
   const t = useTranslations();
   const locale = useLocale();
   const pathname = usePathname();
+  const siteConfig = getSiteConfig(locale);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
 
   const otherLocale = locale === "en" ? "bg" : "en";
-  
+
   // Get the path with the other locale, preserving the current page
   const getLocalizedPath = () => {
     // Replace the current locale in the pathname with the other locale
@@ -178,13 +179,13 @@ export function Header() {
           <div className="relative bg-mb-black/70 backdrop-blur-xl h-full overflow-y-auto animate-in slide-in-from-top duration-500">
             <div className="flex flex-col h-full px-6 py-8">
               {/* Navigation Links */}
-              <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col flex-1">
                 {NAV_ITEMS.map((item, index) => (
                   <Link
                     key={item.href}
                     href={`/${locale}${item.href}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="group text-white hover:text-mb-blue transition-all duration-300 uppercase text-lg font-medium py-4 px-4 rounded-lg hover:bg-mb-anthracite/50 border border-transparent hover:border-mb-blue/30 animate-in slide-in-from-right"
+                    className="group text-white hover:text-mb-blue transition-all duration-300 uppercase text-lg font-medium py-3 px-4 rounded-lg hover:bg-mb-anthracite/50 border border-transparent hover:border-mb-blue/30 animate-in slide-in-from-right"
                     style={{
                       animationDelay: `${index * 100}ms`,
                       animationFillMode: "backwards",
@@ -192,17 +193,6 @@ export function Header() {
                   >
                     <div className="flex items-center justify-between">
                       <span>{t(item.labelKey)}</span>
-                      <svg
-                        className="w-5 h-5 text-mb-silver group-hover:text-mb-blue group-hover:translate-x-1 transition-all duration-300"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M9 5l7 7-7 7" />
-                      </svg>
                     </div>
                   </Link>
                 ))}
@@ -215,7 +205,7 @@ export function Header() {
                     animationFillMode: "backwards",
                   }}
                 >
-                  <div className="border-t border-mb-border/20 pt-6">
+                  <div className="border-t border-mb-border/20 md:pt-6">
                     <h4 className="text-mb-silver text-xs uppercase tracking-wider mb-4 font-semibold">
                       {t("contacts.info.title")}
                     </h4>
@@ -241,7 +231,7 @@ export function Header() {
                       </svg>
                       <div>
                         <p className="text-white text-sm font-medium mb-1">
-                          {SITE_CONFIG.address.street}
+                          {siteConfig.address.street}
                         </p>
                         <p className="text-mb-blue text-xs font-semibold group-hover:text-white transition-colors">
                           {t("nav.viewOnMap")} →
@@ -251,7 +241,7 @@ export function Header() {
 
                     {/* Phone */}
                     <a
-                      href={`tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`}
+                      href={`tel:${siteConfig.phone.replace(/\s/g, "")}`}
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-mb-anthracite/30 transition-all duration-300 group"
                     >
                       <svg
@@ -266,7 +256,7 @@ export function Header() {
                         <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                       <p className="text-white text-sm font-medium group-hover:text-mb-blue transition-colors">
-                        {SITE_CONFIG.phone}
+                        {siteConfig.phone}
                       </p>
                     </a>
                   </div>

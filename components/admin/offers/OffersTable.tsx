@@ -119,9 +119,11 @@ export function OffersTable({
             `
             id, offer_number, customer_name, customer_phone, customer_email,
             client_id, car_model_text, car_model_detail, repair_name, car_year, vin_text,
-            license_plate, mileage, car_id, created_by_name, discount_percent,
+            license_plate, mileage, mileage_unit, car_id, created_by_name, discount_percent,
             discount_parts_percent, discount_services_percent,
-            notes, notes_internal, notes_service, status, total_net, total_gross,
+            notes, notes_internal, notes_service, performed_by, prepayments_eur,
+            service_card_number, service_card_generated_at,
+            status, total_net, total_gross,
             created_at, updated_at,
             client:clients(id, name, phone, email),
             car:cars(id, model, year, vin, license_plate, mileage),

@@ -528,7 +528,8 @@
         "s1": "Diagnostics and troubleshooting of suspension issues",
         "s2": "Shock absorber, spring, and air cushion replacement",
         "s3": "Steering system component repair and replacement",
-        "s4": "Air suspension system adjustment and calibration"
+        "s4": "Air suspension system adjustment and calibration",
+        "s5": "Delivery and installation of electric rails"
       },
       "engine": {
         "title": "Partial Engine Repairs",
@@ -561,9 +562,8 @@
       }
     },
     "additional": {
-      "title": "Additional Services",
-      "add1": "Exhaust system check and maintenance",
-      "add2": "Cooling system preventive maintenance and cleaning"
+      "title": "Front Window Replacement",
+      "add1": "Delivery and installation of original front windows for Mercedes-Benz"
     },
     "exclusions": {
       "title": "Important Notice",
@@ -1361,6 +1361,9 @@
       "deleteOffer": "Delete",
       "offerCreatedAt": "Offer created at",
       "serviceCardCreatedAt": "Service card created at",
+      "performedBy": "Performed by",
+      "performedByChoose": "Choose",
+      "performedBySave": "Save",
       "fixedPrice": "Fixed Price",
       "pricePerHourLabel": "Price per Hour",
       "selectFixedActivity": "select activity",
