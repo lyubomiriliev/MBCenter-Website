@@ -110,9 +110,15 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   const jsonLd = generateLocalBusinessSchema(locale);
 
+  const ogImageUrl = `${SITE_CONFIG.baseUrl}/og-image.jpg`;
+
   return (
     <html lang={locale} className={inter.variable}>
       <head>
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/jpeg" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
