@@ -44,7 +44,7 @@ const SITE_CONFIG_BG: SiteConfig = {
     weekdays: "Понеделник - Петък 10:30 - 19:00ч.",
     weekend: "Събота и Неделя - Почивни дни",
   },
-  viberUrl: "viber://chat?number=359883788873",
+  viberUrl: "viber://chat?number=%2B359883788873",
   social: {
     facebook: "https://www.facebook.com/mbcenterbg",
     instagram: "https://www.instagram.com/mbcenter.bg/",
@@ -76,7 +76,7 @@ const SITE_CONFIG_EN: SiteConfig = {
     weekdays: "Monday - Friday 10:30 - 19:00h",
     weekend: "Saturday and Sunday - Closed",
   },
-  viberUrl: "viber://chat?number=359883788873",
+  viberUrl: "viber://chat?number=%2B359883788873",
   social: {
     facebook: "https://www.facebook.com/mbcenterbg",
     instagram: "https://www.instagram.com/mbcenter.bg/",
