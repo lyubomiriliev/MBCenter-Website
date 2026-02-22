@@ -56,7 +56,7 @@ const SITE_CONFIG_BG: SiteConfig = {
       "https://calendar.google.com/calendar/appointments/schedules/AcZssZ0KHVTiNLWb9t5e_J7VvJ7BqGvfBvYjQZ7J7bYjQZ7J7bYjQZ7J7b?gv=true",
   },
   formspree: {
-    contactFormId: "YOUR_FORMSPREE_ID",
+    contactFormId: "mnjbgyba",
     careerFormId: "YOUR_FORMSPREE_CAREER_ID",
   },
 };
@@ -88,7 +88,7 @@ const SITE_CONFIG_EN: SiteConfig = {
       "https://calendar.google.com/calendar/appointments/schedules/AcZssZ0KHVTiNLWb9t5e_J7VvJ7BqGvfBvYjQZ7J7bYjQZ7J7bYjQZ7J7b?gv=true",
   },
   formspree: {
-    contactFormId: "YOUR_FORMSPREE_ID",
+    contactFormId: "mnjbgyba",
     careerFormId: "YOUR_FORMSPREE_CAREER_ID",
   },
 };

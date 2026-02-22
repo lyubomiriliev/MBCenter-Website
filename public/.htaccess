@@ -1,3 +1,8 @@
+# Ensure OG image is served with correct MIME type (Facebook/Open Graph)
+<Files "og-image.jpg">
+  Header set Content-Type "image/jpeg"
+</Files>
+
 # 301 redirects: old WordPress URLs → new Next.js paths (for static export in public_html)
 RewriteEngine On
 RewriteBase /
