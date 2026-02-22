@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { CarFront } from "lucide-react";
 import { AnimatedSection } from "@/components/animations/AnimatedSection";
 import { AnimatedText } from "@/components/animations/AnimatedText";
 
@@ -250,7 +251,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
 
         {/* Additional Services */}
         <AnimatedSection from="bottom" delay={0.4}>
-          <div className="relative overflow-hidden rounded-2xl border border-mb-border bg-gradient-to-br from-mb-anthracite/80 to-mb-black/80 p-8 md:p-12">
+          <div className="relative overflow-hidden rounded-2xl border border-mb-border bg-gradient-to-br from-mb-anthracite/80 to-mb-black/80 p-8 md:px-5 md:py-10">
             <div className="absolute inset-0 z-0">
               <Image
                 src="/mb-windshield.jpg"
@@ -261,20 +262,10 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
             </div>
             <div className="absolute top-0 right-0 w-64 h-64 bg-mb-blue/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 z-[1]"></div>
             <div className="relative z-10">
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-6 flex items-center gap-3">
-                <svg
-                  className="w-8 h-8 text-mb-blue"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-mb-blue to-blue-600 flex items-center justify-center text-white">
+                  <CarFront className="w-8 h-8" strokeWidth={2} />
+                </div>
                 {t("additional.title")}
               </h3>
               <div className="w-full">
@@ -298,7 +289,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
                         />
                       </svg>
                     </div>
-                    <p className="text-mb-silver leading-relaxed">
+                    <p className="text-mb-silver text-sm leading-relaxed">
                       {t(`additional.${service}`)}
                     </p>
                   </div>
