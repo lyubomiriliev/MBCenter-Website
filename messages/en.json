@@ -1251,6 +1251,7 @@
         "offerNumber": "Offer #",
         "client": "Client",
         "car": "Vehicle",
+        "vin": "VIN Number",
         "licensePlate": "Reg. Number",
         "status": "Status",
         "total": "Total",

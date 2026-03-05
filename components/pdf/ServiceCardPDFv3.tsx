@@ -16,14 +16,13 @@ export const setFontRegistered = (v: boolean) => {
 };
 
 const EUR_TO_BGN = 1.95583;
-const VAT_RATE = 0.2;
 
 // Create styles function that uses current fontRegistered state
 const createStyles = () => {
   const fontFamily = fontRegistered ? "NotoSans" : "Helvetica";
   return StyleSheet.create({
     page: {
-      paddingTop: 24,
+      paddingTop: 15,
       paddingBottom: 30,
       paddingLeft: 30,
       paddingRight: 30,
@@ -81,7 +80,7 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     title: {
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: 700,
       textAlign: "center",
       marginTop: 6,
@@ -135,13 +134,13 @@ const createStyles = () => {
     tableRowAlt: {
       backgroundColor: "#f9f9f9",
     },
-    col1: { flex: 0.06, paddingVertical: 2, paddingHorizontal: 2 },
-    col2: { flex: 0.24, paddingLeft: 4, paddingVertical: 2, paddingRight: 2 },
-    col3: { flex: 0.2, paddingVertical: 2, paddingHorizontal: 2 },
-    colPartNum: { flex: 0.12, paddingVertical: 2, paddingHorizontal: 2 },
+    col1: { flex: 0.05, paddingVertical: 2, paddingHorizontal: 2 },
+    col2: { flex: 0.22, paddingLeft: 4, paddingVertical: 2, paddingRight: 2 },
+    colPartNum: { flex: 0.2, paddingVertical: 2, paddingHorizontal: 2 },
+    col3: { flex: 0.15, paddingVertical: 2, paddingHorizontal: 2 },
     col4: { flex: 0.08, paddingVertical: 2, paddingHorizontal: 2 },
-    col5: { flex: 0.28, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
-    col6: { flex: 0.28, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
+    col5: { flex: 0.2, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
+    col6: { flex: 0.2, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
     colSvc1: { flex: 0.05, paddingHorizontal: 2 },
     colSvc2: { flex: 0.24, paddingLeft: 4, paddingRight: 2 },
     colSvc3: { flex: 0.3, paddingHorizontal: 2 },
@@ -165,7 +164,7 @@ const createStyles = () => {
       fontSize: 12,
       fontWeight: 700,
       marginBottom: 8,
-      textAlign: "center",
+      textAlign: "left",
       fontFamily: fontFamily,
     },
     summaryTable: {
@@ -192,10 +191,10 @@ const createStyles = () => {
       fontSize: 9,
       fontFamily: fontFamily,
     },
-    summaryCol1: { flex: 0.24, paddingLeft: 3, paddingRight: 2 },
-    summaryCol2: { flex: 0.38, paddingRight: 3, paddingLeft: 2 },
+    summaryCol1: { flex: 0.35, paddingLeft: 3, paddingRight: 2 },
+    summaryCol2: { flex: 0.4, paddingRight: 3, paddingLeft: 2 },
     summaryCol3: { flex: 0.24, paddingHorizontal: 2 },
-    summaryCol4: { flex: 0.18, paddingRight: 3, paddingLeft: 2 },
+    summaryCol4: { flex: 0.16, paddingRight: 3, paddingLeft: 2 },
     summaryCol5: { flex: 0.35, paddingRight: 3, paddingLeft: 2 },
     summaryTotalRow: {
       backgroundColor: "#e0e0e0",
@@ -237,14 +236,27 @@ const createStyles = () => {
       lineHeight: 1.3,
       fontFamily: fontFamily,
     },
+    stampRow: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      marginTop: 80,
+    },
     stampField: {
-      width: 160,
-      height: 80,
-      marginTop: 12,
-      alignSelf: "flex-end",
-      borderWidth: 1,
-      borderStyle: "solid",
-      borderColor: "#000",
+      width: "45%",
+      borderTop: "1px solid #000",
+      paddingTop: 4,
+    },
+    stampLabel: {
+      fontSize: 9,
+      color: "#555",
+      marginBottom: 4,
+      fontFamily: fontFamily,
+    },
+    stampDots: {
+      fontSize: 9,
+      color: "#aaa",
+      letterSpacing: 2,
+      fontFamily: fontFamily,
     },
   });
 };
@@ -276,30 +288,47 @@ export function ServiceCardPDFv3({
 }: ServiceCardPDFv3Props) {
   const styles = createStyles();
 
-  const formatDual = (eurValue: number) => {
-    if (isNaN(eurValue) || eurValue == null) return "0.00 EUR / 0.00 BGN";
-    const bgnValue = eurValue * EUR_TO_BGN;
-    return `${eurValue.toFixed(2)} EUR / ${bgnValue.toFixed(2)} BGN`;
+  // EUR only (for per-row values)
+  const formatEur = (eurValue: number) => {
+    if (isNaN(eurValue) || eurValue == null) return "0.00 €";
+    return `${eurValue.toFixed(2)} €`;
   };
 
+  // EUR + лв. (for totals only)
+  const formatDual = (eurValue: number) => {
+    if (isNaN(eurValue) || eurValue == null) return "0.00 € / 0.00 лв.";
+    const bgnValue = eurValue * EUR_TO_BGN;
+    return `${eurValue.toFixed(2)} € / ${bgnValue.toFixed(2)} лв.`;
+  };
+
+  // Discount percentages from offer
+  const discountPartsPercent = (offer as any).discount_parts_percent ?? 0;
+  const discountServicesPercent = (offer as any).discount_services_percent ?? 0;
+
   // Calculate parts total - input prices already include VAT (gross)
-  const partsGross = (offer.items || [])
+  const partsGrossBeforeDiscount = (offer.items || [])
     .filter((item) => item.type === "part")
     .reduce(
       (sum, item) =>
         sum + (item.total ?? item.unit_price * (item.quantity ?? 0)),
       0,
     );
-  const partsNet = partsGross / 1.2; // Net = Gross / 1.2
-  const partsVat = partsGross - partsNet; // VAT = Gross - Net
+  const partsDiscountAmount =
+    partsGrossBeforeDiscount * (discountPartsPercent / 100);
+  const partsGross = partsGrossBeforeDiscount - partsDiscountAmount;
+  const partsNet = partsGross / 1.2;
+  const partsVat = partsGross - partsNet;
 
   // Calculate service actions total - input prices already include VAT (gross)
-  const serviceGross = (offer.service_actions || []).reduce(
+  const serviceGrossBeforeDiscount = (offer.service_actions || []).reduce(
     (sum, action) => sum + action.total_eur_net, // Note: despite the name, this is actually gross
     0,
   );
-  const serviceNet = serviceGross / 1.2; // Net = Gross / 1.2
-  const serviceVat = serviceGross - serviceNet; // VAT = Gross - Net
+  const serviceDiscountAmount =
+    serviceGrossBeforeDiscount * (discountServicesPercent / 100);
+  const serviceGross = serviceGrossBeforeDiscount - serviceDiscountAmount;
+  const serviceNet = serviceGross / 1.2;
+  const serviceVat = serviceGross - serviceNet;
 
   // Grand total
   const totalGross = partsGross + serviceGross;
@@ -327,7 +356,7 @@ export function ServiceCardPDFv3({
             </Text>
             <Text style={styles.companyInfo}>Булстат: 207901533</Text>
             <Text style={styles.companyInfo}>ДДС номер: BG207901533</Text>
-            <Text style={styles.companyInfo}>0883788873</Text>
+            <Text style={styles.companyInfo}>Тел. +359883788873</Text>
             <Text style={styles.companyInfo}>contact@mbcenter.bg</Text>
           </View>
           <View style={styles.headerRight}>
@@ -357,9 +386,7 @@ export function ServiceCardPDFv3({
             </Text>
             <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Пробег:</Text>{" "}
-              {offer.mileage
-                ? `${offer.mileage} ${offer.mileage_unit || "км"}`
-                : ""}
+              {offer.mileage ? `${offer.mileage} км.` : ""}
             </Text>
           </View>
         </View>
@@ -377,37 +404,69 @@ export function ServiceCardPDFv3({
             <View style={styles.table} wrap={true}>
               <View style={styles.tableHeader} wrap={false}>
                 <View style={styles.col1}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
+                  <Text
+                    style={[
+                      styles.colTextCenter,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
+                  >
                     №
                   </Text>
                 </View>
                 <View style={styles.col2}>
-                  <Text style={[styles.colTextLeft, { color: "#fff" }]}>
+                  <Text
+                    style={[styles.colTextLeft, { color: "#fff", fontSize: 8 }]}
+                  >
                     Продукт
                   </Text>
                 </View>
+                <View style={styles.colPartNum}>
+                  <Text
+                    style={[
+                      styles.colTextCenter,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
+                  >
+                    № Част
+                  </Text>
+                </View>
                 <View style={styles.col3}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
+                  <Text
+                    style={[
+                      styles.colTextCenter,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
+                  >
                     Производител
                   </Text>
                 </View>
-                <View style={styles.colPartNum}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    № част
-                  </Text>
-                </View>
                 <View style={styles.col4}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
+                  <Text
+                    style={[
+                      styles.colTextCenter,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
+                  >
                     К-во
                   </Text>
                 </View>
                 <View style={styles.col5}>
-                  <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  <Text
+                    style={[
+                      styles.colTextRight,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
+                  >
                     Цена на брой (с ДДС)
                   </Text>
                 </View>
                 <View style={styles.col6}>
-                  <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  <Text
+                    style={[
+                      styles.colTextRight,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
+                  >
                     Обща цена (с ДДС)
                   </Text>
                 </View>
@@ -433,14 +492,14 @@ export function ServiceCardPDFv3({
                         {item.description || "-"}
                       </Text>
                     </View>
-                    <View style={styles.col3}>
-                      <Text style={styles.colTextCenter}>
-                        {item.brand || "-"}
-                      </Text>
-                    </View>
                     <View style={styles.colPartNum}>
                       <Text style={styles.colTextCenter}>
                         {item.part_number || "-"}
+                      </Text>
+                    </View>
+                    <View style={styles.col3}>
+                      <Text style={styles.colTextCenter}>
+                        {item.brand || "-"}
                       </Text>
                     </View>
                     <View style={styles.col4}>
@@ -448,12 +507,12 @@ export function ServiceCardPDFv3({
                     </View>
                     <View style={styles.col5}>
                       <Text style={styles.colTextRight}>
-                        {formatDual(unitPriceGross)}
+                        {formatEur(unitPriceGross)}
                       </Text>
                     </View>
                     <View style={styles.col6}>
                       <Text style={styles.colTextRight}>
-                        {formatDual(totalGross)}
+                        {formatEur(totalGross)}
                       </Text>
                     </View>
                   </View>
@@ -520,20 +579,20 @@ export function ServiceCardPDFv3({
                       <View style={styles.colSvc3}>
                         <Text style={styles.colTextCenter}>
                           {action.is_fixed_price
-                            ? ""
+                            ? "—"
                             : formatTimeDisplay(action.time_required_text)}
                         </Text>
                       </View>
                       <View style={styles.colSvc4}>
                         <Text style={styles.colTextRight}>
                           {action.is_fixed_price
-                            ? ""
-                            : formatDual(hourlyRateGross)}
+                            ? "—"
+                            : formatEur(hourlyRateGross)}
                         </Text>
                       </View>
                       <View style={styles.colSvc5}>
                         <Text style={styles.colTextRight}>
-                          {formatDual(totalGross)}
+                          {formatEur(totalGross)}
                         </Text>
                       </View>
                     </View>
@@ -572,7 +631,7 @@ export function ServiceCardPDFv3({
                   </View>
                   <View style={styles.summaryCol2}>
                     <Text style={styles.colTextRight}>
-                      {formatDual(partsNet)}
+                      {formatEur(partsNet)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol3}>
@@ -580,12 +639,12 @@ export function ServiceCardPDFv3({
                   </View>
                   <View style={styles.summaryCol4}>
                     <Text style={styles.colTextRight}>
-                      {formatDual(partsVat)}
+                      {formatEur(partsVat)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol5}>
                     <Text style={styles.colTextRight}>
-                      {formatDual(partsGross)}
+                      {formatEur(partsGross)}
                     </Text>
                   </View>
                 </View>
@@ -597,7 +656,7 @@ export function ServiceCardPDFv3({
                 </View>
                 <View style={styles.summaryCol2}>
                   <Text style={styles.colTextRight}>
-                    {formatDual(serviceNet)}
+                    {formatEur(serviceNet)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol3}>
@@ -605,16 +664,77 @@ export function ServiceCardPDFv3({
                 </View>
                 <View style={styles.summaryCol4}>
                   <Text style={styles.colTextRight}>
-                    {formatDual(serviceVat)}
+                    {formatEur(serviceVat)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol5}>
                   <Text style={styles.colTextRight}>
-                    {formatDual(serviceGross)}
+                    {formatEur(serviceGross)}
                   </Text>
                 </View>
               </View>
             )}
+            {/* Discount rows */}
+            {discountPartsPercent > 0 && partsItems.length > 0 && (
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCol1}>
+                  <Text style={styles.colTextLeft}>
+                    Отстъпка за части ({discountPartsPercent}%)
+                  </Text>
+                </View>
+                <View style={styles.summaryCol2}>
+                  <Text style={styles.colTextRight}>
+                    -{formatEur(partsDiscountAmount / 1.2)}
+                  </Text>
+                </View>
+                <View style={styles.summaryCol3}>
+                  <Text style={styles.colTextCenter}>20%</Text>
+                </View>
+                <View style={styles.summaryCol4}>
+                  <Text style={styles.colTextRight}>
+                    -
+                    {formatEur(partsDiscountAmount - partsDiscountAmount / 1.2)}
+                  </Text>
+                </View>
+                <View style={styles.summaryCol5}>
+                  <Text style={styles.colTextRight}>
+                    -{formatEur(partsDiscountAmount)}
+                  </Text>
+                </View>
+              </View>
+            )}
+            {discountServicesPercent > 0 &&
+              offer.service_actions &&
+              offer.service_actions.length > 0 && (
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryCol1}>
+                    <Text style={styles.colTextLeft}>
+                      Отстъпка за сервизни дейности ({discountServicesPercent}%)
+                    </Text>
+                  </View>
+                  <View style={styles.summaryCol2}>
+                    <Text style={styles.colTextRight}>
+                      -{formatEur(serviceDiscountAmount / 1.2)}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryCol3}>
+                    <Text style={styles.colTextCenter}>20%</Text>
+                  </View>
+                  <View style={styles.summaryCol4}>
+                    <Text style={styles.colTextRight}>
+                      -
+                      {formatEur(
+                        serviceDiscountAmount - serviceDiscountAmount / 1.2,
+                      )}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryCol5}>
+                    <Text style={styles.colTextRight}>
+                      -{formatEur(serviceDiscountAmount)}
+                    </Text>
+                  </View>
+                </View>
+              )}
             <View style={[styles.summaryRow, styles.summaryTotalRow]}>
               <View style={styles.summaryCol1}>
                 <Text style={styles.colTextLeft}>Обща стойност</Text>
@@ -626,7 +746,7 @@ export function ServiceCardPDFv3({
                 <Text style={styles.colTextCenter}>20%</Text>
               </View>
               <View style={styles.summaryCol4}>
-                <Text style={styles.colTextRight} />
+                <Text style={styles.colTextRight}>{formatDual(totalVat)}</Text>
               </View>
               <View style={styles.summaryCol5}>
                 <Text
@@ -647,7 +767,7 @@ export function ServiceCardPDFv3({
                 </View>
                 <View style={styles.summaryCol2}>
                   <Text style={styles.colTextRight}>
-                    -{formatDual(prepayment)}
+                    -{formatEur(prepayment)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol3}>
@@ -658,7 +778,7 @@ export function ServiceCardPDFv3({
                 </View>
                 <View style={styles.summaryCol5}>
                   <Text style={styles.colTextRight}>
-                    -{formatDual(prepayment)}
+                    -{formatEur(prepayment)}
                   </Text>
                 </View>
               </View>
@@ -709,12 +829,14 @@ export function ServiceCardPDFv3({
             </Text>
           )}
           <Text style={styles.footerText}>и-мейл: contact@mbcenter.bg</Text>
-          <Text style={styles.disclaimer}>
-            Цените, посочени в тази оферта, са валидни в момента на нейното
-            създаване. Възможни са промени поради непредвидени увеличения на
-            разходите за ремонта, частите, валутни колебания или други причини.
-          </Text>
-          <View style={styles.stampField} />
+          <View style={styles.stampRow}>
+            <View style={styles.stampField}>
+              <Text style={styles.stampLabel}>Печат и подпис:</Text>
+              <Text style={styles.stampDots}>
+                ....................................
+              </Text>
+            </View>
+          </View>
         </View>
       </Page>
     </Document>

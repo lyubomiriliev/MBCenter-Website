@@ -16,7 +16,6 @@ export const setFontRegistered = (v: boolean) => {
 };
 
 const EUR_TO_BGN = 1.95583;
-const VAT_RATE = 0.2;
 
 // Create styles function that uses current fontRegistered state
 const createStyles = () => {
@@ -160,7 +159,7 @@ const createStyles = () => {
       fontSize: 14,
       fontWeight: 700,
       marginBottom: 10,
-      textAlign: "center",
+      textAlign: "left",
       fontFamily: fontFamily,
     },
     summaryTable: {
@@ -234,6 +233,28 @@ const createStyles = () => {
       lineHeight: 1.3,
       fontFamily: fontFamily,
     },
+    stampRow: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      marginTop: 80,
+    },
+    stampField: {
+      width: "45%",
+      borderTop: "1px solid #000",
+      paddingTop: 4,
+    },
+    stampLabel: {
+      fontSize: 9,
+      color: "#555",
+      marginBottom: 4,
+      fontFamily: fontFamily,
+    },
+    stampDots: {
+      fontSize: 9,
+      color: "#aaa",
+      letterSpacing: 2,
+      fontFamily: fontFamily,
+    },
   });
 };
 
@@ -257,33 +278,50 @@ function formatTimeDisplay(timeText: string | null): string {
   return "-";
 }
 
-export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props) {
+export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
   const styles = createStyles();
 
-  const formatDual = (eurValue: number) => {
-    if (isNaN(eurValue) || eurValue == null) return "0.00 € / 0.00 BGN";
-    const bgnValue = eurValue * EUR_TO_BGN;
-    return `${eurValue.toFixed(2)} € / ${bgnValue.toFixed(2)} BGN`;
+  // EUR only (for per-row values)
+  const formatEur = (eurValue: number) => {
+    if (isNaN(eurValue) || eurValue == null) return "0.00 €";
+    return `${eurValue.toFixed(2)} €`;
   };
 
+  // EUR + BGN (for totals only)
+  const formatDual = (eurValue: number) => {
+    if (isNaN(eurValue) || eurValue == null) return "0.00 € / 0.00 лв.";
+    const bgnValue = eurValue * EUR_TO_BGN;
+    return `${eurValue.toFixed(2)} € / ${bgnValue.toFixed(2)} лв.`;
+  };
+
+  // Discount percentages from offer
+  const discountPartsPercent = (offer as any).discount_parts_percent ?? 0;
+  const discountServicesPercent = (offer as any).discount_services_percent ?? 0;
+
   // Calculate parts total - input prices already include VAT (gross)
-  const partsGross = (offer.items || [])
+  const partsGrossBeforeDiscount = (offer.items || [])
     .filter((item) => item.type === "part")
     .reduce(
       (sum, item) =>
         sum + (item.total ?? item.unit_price * (item.quantity ?? 0)),
-      0
+      0,
     );
-  const partsNet = partsGross / 1.2; // Net = Gross / 1.2
-  const partsVat = partsGross - partsNet; // VAT = Gross - Net
+  const partsDiscountAmount =
+    partsGrossBeforeDiscount * (discountPartsPercent / 100);
+  const partsGross = partsGrossBeforeDiscount - partsDiscountAmount;
+  const partsNet = partsGross / 1.2;
+  const partsVat = partsGross - partsNet;
 
   // Calculate service actions total - input prices already include VAT (gross)
-  const serviceGross = (offer.service_actions || []).reduce(
-    (sum, action) => sum + action.total_eur_net, // Note: despite the name, this is actually gross
-    0
+  const serviceGrossBeforeDiscount = (offer.service_actions || []).reduce(
+    (sum, action) => sum + action.total_eur_net,
+    0,
   );
-  const serviceNet = serviceGross / 1.2; // Net = Gross / 1.2
-  const serviceVat = serviceGross - serviceNet; // VAT = Gross - Net
+  const serviceDiscountAmount =
+    serviceGrossBeforeDiscount * (discountServicesPercent / 100);
+  const serviceGross = serviceGrossBeforeDiscount - serviceDiscountAmount;
+  const serviceNet = serviceGross / 1.2;
+  const serviceVat = serviceGross - serviceNet;
 
   // Grand total
   const totalGross = partsGross + serviceGross;
@@ -310,7 +348,7 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
             </Text>
             <Text style={styles.companyInfo}>Булстат: 207901533</Text>
             <Text style={styles.companyInfo}>ДДС номер: BG207901533</Text>
-            <Text style={styles.companyInfo}>0883788873</Text>
+            <Text style={styles.companyInfo}>Тел. +359883788873</Text>
             <Text style={styles.companyInfo}>contact@mbcenter.bg</Text>
           </View>
           <View style={styles.headerRight}>
@@ -340,9 +378,7 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
             </Text>
             <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Пробег:</Text>{" "}
-              {offer.mileage
-                ? `${offer.mileage} ${offer.mileage_unit || "км"}`
-                : ""}
+              {offer.mileage ? `${offer.mileage} км.` : ""}
             </Text>
           </View>
         </View>
@@ -388,9 +424,8 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                 </View>
               </View>
               {sortedParts.map((item, index) => {
-                // Input prices already include VAT
                 const unitPriceGross = item.unit_price;
-                const totalGross =
+                const itemTotalGross =
                   item.total ?? item.unit_price * (item.quantity ?? 0);
                 return (
                   <View
@@ -418,12 +453,12 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                     </View>
                     <View style={styles.col6}>
                       <Text style={styles.colTextRight}>
-                        {formatDual(unitPriceGross)}
+                        {formatEur(unitPriceGross)}
                       </Text>
                     </View>
                     <View style={styles.col7}>
                       <Text style={styles.colTextRight}>
-                        {formatDual(totalGross)}
+                        {formatEur(itemTotalGross)}
                       </Text>
                     </View>
                   </View>
@@ -490,20 +525,20 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                       <View style={styles.colSvc3}>
                         <Text style={styles.colTextCenter}>
                           {action.is_fixed_price
-                            ? ""
+                            ? "—"
                             : formatTimeDisplay(action.time_required_text)}
                         </Text>
                       </View>
                       <View style={styles.colSvc4}>
                         <Text style={styles.colTextRight}>
                           {action.is_fixed_price
-                            ? ""
-                            : formatDual(hourlyRateGross)}
+                            ? "—"
+                            : formatEur(hourlyRateGross)}
                         </Text>
                       </View>
                       <View style={styles.colSvc5}>
                         <Text style={styles.colTextRight}>
-                          {formatDual(totalGross)}
+                          {formatEur(totalGross)}
                         </Text>
                       </View>
                     </View>
@@ -515,7 +550,7 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
 
         {/* Summary */}
         <View style={styles.summarySection}>
-          <Text style={styles.summaryTitle}>Обобщена оферта</Text>
+          <Text style={styles.summaryTitle}>Обобщение</Text>
           <View style={styles.summaryTable}>
             <View style={styles.summaryHeaderRow} wrap={false}>
               <View style={styles.summaryCol1}>
@@ -542,7 +577,7 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                   </View>
                   <View style={styles.summaryCol2}>
                     <Text style={styles.colTextRight}>
-                      {formatDual(partsNet)}
+                      {formatEur(partsNet)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol3}>
@@ -550,12 +585,12 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                   </View>
                   <View style={styles.summaryCol4}>
                     <Text style={styles.colTextRight}>
-                      {formatDual(partsVat)}
+                      {formatEur(partsVat)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol5}>
                     <Text style={styles.colTextRight}>
-                      {formatDual(partsGross)}
+                      {formatEur(partsGross)}
                     </Text>
                   </View>
                 </View>
@@ -567,7 +602,7 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                 </View>
                 <View style={styles.summaryCol2}>
                   <Text style={styles.colTextRight}>
-                    {formatDual(serviceNet)}
+                    {formatEur(serviceNet)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol3}>
@@ -575,16 +610,77 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                 </View>
                 <View style={styles.summaryCol4}>
                   <Text style={styles.colTextRight}>
-                    {formatDual(serviceVat)}
+                    {formatEur(serviceVat)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol5}>
                   <Text style={styles.colTextRight}>
-                    {formatDual(serviceGross)}
+                    {formatEur(serviceGross)}
                   </Text>
                 </View>
               </View>
             )}
+            {/* Discount rows */}
+            {discountPartsPercent > 0 && parts.length > 0 && (
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCol1}>
+                  <Text style={styles.colTextLeft}>
+                    Отстъпка за части ({discountPartsPercent}%)
+                  </Text>
+                </View>
+                <View style={styles.summaryCol2}>
+                  <Text style={styles.colTextRight}>
+                    -{formatEur(partsDiscountAmount / 1.2)}
+                  </Text>
+                </View>
+                <View style={styles.summaryCol3}>
+                  <Text style={styles.colTextCenter}>20%</Text>
+                </View>
+                <View style={styles.summaryCol4}>
+                  <Text style={styles.colTextRight}>
+                    -
+                    {formatEur(partsDiscountAmount - partsDiscountAmount / 1.2)}
+                  </Text>
+                </View>
+                <View style={styles.summaryCol5}>
+                  <Text style={styles.colTextRight}>
+                    -{formatEur(partsDiscountAmount)}
+                  </Text>
+                </View>
+              </View>
+            )}
+            {discountServicesPercent > 0 &&
+              offer.service_actions &&
+              offer.service_actions.length > 0 && (
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryCol1}>
+                    <Text style={styles.colTextLeft}>
+                      Отстъпка за сервизни дейности ({discountServicesPercent}%)
+                    </Text>
+                  </View>
+                  <View style={styles.summaryCol2}>
+                    <Text style={styles.colTextRight}>
+                      -{formatEur(serviceDiscountAmount / 1.2)}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryCol3}>
+                    <Text style={styles.colTextCenter}>20%</Text>
+                  </View>
+                  <View style={styles.summaryCol4}>
+                    <Text style={styles.colTextRight}>
+                      -
+                      {formatEur(
+                        serviceDiscountAmount - serviceDiscountAmount / 1.2,
+                      )}
+                    </Text>
+                  </View>
+                  <View style={styles.summaryCol5}>
+                    <Text style={styles.colTextRight}>
+                      -{formatEur(serviceDiscountAmount)}
+                    </Text>
+                  </View>
+                </View>
+              )}
             <View style={[styles.summaryRow, styles.summaryTotalRow]}>
               <View style={styles.summaryCol1}>
                 <Text style={styles.colTextLeft}>Обща стойност</Text>
@@ -596,7 +692,7 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                 <Text style={styles.colTextCenter}>20%</Text>
               </View>
               <View style={styles.summaryCol4}>
-                <Text style={styles.colTextRight} />
+                <Text style={styles.colTextRight}>{formatDual(totalVat)}</Text>
               </View>
               <View style={styles.summaryCol5}>
                 <Text
@@ -610,10 +706,15 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
             {prepayments.map((prepayment, index) => (
               <View key={index} style={styles.summaryRow}>
                 <View style={styles.summaryCol1}>
-                  <Text style={styles.colTextLeft}>Авансово плащане {prepayments.length > 1 ? `${index + 1}` : ''}</Text>
+                  <Text style={styles.colTextLeft}>
+                    Авансово плащане{" "}
+                    {prepayments.length > 1 ? `${index + 1}` : ""}
+                  </Text>
                 </View>
                 <View style={styles.summaryCol2}>
-                  <Text style={styles.colTextRight}>-{formatDual(prepayment)}</Text>
+                  <Text style={styles.colTextRight}>
+                    -{formatEur(prepayment)}
+                  </Text>
                 </View>
                 <View style={styles.summaryCol3}>
                   <Text style={styles.colTextCenter} />
@@ -622,7 +723,9 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                   <Text style={styles.colTextRight} />
                 </View>
                 <View style={styles.summaryCol5}>
-                  <Text style={styles.colTextRight}>-{formatDual(prepayment)}</Text>
+                  <Text style={styles.colTextRight}>
+                    -{formatEur(prepayment)}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -645,7 +748,12 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
                   <Text
                     style={[styles.colTextRight, styles.summaryTotalAmountText]}
                   >
-                    {formatDual(Math.max(0, totalGross - prepayments.reduce((a, b) => a + b, 0)))}
+                    {formatDual(
+                      Math.max(
+                        0,
+                        totalGross - prepayments.reduce((a, b) => a + b, 0),
+                      ),
+                    )}
                   </Text>
                 </View>
               </View>
@@ -673,6 +781,14 @@ export function OfferPDFv3({ offer, locale, prepayments = [] }: OfferPDFv3Props)
             разходите за продукти, суровини, валутни колебания или други
             причини.
           </Text>
+          <View style={styles.stampRow}>
+            <View style={styles.stampField}>
+              <Text style={styles.stampLabel}>Печат и подпис:</Text>
+              <Text style={styles.stampDots}>
+                ....................................
+              </Text>
+            </View>
+          </View>
         </View>
       </Page>
     </Document>

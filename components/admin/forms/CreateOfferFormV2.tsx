@@ -66,7 +66,9 @@ export function CreateOfferFormV2({
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
-  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [offerPdfGenerating, setOfferPdfGenerating] = useState(false);
+  const [serviceCardGenerating, setServiceCardGenerating] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
   const [savedOffer, setSavedOffer] = useState<OfferWithRelations | null>(null);
   const [isLoadingOffer, setIsLoadingOffer] = useState(false);
   const [prepayments, setPrepayments] = useState<number[]>([]);
@@ -75,6 +77,8 @@ export function CreateOfferFormV2({
   const [prepaymentError, setPrepaymentError] = useState("");
   const [performedBySelection, setPerformedBySelection] = useState("");
   const [performedBySaving, setPerformedBySaving] = useState(false);
+  const [notesFromServiceInput, setNotesFromServiceInput] = useState("");
+  const [notesFromServiceSaving, setNotesFromServiceSaving] = useState(false);
 
   const updateOfferMutation = useUpdateOffer();
 
@@ -103,10 +107,15 @@ export function CreateOfferFormV2({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAutoSaveRef = useRef<string | null>(null);
   const formLoadedRef = useRef(false);
+  const changedAfterLastCardRef = useRef(true);
 
   useEffect(() => {
     if (savedOffer) setPerformedBySelection(savedOffer.performed_by ?? "");
   }, [savedOffer?.id, savedOffer?.performed_by]);
+
+  useEffect(() => {
+    if (savedOffer) setNotesFromServiceInput(savedOffer.notes ?? "");
+  }, [savedOffer?.id, savedOffer?.notes]);
 
   // Load existing offer data into form when editing
   useEffect(() => {
@@ -319,6 +328,7 @@ export function CreateOfferFormV2({
         }
 
         lastAutoSaveRef.current = currentSnapshot;
+        changedAfterLastCardRef.current = true;
         queryClient.invalidateQueries({ queryKey: ["offers"] });
         queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
         const refreshed = await refetchOffer();
@@ -470,7 +480,7 @@ export function CreateOfferFormV2({
   };
 
   const generateOfferPDF = async (offerData: OfferWithRelations) => {
-    setPdfGenerating(true);
+    setOfferPdfGenerating(true);
     try {
       console.log("Generating PDF for offer:", offerData.offer_number);
 
@@ -532,7 +542,7 @@ export function CreateOfferFormV2({
       showError(t("errors.pdfFailed"));
       throw error;
     } finally {
-      setPdfGenerating(false);
+      setOfferPdfGenerating(false);
     }
   };
 
@@ -546,7 +556,7 @@ export function CreateOfferFormV2({
       return;
     }
 
-    setPdfGenerating(true);
+    setServiceCardGenerating(true);
     try {
       // Create a mock offer for unsaved forms
       const offerData: OfferWithRelations = savedOffer || {
@@ -658,15 +668,17 @@ export function CreateOfferFormV2({
         URL.revokeObjectURL(url);
       }, 100);
 
-      // Auto-set status to "finished" and save service card generation metadata
+      // Auto-set status to "finished" and save/update service card generation metadata
       if (savedOffer && savedOffer.id !== "temp") {
-        const updateData: any = { status: "finished" };
-
-        // Only set service card metadata on first generation
-        if (!savedOffer.service_card_generated_at) {
-          updateData.service_card_number = savedOffer.offer_number;
-          updateData.service_card_generated_at = new Date().toISOString();
-        }
+        const updateData: any = {
+          status: "finished",
+          service_card_number:
+            savedOffer.service_card_number || savedOffer.offer_number,
+          ...(changedAfterLastCardRef.current && {
+            service_card_generated_at: new Date().toISOString(),
+          }),
+        };
+        changedAfterLastCardRef.current = false;
 
         await supabase
           .from("offers")
@@ -680,7 +692,99 @@ export function CreateOfferFormV2({
       console.error("Error generating service card PDF:", error);
       showError(t("errors.serviceCardFailed"));
     } finally {
-      setPdfGenerating(false);
+      setServiceCardGenerating(false);
+    }
+  };
+
+  const cloneCurrentOffer = async () => {
+    if (!savedOffer) return;
+    setIsCloning(true);
+    try {
+      const { data: newOfferNumber, error: numError } = await supabase.rpc(
+        "generate_offer_number",
+      );
+      if (numError || !newOfferNumber)
+        throw new Error("Failed to generate offer number");
+
+      const { data: newOffer, error: insertError } = await supabase
+        .from("offers")
+        .insert({
+          offer_number: newOfferNumber,
+          customer_name: savedOffer.customer_name,
+          customer_phone: savedOffer.customer_phone,
+          customer_email: savedOffer.customer_email,
+          car_model_text: savedOffer.car_model_text,
+          car_model_detail: savedOffer.car_model_detail,
+          repair_name: savedOffer.repair_name,
+          vin_text: savedOffer.vin_text,
+          license_plate: savedOffer.license_plate,
+          mileage: savedOffer.mileage,
+          mileage_unit: savedOffer.mileage_unit,
+          car_year: savedOffer.car_year,
+          created_by_name: savedOffer.created_by_name,
+          created_by: savedOffer.created_by,
+          status: "draft",
+          total_net: savedOffer.total_net,
+          total_vat: savedOffer.total_vat,
+          total_gross: savedOffer.total_gross,
+          discount_percent: savedOffer.discount_percent,
+          discount_parts_percent: savedOffer.discount_parts_percent,
+          discount_services_percent: savedOffer.discount_services_percent,
+          currency: savedOffer.currency || "EUR",
+          notes: savedOffer.notes,
+          notes_internal: savedOffer.notes_internal,
+          notes_service: savedOffer.notes_service,
+          prepayments_eur: savedOffer.prepayments_eur,
+        } as never)
+        .select()
+        .single();
+
+      if (insertError || !newOffer) throw new Error("Failed to create clone");
+
+      if (savedOffer.items && savedOffer.items.length > 0) {
+        await supabase.from("offer_items").insert(
+          savedOffer.items.map((item, i) => ({
+            offer_id: (newOffer as any).id,
+            type: item.type,
+            description: item.description,
+            brand: item.brand,
+            part_number: item.part_number,
+            unit_price: item.unit_price,
+            quantity: item.quantity,
+            total: item.total,
+            sort_order: i,
+          })) as never,
+        );
+      }
+
+      if (savedOffer.service_actions && savedOffer.service_actions.length > 0) {
+        await supabase.from("service_actions").insert(
+          savedOffer.service_actions.map((action, i) => ({
+            offer_id: (newOffer as any).id,
+            action_name: action.action_name,
+            time_required_text: action.time_required_text,
+            price_per_hour_eur_net: action.price_per_hour_eur_net,
+            total_eur_net: action.total_eur_net,
+            is_fixed_price: action.is_fixed_price,
+            fixed_price_amount: action.fixed_price_amount,
+            sort_order: i,
+          })) as never,
+        );
+      }
+
+      const basePath = pathname.includes("/mb-admin")
+        ? pathname.split("/mb-admin")[0] + "/mb-admin"
+        : pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics";
+      router.push(`${basePath}/offers/${(newOffer as any).id}`);
+    } catch (error) {
+      console.error("Error cloning offer:", error);
+      showError(
+        locale === "bg"
+          ? "Грешка при клониране на офертата"
+          : "Error cloning offer",
+      );
+    } finally {
+      setIsCloning(false);
     }
   };
 
@@ -1082,25 +1186,63 @@ export function CreateOfferFormV2({
       <div className="space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Skeleton cards */}
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="bg-mb-anthracite border-mb-border">
-                <CardContent className="pt-6">
-                  <div className="space-y-4 animate-pulse">
-                    <div className="h-4 bg-mb-black rounded w-1/4"></div>
-                    <div className="h-10 bg-mb-black rounded"></div>
-                    <div className="h-4 bg-mb-black rounded w-3/4"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="lg:col-span-1">
+            {/* Car info skeleton */}
             <Card className="bg-mb-anthracite border-mb-border">
               <CardContent className="pt-6">
                 <div className="space-y-4 animate-pulse">
-                  <div className="h-4 bg-mb-black rounded w-1/2"></div>
-                  <div className="h-20 bg-mb-black rounded"></div>
+                  <div className="h-4 bg-white/10 rounded w-1/4"></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-10 bg-white/10 rounded"></div>
+                    <div className="h-10 bg-white/10 rounded"></div>
+                    <div className="h-10 bg-white/10 rounded"></div>
+                    <div className="h-10 bg-white/10 rounded"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            {/* Parts skeleton */}
+            <Card className="bg-mb-anthracite border-mb-border">
+              <CardContent className="pt-6">
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-4 bg-white/10 rounded w-1/5"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+            {/* Services skeleton */}
+            <Card className="bg-mb-anthracite border-mb-border">
+              <CardContent className="pt-6">
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-4 bg-white/10 rounded w-1/4"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+            {/* Notes skeleton */}
+            <Card className="bg-mb-anthracite border-mb-border">
+              <CardContent className="pt-6">
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-4 bg-white/10 rounded w-1/5"></div>
+                  <div className="h-20 bg-white/10 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="lg:col-span-1">
+            <Card className="bg-mb-anthracite border-mb-border sticky top-4">
+              <CardContent className="pt-6">
+                <div className="space-y-4 animate-pulse">
+                  <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                  <div className="h-6 bg-white/10 rounded w-3/4"></div>
+                  <div className="h-6 bg-white/10 rounded w-2/3"></div>
+                  <div className="h-px bg-white/10 rounded"></div>
+                  <div className="h-8 bg-white/10 rounded w-full"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
+                  <div className="h-10 bg-white/10 rounded"></div>
                 </div>
               </CardContent>
             </Card>
@@ -1149,7 +1291,7 @@ export function CreateOfferFormV2({
               </div>
               <div>
                 <span className="text-mb-silver text-sm">{t("carVin")}</span>
-                <p className="text-white font-mono">
+                <p className="text-white">
                   {savedOffer.vin_text
                     ? savedOffer.vin_text.toUpperCase()
                     : "-"}
@@ -1181,7 +1323,7 @@ export function CreateOfferFormV2({
               </div>
               <div>
                 <CardTitle className="text-lg mb-2">
-                  {t("notesService")}
+                  {t("notesFromReception")}
                 </CardTitle>
                 <p className="text-white whitespace-pre-wrap">
                   {savedOffer.notes_service || "-"}
@@ -1195,16 +1337,24 @@ export function CreateOfferFormV2({
                   <select
                     value={performedBySelection}
                     onChange={(e) => setPerformedBySelection(e.target.value)}
-                    className="bg-mb-anthracite/20 border border-mb-border text-white rounded-lg px-4 py-2.5 text-sm w-full max-w-[200px] focus:outline-none focus:ring-2 focus:ring-mb-blue/50 focus:border-mb-blue/50 transition-colors"
+                    className="border border-mb-border bg-mb-blue/20 text-white rounded-lg px-4 py-2.5 text-sm w-full max-w-[200px] focus:outline-none focus:ring-2 focus:ring-mb-blue/50 focus:border-mb-blue/50 transition-colors"
                   >
-                    <option value="">{t("performedByChoose")}</option>
-                    <option value="50:50">50:50</option>
-                    <option value="Жоро">Жоро</option>
-                    <option value="Любо">Любо</option>
+                    <option value="" className="bg-mb-anthracite">
+                      {t("performedByChoose")}
+                    </option>
+                    <option value="50:50" className="bg-mb-anthracite">
+                      50:50
+                    </option>
+                    <option value="Жоро" className="bg-mb-anthracite">
+                      Жоро
+                    </option>
+                    <option value="Любо" className="bg-mb-anthracite">
+                      Любо
+                    </option>
                   </select>
                   <Button
                     type="button"
-                    size="sm"
+                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-5 py-2"
                     disabled={performedBySaving}
                     onClick={async () => {
                       if (!savedOffer?.id) return;
@@ -1239,6 +1389,49 @@ export function CreateOfferFormV2({
           </CardContent>
         </Card>
 
+        {/* Забележки от сервиза - editable by mechanic */}
+        <Card className="bg-mb-anthracite border-mb-border">
+          <CardContent className="pt-6">
+            <CardTitle className="text-lg mb-3">{t("notes")}</CardTitle>
+            <textarea
+              value={notesFromServiceInput}
+              onChange={(e) => setNotesFromServiceInput(e.target.value)}
+              placeholder="Опишете какво е открито по автомобила..."
+              rows={4}
+              className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+            />
+            <Button
+              type="button"
+              className="mt-3 bg-mb-blue hover:bg-mb-blue/90 text-white px-5 py-2"
+              disabled={notesFromServiceSaving}
+              onClick={async () => {
+                if (!savedOffer?.id) return;
+                setNotesFromServiceSaving(true);
+                try {
+                  await updateOfferMutation.mutateAsync({
+                    id: savedOffer.id,
+                    offer: {
+                      notes: notesFromServiceInput.trim() || null,
+                    } as any,
+                  });
+                  queryClient.invalidateQueries({
+                    queryKey: ["offer", savedOffer.id],
+                  });
+                  showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                } catch {
+                  showError(
+                    locale === "bg" ? "Грешка при запазване." : "Error saving.",
+                  );
+                } finally {
+                  setNotesFromServiceSaving(false);
+                }
+              }}
+            >
+              {notesFromServiceSaving ? "…" : t("performedBySave")}
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Parts - no prices, only names, numbers, quantities */}
         {offerParts.length > 0 && (
           <Card className="bg-mb-anthracite border-mb-border">
@@ -1249,25 +1442,27 @@ export function CreateOfferFormV2({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <div className="grid grid-cols-[40px_minmax(0,24rem)_120px_80px] gap-3 text-xs text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
+                <div className="grid grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_80px] gap-3 text-sm text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
                   <div>#</div>
                   <div>{t("productName")}</div>
                   <div>{t("partNumber")}</div>
-                  <div>{t("qty")}</div>
+                  <div className="text-right">{t("qty")}</div>
                 </div>
                 {offerParts
                   .sort((a, b) => a.sort_order - b.sort_order)
                   .map((part, i) => (
                     <div
                       key={part.id}
-                      className="grid grid-cols-[40px_minmax(0,24rem)_120px_80px] gap-3 text-sm py-1.5 border-b border-mb-border/50"
+                      className="grid grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_80px] gap-3 text-base py-1.5 border-b border-mb-border/50"
                     >
                       <div className="text-mb-silver">{i + 1}</div>
                       <div className="text-white">{part.description}</div>
-                      <div className="text-mb-silver font-mono">
+                      <div className="text-mb-silver font-mono truncate">
                         {part.part_number || "-"}
                       </div>
-                      <div className="text-white">{part.quantity}</div>
+                      <div className="text-white text-right">
+                        {part.quantity}
+                      </div>
                     </div>
                   ))}
               </div>
@@ -1391,24 +1586,32 @@ export function CreateOfferFormV2({
                 </div>
               </div>
 
-              {/* Notes for Me */}
-              <div className="space-y-2">
-                <Label htmlFor="notesInternal">{t("notesInternal")}</Label>
-                <Textarea
-                  {...methods.register("notesInternal")}
-                  placeholder={t("notesInternalPlaceholder")}
-                  className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
-                />
-              </div>
-
-              {/* Notes for Service */}
-              <div className="space-y-2">
-                <Label htmlFor="notesService">{t("notesService")}</Label>
-                <Textarea
-                  {...methods.register("notesService")}
-                  placeholder={t("notesServicePlaceholder")}
-                  className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
-                />
+              {/* Three notes fields side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="notesInternal">{t("notesInternal")}</Label>
+                  <Textarea
+                    {...methods.register("notesInternal")}
+                    placeholder={t("notesInternalPlaceholder")}
+                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notesService">{t("notesService")}</Label>
+                  <Textarea
+                    {...methods.register("notesService")}
+                    placeholder={t("notesServicePlaceholder")}
+                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">{t("notes")}</Label>
+                  <Textarea
+                    {...methods.register("notes")}
+                    placeholder={t("notesPlaceholder")}
+                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1417,7 +1620,7 @@ export function CreateOfferFormV2({
         {/* Sidebar: only on admin create/edit (not in mechanic view) */}
         {!isMechanicView && (
           <div className="flex w-full flex-col lg:shrink-0 lg:w-[20rem] xl:w-[22rem] min-[2200px]:w-[28rem] min-[3000px]:w-[34rem]">
-            <div className="w-full lg:sticky lg:top-6">
+            <div className="w-full lg:sticky lg:top-8">
               <FloatingSummary
                 prepayments={prepayments}
                 onRemovePrepayment={(i) =>
@@ -1481,10 +1684,10 @@ export function CreateOfferFormV2({
                     type="button"
                     variant="outline"
                     className="w-full border-mb-border bg-green-600 hover:bg-green-700 text-white"
-                    disabled={pdfGenerating}
+                    disabled={offerPdfGenerating || serviceCardGenerating}
                     onClick={() => generateOfferPDF(savedOffer)}
                   >
-                    {pdfGenerating ? (
+                    {offerPdfGenerating ? (
                       <>
                         <svg
                           className="animate-spin -ml-1 mr-2 h-4 w-4"
@@ -1505,7 +1708,7 @@ export function CreateOfferFormV2({
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           />
                         </svg>
-                        Generating...
+                        Създаване…
                       </>
                     ) : (
                       <>
@@ -1533,10 +1736,10 @@ export function CreateOfferFormV2({
                   type="button"
                   variant="outline"
                   className="w-full border-mb-border"
-                  disabled={pdfGenerating}
+                  disabled={serviceCardGenerating || offerPdfGenerating}
                   onClick={generateServiceCardPDF}
                 >
-                  {pdfGenerating ? (
+                  {serviceCardGenerating ? (
                     <>
                       <svg
                         className="animate-spin -ml-1 mr-2 h-4 w-4"
@@ -1557,7 +1760,7 @@ export function CreateOfferFormV2({
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                       </svg>
-                      Generating...
+                      Създаване…
                     </>
                   ) : (
                     <>
@@ -1606,6 +1809,59 @@ export function CreateOfferFormV2({
                   {t("addPrePayment")}
                 </Button>
 
+                {/* Clone Button (only for existing offers) */}
+                {isEditing && savedOffer && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-amber-600 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400"
+                    disabled={isCloning}
+                    onClick={cloneCurrentOffer}
+                  >
+                    {isCloning ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Създаване…
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                        {t("clone")}
+                      </>
+                    )}
+                  </Button>
+                )}
+
                 {/* Delete Button (only for existing offers) */}
                 {isEditing && savedOffer && (
                   <Button
@@ -1643,51 +1899,55 @@ export function CreateOfferFormV2({
                   </Button>
                 )}
 
-                {/* Offer Metadata Info - use existingOffer so it shows on first load before effect sets savedOffer */}
-                {isEditing && (existingOffer ?? savedOffer) && (() => {
-                  const metaOffer = existingOffer ?? savedOffer!;
-                  return (
-                  <div className="w-full p-3 bg-mb-black/30 border border-mb-border rounded-lg text-xs text-mb-silver space-y-1.5">
-                    <div>
-                      <span className="font-medium">
-                        {t("offerCreatedAt")}:
-                      </span>{" "}
-                      {new Date(metaOffer.created_at).toLocaleDateString(
-                        "bg-BG",
-                        {
-                          year: "numeric",
-                          month: "2-digit",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}
-                    </div>
-                    {metaOffer.service_card_generated_at && (
-                      <div>
-                        <span className="font-medium">
-                          {t("serviceCardCreatedAt")}:
-                        </span>{" "}
-                        {new Date(
-                          metaOffer.service_card_generated_at,
-                        ).toLocaleDateString("bg-BG", {
-                          year: "numeric",
-                          month: "2-digit",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                {/* Offer Metadata Info - prefer savedOffer (refreshed after actions) over existingOffer (initial load) */}
+                {isEditing &&
+                  (savedOffer ?? existingOffer) &&
+                  (() => {
+                    const metaOffer = savedOffer ?? existingOffer!;
+                    return (
+                      <div className="w-full p-3 bg-mb-black/30 border border-mb-border rounded-lg text-xs text-mb-silver space-y-1.5">
+                        <div>
+                          <span className="font-medium">
+                            {t("offerCreatedAt")}:
+                          </span>{" "}
+                          {new Date(metaOffer.created_at).toLocaleDateString(
+                            "bg-BG",
+                            {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                        </div>
+                        {metaOffer.service_card_generated_at && (
+                          <div>
+                            <span className="font-medium">
+                              {t("serviceCardCreatedAt")}:
+                            </span>{" "}
+                            {new Date(
+                              metaOffer.service_card_generated_at,
+                            ).toLocaleDateString("bg-BG", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                        )}
+                        {metaOffer.performed_by && (
+                          <div>
+                            <span className="font-medium">
+                              {t("performedBy")}:
+                            </span>{" "}
+                            {metaOffer.performed_by}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {metaOffer.performed_by && (
-                      <div>
-                        <span className="font-medium">{t("performedBy")}:</span>{" "}
-                        {metaOffer.performed_by}
-                      </div>
-                    )}
-                  </div>
-                  );
-                })()}
+                    );
+                  })()}
               </FloatingSummary>
             </div>
           </div>

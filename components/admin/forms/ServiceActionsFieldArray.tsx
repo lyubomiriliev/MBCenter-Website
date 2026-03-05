@@ -82,6 +82,14 @@ function removeFixedActivity(id: string) {
   localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
 }
 
+function updateFixedActivity(id: string, name: string, priceEur: number) {
+  const existing = getStoredFixedActivities();
+  const updated = existing.map((a) =>
+    a.id === id ? { ...a, name, priceEur } : a,
+  );
+  localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
+}
+
 function AddEditServiceActionModal({
   open,
   onOpenChange,
@@ -106,6 +114,7 @@ function AddEditServiceActionModal({
   const [error, setError] = useState("");
   const [fixedActivities, setFixedActivities] = useState<FixedActivity[]>([]);
   const [addNewModalOpen, setAddNewModalOpen] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<FixedActivity | null>(null);
   const [newActivityName, setNewActivityName] = useState("");
   const [newActivityPrice, setNewActivityPrice] = useState("0");
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
@@ -202,12 +211,24 @@ function AddEditServiceActionModal({
     const trimmed = newActivityName.trim();
     const price = parseFloat(newActivityPrice.replace(",", ".")) || 0;
     if (trimmed && price > 0) {
-      const item = addFixedActivity(trimmed, price);
-      setFixedActivities((prev) => [...prev, item]);
-      setActionName(trimmed);
-      setFixedPriceAmount(price);
-      setFixedPriceInput(price.toString());
-      setSelectedActivityId(item.id);
+      if (editingActivity) {
+        updateFixedActivity(editingActivity.id, trimmed, price);
+        const updated = getStoredFixedActivities();
+        setFixedActivities(updated);
+        if (selectedActivityId === editingActivity.id) {
+          setActionName(trimmed);
+          setFixedPriceAmount(price);
+          setFixedPriceInput(price.toString());
+        }
+        setEditingActivity(null);
+      } else {
+        const item = addFixedActivity(trimmed, price);
+        setFixedActivities((prev) => [...prev, item]);
+        setActionName(trimmed);
+        setFixedPriceAmount(price);
+        setFixedPriceInput(price.toString());
+        setSelectedActivityId(item.id);
+      }
       setNewActivityName("");
       setNewActivityPrice("0");
       setAddNewModalOpen(false);
@@ -328,7 +349,7 @@ function AddEditServiceActionModal({
                         {fixedActivities.map((act) => (
                           <div
                             key={act.id}
-                            className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100"
+                            className="flex items-center gap-1 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100"
                             onClick={() => {
                               handleSelectActivity(act.id);
                               setActivityPopoverOpen(false);
@@ -338,6 +359,33 @@ function AddEditServiceActionModal({
                               {act.name} — €{act.priceEur.toFixed(2)} /{" "}
                               {(act.priceEur * EUR_TO_BGN).toFixed(2)} лв.
                             </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingActivity(act);
+                                setNewActivityName(act.name);
+                                setNewActivityPrice(act.priceEur.toString());
+                                setActivityPopoverOpen(false);
+                                setAddNewModalOpen(true);
+                              }}
+                              className="shrink-0 p-0.5 rounded text-blue-500 hover:bg-blue-100"
+                              aria-label="Edit"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -370,7 +418,12 @@ function AddEditServiceActionModal({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setAddNewModalOpen(true)}
+                    onClick={() => {
+                      setEditingActivity(null);
+                      setNewActivityName("");
+                      setNewActivityPrice("0");
+                      setAddNewModalOpen(true);
+                    }}
                     className="border-mb-border text-sm"
                   >
                     + {t("addFixedActivity")}
@@ -378,12 +431,24 @@ function AddEditServiceActionModal({
                 </div>
               </div>
 
-              {/* Add New Fixed Activity Modal */}
-              <Dialog open={addNewModalOpen} onOpenChange={setAddNewModalOpen}>
+              {/* Add / Edit Fixed Activity Modal */}
+              <Dialog
+                open={addNewModalOpen}
+                onOpenChange={(v) => {
+                  if (!v) {
+                    setEditingActivity(null);
+                    setNewActivityName("");
+                    setNewActivityPrice("0");
+                  }
+                  setAddNewModalOpen(v);
+                }}
+              >
                 <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
                   <DialogHeader>
                     <DialogTitle className="text-white">
-                      {t("addFixedActivity")}
+                      {editingActivity
+                        ? "Редактирай дейност"
+                        : t("addFixedActivity")}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 py-2">
@@ -518,11 +583,9 @@ function AddEditServiceActionModal({
                   const rate = Number(pricePerHour) || 0;
                   if (hours <= 0 || rate <= 0) return null;
                   const totalWithVat = rate * hours;
-                  const totalWithoutVat = totalWithVat / (1 + 0.2);
                   return (
                     <p className="text-sm mt-4 text-mb-silver">
-                      Обща стойност: €{totalWithVat.toFixed(2)} {t("withVat")} ·
-                      €{totalWithoutVat.toFixed(2)} {t("withoutVat")}
+                      Обща стойност: €{totalWithVat.toFixed(2)} {t("withVat")}
                     </p>
                   );
                 })()}
@@ -622,18 +685,15 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
         title={actionName}
       >
         {actionName || "—"}
-        {isFixed && (
-          <span className="ml-1 text-xs text-orange-400">(фикс.)</span>
-        )}
       </div>
       <div
         className="text-mb-silver text-sm flex items-center justify-center"
         title={timeRequired}
       >
-        {isFixed ? "" : timeRequired || "—"}
+        {isFixed ? "—" : timeRequired || "—"}
       </div>
       <div className="text-white text-sm tabular-nums flex items-center justify-end">
-        {isFixed ? "" : `€${Number(pricePerHour).toFixed(2)}`}
+        {isFixed ? "—" : `€${Number(pricePerHour).toFixed(2)}`}
       </div>
       <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-end">
         €{total.toFixed(2)}

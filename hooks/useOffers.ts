@@ -90,13 +90,14 @@ export function useOffers(filters: OffersFilters = {}) {
           car_model_detail,
           repair_name,
           license_plate,
+          vin_text,
           status,
           total_gross,
           created_at,
           service_card_number,
           service_card_generated_at,
           client:clients(id, name),
-          car:cars(id, model, year, license_plate)
+          car:cars(id, model, year, license_plate, vin)
         `,
           { count: "exact" }
         )

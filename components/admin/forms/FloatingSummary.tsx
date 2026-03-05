@@ -29,7 +29,7 @@ export function FloatingSummary({
   const amountDueBgn = amountDueEur * EUR_TO_BGN;
 
   return (
-    <div className="space-y-4 lg:fixed lg:top-28 mr-6">
+    <div className="space-y-4 mr-0 lg:mr-6 lg:fixed lg:top-30 rounded-lg lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
       <Card className="bg-mb-anthracite border-mb-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">

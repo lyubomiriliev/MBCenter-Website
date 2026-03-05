@@ -61,12 +61,14 @@ function AddEditPartModal({
       setPartNumber(vals.partNumber ?? "");
       setQuantity(vals.quantity ?? 1);
       setUnitPrice(vals.unitPrice ?? 0);
+      setPriceInput((vals.unitPrice ?? 0).toString());
     } else {
       setDescription("");
       setBrand("");
       setPartNumber("");
       setQuantity(1);
       setUnitPrice(0);
+      setPriceInput("0");
     }
     setError("");
   }, []);
@@ -122,6 +124,13 @@ function AddEditPartModal({
               id="modal-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onFocus={(e) => {
+                const t = e.target;
+                setTimeout(
+                  () => t.setSelectionRange(t.value.length, t.value.length),
+                  0,
+                );
+              }}
               placeholder={t("productName")}
               className="bg-gray-100 text-gray-900 border-mb-border"
             />
@@ -258,7 +267,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,28rem)_120px_120px_60px_130px_120px_80px] gap-3 items-center rounded border border-mb-border bg-mb-anthracite/50 px-2 py-1.5 even:bg-mb-anthracite/30 shrink-0"
+      className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,28rem)_120px_minmax(150px,220px)_60px_130px_120px_80px] gap-3 items-center rounded border border-mb-border bg-mb-anthracite/50 px-2 py-1.5 even:bg-mb-anthracite/30 shrink-0"
     >
       <button
         type="button"
@@ -471,7 +480,7 @@ export function PartsFieldArray() {
           </div>
         ) : (
           <div className="min-w-0 overflow-x-auto -mx-1 px-1 pb-1">
-            <div className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,28rem)_120px_120px_60px_130px_120px_80px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1 shrink-0">
+            <div className="grid min-w-[860px] grid-cols-[32px_24px_minmax(220px,28rem)_120px_minmax(140px,220px)_60px_130px_120px_80px] gap-3 items-center py-1.5 px-2 text-xs font-medium text-mb-silver uppercase tracking-wider border-b border-mb-border mb-1 shrink-0">
               <div />
               <div className="flex items-center justify-center">#</div>
               <div className="flex min-w-0 items-center justify-start leading-tight">

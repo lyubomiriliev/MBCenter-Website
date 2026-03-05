@@ -239,6 +239,17 @@ export function OffersTable({
       }
     ),
     columnHelper.accessor(
+      (row) => row.vin_text || row.car?.vin,
+      {
+        id: "vin",
+        header: () => t("offers.columns.vin"),
+        cell: (info) => {
+          const v = info.getValue();
+          return v ? <span className="font-mono text-xs">{v.toUpperCase()}</span> : "-";
+        },
+      }
+    ),
+    columnHelper.accessor(
       (row) => row.license_plate || row.car?.license_plate,
       {
         id: "licensePlate",
