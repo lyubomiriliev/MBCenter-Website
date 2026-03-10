@@ -14,6 +14,11 @@ interface AuthState {
   error: string | null;
 }
 
+// Safety timeout so a hung auth request can't block the entire admin UI forever.
+// If Supabase auth doesn't respond within this window, we fall back to
+// a \"logged out\" state and let AdminGuard send the user to /admin-login.
+const AUTH_INIT_TIMEOUT_MS = 8000;
+
 export function useSupabaseAuth() {
   const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
@@ -87,11 +92,26 @@ export function useSupabaseAuth() {
 
     const initAuth = async () => {
       try {
-        // Get current session
+        // Get current session with a hard timeout so we never hang indefinitely.
+        const getSessionWithTimeout = async () => {
+          const timeout = new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("AUTH_INIT_TIMEOUT")),
+              AUTH_INIT_TIMEOUT_MS,
+            ),
+          );
+
+          // supabase.auth.getSession() resolves to { data: { session }, error }
+          return Promise.race([supabase.auth.getSession(), timeout]) as Promise<{
+            data: { session: Session | null };
+            error: unknown;
+          }>;
+        };
+
         const {
           data: { session },
           error,
-        } = await supabase.auth.getSession();
+        } = await getSessionWithTimeout();
 
         if (error) throw error;
 
@@ -114,6 +134,7 @@ export function useSupabaseAuth() {
           });
         }
       } catch (error) {
+        console.error("Supabase auth init failed:", error);
         if (mounted) {
           setState({
             user: null,
