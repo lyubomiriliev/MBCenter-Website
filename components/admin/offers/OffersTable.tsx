@@ -245,7 +245,7 @@ export function OffersTable({
         header: () => t("offers.columns.vin"),
         cell: (info) => {
           const v = info.getValue();
-          return v ? <span className="font-mono text-xs">{v.toUpperCase()}</span> : "-";
+          return v ? v.toUpperCase() : "-";
         },
       }
     ),

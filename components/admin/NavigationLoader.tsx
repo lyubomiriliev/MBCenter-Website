@@ -24,6 +24,9 @@ export function NavigationLoader() {
       const href = anchor.getAttribute("href");
       if (!href) return;
       if (
+        anchor.hasAttribute("download") ||
+        href.startsWith("blob:") ||
+        href.startsWith("data:") ||
         href.startsWith("http") ||
         href.startsWith("mailto") ||
         href.startsWith("tel") ||
