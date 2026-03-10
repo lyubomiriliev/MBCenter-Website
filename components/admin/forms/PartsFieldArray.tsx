@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useState, useCallback, useEffect, useMemo, memo } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import {
   DndContext,
@@ -233,20 +233,20 @@ function AddEditPartModal({
 
 interface PartRowProps {
   index: number;
-  onRemove: () => void;
-  onEdit: () => void;
+  remove: (index: number) => void;
+  openEdit: (index: number) => void;
 }
 
-function PartRow({ index, onRemove, onEdit }: PartRowProps) {
+const PartRow = memo(function PartRow({ index, remove, openEdit }: PartRowProps) {
   const t = useTranslations("admin.form");
-  const { watch } = useFormContext<OfferFormData>();
+  const { control } = useFormContext<OfferFormData>();
 
-  const quantity = watch(`parts.${index}.quantity`) ?? 1;
-  const unitPrice = watch(`parts.${index}.unitPrice`) ?? 0;
+  const quantity = useWatch({ control, name: `parts.${index}.quantity` }) ?? 1;
+  const unitPrice = useWatch({ control, name: `parts.${index}.unitPrice` }) ?? 0;
   const total = quantity * unitPrice;
-  const description = watch(`parts.${index}.description`) ?? "";
-  const brand = watch(`parts.${index}.brand`) ?? "";
-  const partNumber = watch(`parts.${index}.partNumber`) ?? "";
+  const description = useWatch({ control, name: `parts.${index}.description` }) ?? "";
+  const brand = useWatch({ control, name: `parts.${index}.brand` }) ?? "";
+  const partNumber = useWatch({ control, name: `parts.${index}.partNumber` }) ?? "";
 
   const {
     attributes,
@@ -325,7 +325,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={onEdit}
+          onClick={() => openEdit(index)}
           className="h-7 px-2 text-mb-silver hover:text-white hover:bg-mb-anthracite"
           aria-label={t("editPart")}
         >
@@ -347,7 +347,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={onRemove}
+          onClick={() => remove(index)}
           className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
           aria-label={t("remove")}
         >
@@ -368,7 +368,7 @@ function PartRow({ index, onRemove, onEdit }: PartRowProps) {
       </div>
     </div>
   );
-}
+});
 
 export function PartsFieldArray() {
   const t = useTranslations("admin.form");
@@ -377,6 +377,8 @@ export function PartsFieldArray() {
     control,
     name: "parts",
   });
+
+  const sortableItems = useMemo(() => fields.map((_, i) => `part-${i}`), [fields]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -507,15 +509,15 @@ export function PartsFieldArray() {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={fields.map((_, i) => `part-${i}`)}
+                items={sortableItems}
                 strategy={verticalListSortingStrategy}
               >
                 {fields.map((field, index) => (
                   <PartRow
                     key={field.id}
                     index={index}
-                    onRemove={() => remove(index)}
-                    onEdit={() => openEdit(index)}
+                    remove={remove}
+                    openEdit={openEdit}
                   />
                 ))}
               </SortableContext>

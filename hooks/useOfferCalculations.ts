@@ -59,7 +59,6 @@ export function useOfferCalculations(
 ): CalculationResult {
   const parts = useWatch({ control, name: "parts" }) || [];
   const serviceActions = useWatch({ control, name: "serviceActions" }) || [];
-  const discountPercent = useWatch({ control, name: "discountPercent" }) || 0;
   const discountPartsPercent =
     useWatch({ control, name: "discountPartsPercent" }) || 0;
   const discountServicesPercent =
@@ -140,11 +139,5 @@ export function useOfferCalculations(
         grossTotalBGN: formatBGN(grossTotalBGN),
       },
     };
-  }, [
-    parts,
-    serviceActions,
-    discountPercent,
-    discountPartsPercent,
-    discountServicesPercent,
-  ]);
+  }, [parts, serviceActions, discountPartsPercent, discountServicesPercent]);
 }

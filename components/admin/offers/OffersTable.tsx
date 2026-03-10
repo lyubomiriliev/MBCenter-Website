@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -172,9 +172,9 @@ export function OffersTable({
       .map((idx) => data?.offers[Number(idx)]?.id)
       .filter(Boolean) as string[];
 
-    for (const id of selectedIds) {
-      await supabase.from("offers").delete().eq("id", id);
-    }
+    await Promise.all(
+      selectedIds.map((id) => supabase.from("offers").delete().eq("id", id))
+    );
     queryClient.invalidateQueries({ queryKey: ["offers"] });
     setRowSelection({});
     setBulkDeleteDialogOpen(false);
@@ -182,7 +182,7 @@ export function OffersTable({
 
   const selectedCount = Object.values(rowSelection).filter(Boolean).length;
 
-  const columns = [
+  const columns = useMemo(() => [
     !isMechanicView && columnHelper.display({
       id: "select",
       header: ({ table }) => (
@@ -409,7 +409,8 @@ export function OffersTable({
         </DropdownMenu>
       ),
     }),
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isMechanicView, t, basePath, router, handleClone, setDeletingOfferId, setEditingOffer, setSelectedStatus, setStatusDialogOpen]);
 
   const table = useReactTable({
     data: data?.offers || [],

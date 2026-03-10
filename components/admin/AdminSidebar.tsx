@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,7 @@ export function AdminSidebar({ basePath }: AdminSidebarProps) {
   const pathname = usePathname();
   const locale = useLocale();
   const t = useTranslations();
-  const { profile, signOut, isAdmin } = useSupabaseAuth();
+  const { profile, signOut, isAdmin } = useSupabaseAuthContext();
   const { open, setOpen } = useSidebar();
 
   const handleSignOut = async () => {

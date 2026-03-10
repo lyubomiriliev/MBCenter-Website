@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { SidebarProvider } from '@/components/admin/SidebarContext';
+import { SupabaseAuthProvider } from '@/components/admin/SupabaseAuthContext';
+import { NavigationLoader } from '@/components/admin/NavigationLoader';
 
 export default function AdminLayout({
   children,
@@ -25,16 +27,19 @@ export default function AdminLayout({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AdminGuard requiredRole="admin" redirectTo={`/${locale}/admin-login`}>
-        <SidebarProvider>
-          <div className="min-h-screen bg-mb-black">
-            <AdminSidebar basePath={`/${locale}/mb-admin`} />
-            <main className="lg:ml-64 min-h-screen flex flex-col overflow-hidden">
-              {children}
-            </main>
-          </div>
-        </SidebarProvider>
-      </AdminGuard>
+      <SupabaseAuthProvider>
+        <AdminGuard requiredRole="admin" redirectTo={`/${locale}/admin-login`}>
+          <SidebarProvider>
+            <div className="min-h-screen bg-mb-black">
+              <NavigationLoader />
+              <AdminSidebar basePath={`/${locale}/mb-admin`} />
+              <main className="lg:ml-64 min-h-screen flex flex-col overflow-hidden">
+                {children}
+              </main>
+            </div>
+          </SidebarProvider>
+        </AdminGuard>
+      </SupabaseAuthProvider>
     </QueryClientProvider>
   );
 }

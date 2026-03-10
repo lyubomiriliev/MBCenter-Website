@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useSupabaseAuthContext } from '@/components/admin/SupabaseAuthContext';
 import type { UserRole } from '@/types/database';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -19,7 +19,7 @@ export function AdminGuard({
 }: AdminGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isLoading, isAuthenticated, hasRole, profile } = useSupabaseAuth();
+  const { isLoading, isAuthenticated, hasRole, profile } = useSupabaseAuthContext();
 
   useEffect(() => {
     // Wait for auth to load

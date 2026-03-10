@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
@@ -99,15 +99,20 @@ export function CreateOfferFormV2({
   const {
     handleSubmit,
     formState: { errors },
-    watch,
     getValues,
     trigger,
   } = methods;
 
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const localSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAutoSaveRef = useRef<string | null>(null);
   const formLoadedRef = useRef(false);
   const changedAfterLastCardRef = useRef(true);
+  const prepaymentsRef = useRef(prepayments);
+
+  useEffect(() => {
+    prepaymentsRef.current = prepayments;
+  }, [prepayments]);
 
   useEffect(() => {
     if (savedOffer) setPerformedBySelection(savedOffer.performed_by ?? "");
@@ -121,6 +126,9 @@ export function CreateOfferFormV2({
   useEffect(() => {
     if (!existingOffer || !isEditing) return;
     setSavedOffer(existingOffer);
+    // Only reset the form on initial load — never on subsequent refetches
+    // (refetches happen after autosave; resetting would wipe in-progress typing)
+    if (formLoadedRef.current) return;
     const savedPrepayments = (
       existingOffer as { prepayments_eur?: number[] | null }
     ).prepayments_eur;
@@ -206,24 +214,19 @@ export function CreateOfferFormV2({
     });
   }, [existingOffer, isEditing, methods]);
 
-  // Debounced auto-save when editing (trigger on form or prepayments change)
-  const watchedValues = watch();
-  useEffect(() => {
-    if (!isEditing || !offerId || !formLoadedRef.current || !existingOffer)
-      return;
-
-    const snapshot = JSON.stringify({ form: watchedValues, prepayments });
-    if (lastAutoSaveRef.current === snapshot) return;
-
+  // Stable save function — reads values at save time via getValues(), no watch() subscription.
+  // Using useCallback means this reference is stable and won't cause effect re-runs.
+  const saveOffer = useCallback(async () => {
+    if (!formLoadedRef.current || !offerId) return;
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-
     autoSaveTimeoutRef.current = setTimeout(async () => {
       autoSaveTimeoutRef.current = null;
       const isValid = await trigger();
       if (!isValid) return;
 
       const data = getValues();
-      const currentSnapshot = JSON.stringify({ form: data, prepayments });
+      const currentPrepayments = prepaymentsRef.current;
+      const currentSnapshot = JSON.stringify({ form: data, prepayments: currentPrepayments });
       if (lastAutoSaveRef.current === currentSnapshot) return;
 
       try {
@@ -268,7 +271,7 @@ export function CreateOfferFormV2({
           notes: data.notes || null,
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
-          prepayments_eur: prepayments.length > 0 ? prepayments : null,
+          prepayments_eur: currentPrepayments.length > 0 ? currentPrepayments : null,
         };
 
         const offerRes = await supabase
@@ -311,9 +314,7 @@ export function CreateOfferFormV2({
             price_per_hour_eur_net: action.pricePerHour,
             total_eur_net: total,
             is_fixed_price: isFixed,
-            fixed_price_amount: isFixed
-              ? action.fixedPriceAmount || null
-              : null,
+            fixed_price_amount: isFixed ? action.fixedPriceAmount || null : null,
             sort_order: i,
           };
         });
@@ -322,39 +323,40 @@ export function CreateOfferFormV2({
           await supabase.from("offer_items").insert(partsInserts as never);
         }
         if (serviceInserts.length > 0) {
-          await supabase
-            .from("service_actions")
-            .insert(serviceInserts as never);
+          await supabase.from("service_actions").insert(serviceInserts as never);
         }
 
         lastAutoSaveRef.current = currentSnapshot;
         changedAfterLastCardRef.current = true;
+        // Invalidate queries — React Query will refetch in the background.
+        // existingOffer updating will call setSavedOffer via the load useEffect.
+        // Do NOT call refetchOffer() here — it was causing form resets during typing.
         queryClient.invalidateQueries({ queryKey: ["offers"] });
         queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
-        const refreshed = await refetchOffer();
-        if (refreshed.data) setSavedOffer(refreshed.data);
         showSuccess(t("saved"));
       } catch (err) {
         console.error("Auto-save failed:", err);
       }
     }, AUTOSAVE_DEBOUNCE_MS);
+  }, [offerId, trigger, getValues, queryClient, showSuccess, t]);
 
+  // Subscribe to form changes for server autosave.
+  // methods.watch(callback) fires the callback without causing a re-render —
+  // unlike watch() which returns a value and forces a re-render on every keystroke.
+  useEffect(() => {
+    if (!isEditing) return;
+    const subscription = methods.watch(saveOffer);
     return () => {
+      subscription.unsubscribe();
       if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
     };
-  }, [
-    watchedValues,
-    prepayments,
-    isEditing,
-    offerId,
-    existingOffer,
-    trigger,
-    getValues,
-    refetchOffer,
-    queryClient,
-    showSuccess,
-    t,
-  ]);
+  }, [isEditing, methods, saveOffer]);
+
+  // Trigger autosave when prepayments change (not covered by form subscription)
+  useEffect(() => {
+    if (!isEditing) return;
+    saveOffer();
+  }, [prepayments, isEditing, saveOffer]);
 
   // Load from localStorage on mount (only for new offers)
   useEffect(() => {
@@ -387,74 +389,33 @@ export function CreateOfferFormV2({
     }
   }, [isEditing, methods]);
 
-  // Watch form values for auto-save
-  const customerName = watch("customerName");
-  const customerPhone = watch("customerPhone");
-  const clientEmail = watch("clientEmail");
-  const carModel = watch("carModel");
-  const carModelDetail = watch("carModelDetail");
-  const repairName = watch("repairName");
-  const carYear = watch("carYear");
-  const vinText = watch("vinText");
-  const carLicensePlate = watch("carLicensePlate");
-  const carMileage = watch("carMileage");
-  const carMileageUnit = watch("carMileageUnit");
-  const createdByName = watch("createdByName");
-  const discountPercent = watch("discountPercent");
-  const discountPartsPercent = watch("discountPartsPercent");
-  const discountServicesPercent = watch("discountServicesPercent");
-  const notes = watch("notes");
-  const notesInternal = watch("notesInternal");
-  const notesService = watch("notesService");
-  const parts = watch("parts");
-  const serviceActions = watch("serviceActions");
-
-  // Auto-save to localStorage
+  // Subscription-based localStorage autosave for new (unsaved) offers.
+  // No individual watch() calls needed — no re-renders per keystroke.
   useEffect(() => {
     if (isEditing) return;
-
-    const saveTimeout = setTimeout(() => {
-      const formData = methods.getValues();
-      try {
-        localStorage.setItem(
-          AUTOSAVE_KEY,
-          JSON.stringify({
-            formData,
-            prepayments,
-            timestamp: new Date().toISOString(),
-          }),
-        );
-      } catch (err) {
-        console.error("Error saving draft:", err);
-      }
-    }, 1000);
-
-    return () => clearTimeout(saveTimeout);
-  }, [
-    isEditing,
-    methods,
-    prepayments,
-    customerName,
-    customerPhone,
-    clientEmail,
-    carModel,
-    carModelDetail,
-    repairName,
-    carYear,
-    vinText,
-    carLicensePlate,
-    carMileage,
-    carMileageUnit,
-    createdByName,
-    discountPercent,
-    discountPartsPercent,
-    discountServicesPercent,
-    notes,
-    notesInternal,
-    notesService,
-    parts,
-    serviceActions,
-  ]);
+    const subscription = methods.watch(() => {
+      if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
+      localSaveTimeoutRef.current = setTimeout(() => {
+        const formData = methods.getValues();
+        try {
+          localStorage.setItem(
+            AUTOSAVE_KEY,
+            JSON.stringify({
+              formData,
+              prepayments: prepaymentsRef.current,
+              timestamp: new Date().toISOString(),
+            }),
+          );
+        } catch (err) {
+          console.error("Error saving draft:", err);
+        }
+      }, 1000);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
+    };
+  }, [isEditing, methods]);
 
   const fetchOfferWithRelations = async (
     id: string,
@@ -547,10 +508,11 @@ export function CreateOfferFormV2({
   };
 
   const generateServiceCardPDF = async () => {
+    const formValues = methods.getValues();
     if (
       !savedOffer &&
-      methods.watch("parts").length === 0 &&
-      methods.watch("serviceActions").length === 0
+      formValues.parts.length === 0 &&
+      formValues.serviceActions.length === 0
     ) {
       showError(t("errors.noItemsForServiceCard"));
       return;
@@ -558,34 +520,32 @@ export function CreateOfferFormV2({
 
     setServiceCardGenerating(true);
     try {
-      // Create a mock offer for unsaved forms
       const offerData: OfferWithRelations = savedOffer || {
         id: "temp",
         offer_number: "",
-        customer_name: methods.watch("customerName"),
-        customer_phone: methods.watch("customerPhone") || null,
-        customer_email: methods.watch("clientEmail") || null,
-        car_model_text: methods.watch("carModel"),
-        car_model_detail: methods.watch("carModelDetail") || null,
-        repair_name: methods.watch("repairName") || null,
-        vin_text: methods.watch("vinText") || null,
-        license_plate: methods.watch("carLicensePlate") || null,
-        mileage: methods.watch("carMileage") ?? null,
-        mileage_unit: methods.watch("carMileageUnit") || "km",
-        car_year: methods.watch("carYear") ?? null,
-        created_by_name: methods.watch("createdByName"),
+        customer_name: formValues.customerName,
+        customer_phone: formValues.customerPhone || null,
+        customer_email: formValues.clientEmail || null,
+        car_model_text: formValues.carModel,
+        car_model_detail: formValues.carModelDetail || null,
+        repair_name: formValues.repairName || null,
+        vin_text: formValues.vinText || null,
+        license_plate: formValues.carLicensePlate || null,
+        mileage: formValues.carMileage ?? null,
+        mileage_unit: formValues.carMileageUnit || "km",
+        car_year: formValues.carYear ?? null,
+        created_by_name: formValues.createdByName,
         status: "draft",
         total_net: 0,
         total_vat: 0,
         total_gross: 0,
-        discount_percent: methods.watch("discountPercent") || 0,
-        discount_parts_percent: methods.watch("discountPartsPercent") || 0,
-        discount_services_percent:
-          methods.watch("discountServicesPercent") || 0,
+        discount_percent: formValues.discountPercent || 0,
+        discount_parts_percent: formValues.discountPartsPercent || 0,
+        discount_services_percent: formValues.discountServicesPercent || 0,
         currency: "EUR",
-        notes: methods.watch("notes") || null,
-        notes_internal: methods.watch("notesInternal") || null,
-        notes_service: methods.watch("notesService") || null,
+        notes: formValues.notes || null,
+        notes_internal: formValues.notesInternal || null,
+        notes_service: formValues.notesService || null,
         service_card_number: null,
         service_card_generated_at: null,
         performed_by: null,
@@ -595,7 +555,7 @@ export function CreateOfferFormV2({
         client_id: null,
         car_id: null,
         created_by: null,
-        items: methods.watch("parts").map((part, index) => ({
+        items: formValues.parts.map((part, index) => ({
           id: `part-${index}`,
           offer_id: "temp",
           type: "part" as const,
@@ -607,9 +567,7 @@ export function CreateOfferFormV2({
           total: part.unitPrice * part.quantity,
           sort_order: index,
         })),
-        service_actions: methods
-          .watch("serviceActions")
-          .map((action, index) => {
+        service_actions: formValues.serviceActions.map((action, index) => {
             const isFixed = action.isFixedPrice ?? false;
             const hours = isFixed
               ? 0

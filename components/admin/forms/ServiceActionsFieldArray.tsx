@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { useFieldArray, useFormContext } from "react-hook-form";
+import { useState, useCallback, useEffect, useMemo, memo } from "react";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import {
   DndContext,
@@ -618,19 +618,19 @@ function AddEditServiceActionModal({
 
 interface ServiceActionRowProps {
   index: number;
-  onRemove: () => void;
-  onEdit: () => void;
+  remove: (index: number) => void;
+  openEdit: (index: number) => void;
 }
 
-function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
+const ServiceActionRow = memo(function ServiceActionRow({ index, remove, openEdit }: ServiceActionRowProps) {
   const t = useTranslations("admin.form");
-  const { watch } = useFormContext<OfferFormData>();
+  const { control } = useFormContext<OfferFormData>();
 
-  const timeRequired = watch(`serviceActions.${index}.timeRequired`) ?? "";
-  const pricePerHour = watch(`serviceActions.${index}.pricePerHour`) ?? 0;
-  const actionName = watch(`serviceActions.${index}.actionName`) ?? "";
-  const isFixed = watch(`serviceActions.${index}.isFixedPrice`) ?? false;
-  const fixedAmount = watch(`serviceActions.${index}.fixedPriceAmount`) ?? 0;
+  const timeRequired = useWatch({ control, name: `serviceActions.${index}.timeRequired` }) ?? "";
+  const pricePerHour = useWatch({ control, name: `serviceActions.${index}.pricePerHour` }) ?? 0;
+  const actionName = useWatch({ control, name: `serviceActions.${index}.actionName` }) ?? "";
+  const isFixed = useWatch({ control, name: `serviceActions.${index}.isFixedPrice` }) ?? false;
+  const fixedAmount = useWatch({ control, name: `serviceActions.${index}.fixedPriceAmount` }) ?? 0;
 
   const totalHours = parseTimeToHours(timeRequired);
   const total = isFixed ? fixedAmount : totalHours * pricePerHour;
@@ -703,7 +703,7 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={onEdit}
+          onClick={() => openEdit(index)}
           className="h-7 px-2 text-mb-silver hover:text-white hover:bg-mb-anthracite"
           aria-label={t("editServiceAction")}
         >
@@ -725,7 +725,7 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={onRemove}
+          onClick={() => remove(index)}
           className="h-7 px-2 text-red-400 hover:text-red-300 hover:bg-red-500/10"
           aria-label={t("remove")}
         >
@@ -746,7 +746,7 @@ function ServiceActionRow({ index, onRemove, onEdit }: ServiceActionRowProps) {
       </div>
     </div>
   );
-}
+});
 
 export function ServiceActionsFieldArray() {
   const t = useTranslations("admin.form");
@@ -755,6 +755,8 @@ export function ServiceActionsFieldArray() {
     control,
     name: "serviceActions",
   });
+
+  const sortableItems = useMemo(() => fields.map((_, i) => `service-${i}`), [fields]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -885,15 +887,15 @@ export function ServiceActionsFieldArray() {
               onDragEnd={handleDragEnd}
             >
               <SortableContext
-                items={fields.map((_, i) => `service-${i}`)}
+                items={sortableItems}
                 strategy={verticalListSortingStrategy}
               >
                 {fields.map((field, index) => (
                   <ServiceActionRow
                     key={field.id}
                     index={index}
-                    onRemove={() => remove(index)}
-                    onEdit={() => openEdit(index)}
+                    remove={remove}
+                    openEdit={openEdit}
                   />
                 ))}
               </SortableContext>
