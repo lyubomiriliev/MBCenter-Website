@@ -14,11 +14,6 @@ interface AuthState {
   error: string | null;
 }
 
-// Safety timeout so a hung auth request can't block the entire admin UI forever.
-// If Supabase auth doesn't respond within this window, we fall back to
-// a \"logged out\" state and let AdminGuard send the user to /admin-login.
-const AUTH_INIT_TIMEOUT_MS = 8000;
-
 export function useSupabaseAuth() {
   const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
@@ -29,17 +24,13 @@ export function useSupabaseAuth() {
     error: null,
   });
 
-  // Fetch profile for user with React Query cache
   const fetchProfile = useCallback(
     async (userId: string) => {
       try {
-        // Check cache first
         const cachedProfile = queryClient.getQueryData(["profile", userId]) as
           | Profile
           | undefined;
-        if (cachedProfile) {
-          return cachedProfile;
-        }
+        if (cachedProfile) return cachedProfile;
 
         const { data: queryData, error } = await supabase
           .from("profiles")
@@ -49,7 +40,6 @@ export function useSupabaseAuth() {
 
         let data: Profile | null = queryData;
 
-        // If profile doesn't exist, create one
         if (!data) {
           const insertPayload: InsertProfile = {
             auth_id: userId,
@@ -72,10 +62,7 @@ export function useSupabaseAuth() {
 
         if (error) throw error;
 
-        // Cache the profile
-        if (data) {
-          queryClient.setQueryData(["profile", userId], data);
-        }
+        if (data) queryClient.setQueryData(["profile", userId], data);
 
         return data as Profile | null;
       } catch (error) {
@@ -83,40 +70,26 @@ export function useSupabaseAuth() {
         return null;
       }
     },
-    [queryClient]
+    [queryClient],
   );
 
-  // Initialize auth state
   useEffect(() => {
     let mounted = true;
+    let initialized = false;
 
-    const initAuth = async () => {
-      try {
-        // Get current session with a hard timeout so we never hang indefinitely.
-        const getSessionWithTimeout = async () => {
-          const timeout = new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error("AUTH_INIT_TIMEOUT")),
-              AUTH_INIT_TIMEOUT_MS,
-            ),
-          );
+    // onAuthStateChange is the single source of truth for auth state in
+    // Supabase JS v2. It fires INITIAL_SESSION on mount with the stored
+    // session (or null), so we no longer need a separate getSession() call
+    // that races with this and can cause AbortErrors in production.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      initialized = true;
 
-          // supabase.auth.getSession() resolves to { data: { session }, error }
-          return Promise.race([supabase.auth.getSession(), timeout]) as Promise<{
-            data: { session: Session | null };
-            error: unknown;
-          }>;
-        };
-
-        const {
-          data: { session },
-          error,
-        } = await getSessionWithTimeout();
-
-        if (error) throw error;
-
-        if (session?.user && mounted) {
-          const profile = await fetchProfile(session.user.id);
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        if (mounted) {
           setState({
             user: session.user,
             session,
@@ -124,47 +97,7 @@ export function useSupabaseAuth() {
             isLoading: false,
             error: null,
           });
-        } else if (mounted) {
-          setState({
-            user: null,
-            session: null,
-            profile: null,
-            isLoading: false,
-            error: null,
-          });
         }
-      } catch (error) {
-        console.error("Supabase auth init failed:", error);
-        if (mounted) {
-          setState({
-            user: null,
-            session: null,
-            profile: null,
-            isLoading: false,
-            error:
-              error instanceof Error ? error.message : "Authentication error",
-          });
-        }
-      }
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
-        setState({
-          user: session.user,
-          session,
-          profile,
-          isLoading: false,
-          error: null,
-        });
       } else {
         setState({
           user: null,
@@ -176,13 +109,27 @@ export function useSupabaseAuth() {
       }
     });
 
+    // Safety net: if INITIAL_SESSION never fires within 8 s (e.g. network
+    // completely unreachable), unblock the UI so AdminGuard can redirect to
+    // login rather than showing a skeleton forever.
+    // Importantly we do NOT set user: null here — that would create a false
+    // "logged-out" state; we just clear isLoading and let AdminGuard decide.
+    const safetyTimer = setTimeout(() => {
+      if (mounted && !initialized) {
+        console.error("Auth: INITIAL_SESSION not received within 8 s");
+        setState((prev) =>
+          prev.isLoading ? { ...prev, isLoading: false } : prev,
+        );
+      }
+    }, 8000);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(safetyTimer);
     };
   }, [fetchProfile]);
 
-  // Sign in with email/password
   const signIn = async (email: string, password: string) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -196,10 +143,10 @@ export function useSupabaseAuth() {
       return { error };
     }
 
+    // isLoading will be cleared by the SIGNED_IN event from onAuthStateChange
     return { data };
   };
 
-  // Sign out
   const signOut = async () => {
     setState((prev) => ({ ...prev, isLoading: true }));
     const { error } = await supabase.auth.signOut();
@@ -209,29 +156,17 @@ export function useSupabaseAuth() {
       return { error };
     }
 
-    setState({
-      user: null,
-      session: null,
-      profile: null,
-      isLoading: false,
-      error: null,
-    });
-
+    // SIGNED_OUT event will clear the state via onAuthStateChange
     return { error: null };
   };
 
-  // Check if user has required role
   const hasRole = (requiredRole: UserRole | UserRole[]): boolean => {
     if (!state.profile) return false;
-
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     return roles.includes(state.profile.role);
   };
 
-  // Check if user is admin
   const isAdmin = (): boolean => hasRole("admin");
-
-  // Check if user is mechanic (or admin, since admin has all permissions)
   const isMechanic = (): boolean => hasRole(["mechanic", "admin"]);
 
   return {
