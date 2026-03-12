@@ -33,9 +33,9 @@ export function AdminHeader({ title, subtitle, actions }: AdminHeaderProps) {
             </svg>
           </button>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-white truncate">{title}</h1>
+            <h1 className="text-base sm:text-2xl font-bold text-white">{title}</h1>
             {subtitle && (
-              <p className="text-xs sm:text-sm text-mb-silver mt-0.5 truncate">{subtitle}</p>
+              <p className="text-xs sm:text-sm text-mb-silver mt-0.5 hidden sm:block truncate">{subtitle}</p>
             )}
           </div>
         </div>

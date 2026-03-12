@@ -308,6 +308,29 @@ export interface Database {
           created_at?: string;
         };
       };
+      fixed_activities: {
+        Row: {
+          id: string;
+          name: string;
+          price_eur: number;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          price_eur: number;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          price_eur?: number;
+          sort_order?: number;
+          created_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -334,6 +357,8 @@ export type ServiceAction =
   Database["public"]["Tables"]["service_actions"]["Row"];
 export type OfferPayment =
   Database["public"]["Tables"]["offer_payments"]["Row"];
+export type FixedActivity =
+  Database["public"]["Tables"]["fixed_activities"]["Row"];
 
 export type InsertProfile = Database["public"]["Tables"]["profiles"]["Insert"];
 export type InsertClient = Database["public"]["Tables"]["clients"]["Insert"];
@@ -345,6 +370,8 @@ export type InsertServiceAction =
   Database["public"]["Tables"]["service_actions"]["Insert"];
 export type InsertOfferPayment =
   Database["public"]["Tables"]["offer_payments"]["Insert"];
+export type InsertFixedActivity =
+  Database["public"]["Tables"]["fixed_activities"]["Insert"];
 
 export type UpdateProfile = Database["public"]["Tables"]["profiles"]["Update"];
 export type UpdateClient = Database["public"]["Tables"]["clients"]["Update"];
@@ -356,6 +383,8 @@ export type UpdateServiceAction =
   Database["public"]["Tables"]["service_actions"]["Update"];
 export type UpdateOfferPayment =
   Database["public"]["Tables"]["offer_payments"]["Update"];
+export type UpdateFixedActivity =
+  Database["public"]["Tables"]["fixed_activities"]["Update"];
 
 // Extended types with relations
 export interface OfferWithRelations extends Offer {

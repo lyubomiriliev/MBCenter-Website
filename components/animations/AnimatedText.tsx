@@ -26,14 +26,14 @@ export function AnimatedText({
 
     const ctx = gsap.context(() => {
       gsap.from(textRef.current, {
-        y: 40,
+        y: 25,
         opacity: 0,
-        duration: 0.8,
+        duration: 0.5,
         delay,
         ease: 'power3.out',
         scrollTrigger: {
           trigger: textRef.current,
-          start: 'top 90%',
+          start: 'top 97%',
           toggleActions: 'play none none none',
         },
       });

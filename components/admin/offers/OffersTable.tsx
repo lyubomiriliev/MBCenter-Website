@@ -475,11 +475,7 @@ export function OffersTable({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className={
-                      header.column.id === "licensePlate"
-                        ? "text-mb-silver whitespace-nowrap min-w-[5rem]"
-                        : "text-mb-silver"
-                    }
+                    className="text-mb-silver whitespace-nowrap"
                   >
                     {header.isPlaceholder
                       ? null
@@ -501,7 +497,7 @@ export function OffersTable({
                   onMouseEnter={() => prefetchOffer(row.original.id)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="whitespace-nowrap">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

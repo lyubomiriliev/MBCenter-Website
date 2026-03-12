@@ -38,57 +38,14 @@ import {
 import type { OfferFormData, ServiceActionFormData } from "@/lib/schemas/offer";
 import { EUR_TO_BGN } from "@/lib/schemas/offer";
 import { parseTimeToHours } from "@/lib/utils";
+import {
+  useFixedActivities,
+  useAddFixedActivity,
+  useUpdateFixedActivity,
+  useDeleteFixedActivity,
+} from "@/hooks/useFixedActivities";
 
-const FIXED_ACTIVITIES_KEY = "mbcenter_fixed_activities_v2";
-
-export type FixedActivity = { id: string; name: string; priceEur: number };
-
-function getStoredFixedActivities(): FixedActivity[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(FIXED_ACTIVITIES_KEY);
-    if (!stored) {
-      const legacy = localStorage.getItem("mbcenter_fixed_activities");
-      if (legacy) {
-        const arr = JSON.parse(legacy) as string[];
-        const migrated = arr.map((name, i) => ({
-          id: `legacy-${i}`,
-          name,
-          priceEur: 0,
-        }));
-        localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(migrated));
-        return migrated;
-      }
-      return [];
-    }
-    return JSON.parse(stored);
-  } catch {
-    return [];
-  }
-}
-
-function addFixedActivity(name: string, priceEur: number): FixedActivity {
-  const existing = getStoredFixedActivities();
-  const id = `act-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-  const item = { id, name, priceEur };
-  const updated = [...existing, item];
-  localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
-  return item;
-}
-
-function removeFixedActivity(id: string) {
-  const existing = getStoredFixedActivities();
-  const updated = existing.filter((a) => a.id !== id);
-  localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
-}
-
-function updateFixedActivity(id: string, name: string, priceEur: number) {
-  const existing = getStoredFixedActivities();
-  const updated = existing.map((a) =>
-    a.id === id ? { ...a, name, priceEur } : a,
-  );
-  localStorage.setItem(FIXED_ACTIVITIES_KEY, JSON.stringify(updated));
-}
+export type FixedActivityItem = { id: string; name: string; priceEur: number };
 
 function AddEditServiceActionModal({
   open,
@@ -112,25 +69,18 @@ function AddEditServiceActionModal({
   const [fixedPriceAmount, setFixedPriceAmount] = useState(0);
   const [fixedPriceInput, setFixedPriceInput] = useState("0");
   const [error, setError] = useState("");
-  const [fixedActivities, setFixedActivities] = useState<FixedActivity[]>([]);
+  const { data: fixedActivities = [] } = useFixedActivities();
+  const addActivityMut = useAddFixedActivity();
+  const updateActivityMut = useUpdateFixedActivity();
+  const deleteActivityMut = useDeleteFixedActivity();
   const [addNewModalOpen, setAddNewModalOpen] = useState(false);
-  const [editingActivity, setEditingActivity] = useState<FixedActivity | null>(null);
+  const [editingActivity, setEditingActivity] = useState<FixedActivityItem | null>(null);
   const [newActivityName, setNewActivityName] = useState("");
   const [newActivityPrice, setNewActivityPrice] = useState("0");
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [activityPopoverOpen, setActivityPopoverOpen] = useState(false);
 
-  const refreshActivities = useCallback(() => {
-    setFixedActivities(getStoredFixedActivities());
-  }, []);
-
-  useEffect(() => {
-    refreshActivities();
-  }, [open, addNewModalOpen, refreshActivities]);
-
-  const reset = useCallback((vals: ServiceActionFormData | null) => {
-    const activities =
-      typeof window !== "undefined" ? getStoredFixedActivities() : [];
+  const reset = useCallback((vals: ServiceActionFormData | null, activities: FixedActivityItem[]) => {
     if (vals) {
       setActionName(vals.actionName);
       setTimeInput(vals.timeRequired ?? "1");
@@ -163,9 +113,14 @@ function AddEditServiceActionModal({
     setNewActivityPrice("0");
   }, []);
 
+  const activitiesForReset = useMemo(
+    () => fixedActivities.map((a) => ({ id: a.id, name: a.name, priceEur: a.price_eur })),
+    [fixedActivities],
+  );
+
   useEffect(() => {
-    if (open) reset(initialValues);
-  }, [open, initialValues, reset]);
+    if (open) reset(initialValues, activitiesForReset);
+  }, [open, initialValues, reset, activitiesForReset]);
 
   const handleOk = () => {
     const name = actionName.trim();
@@ -207,14 +162,12 @@ function AddEditServiceActionModal({
     onOpenChange(false);
   };
 
-  const handleAddNewFixedActivity = () => {
+  const handleAddNewFixedActivity = async () => {
     const trimmed = newActivityName.trim();
     const price = parseFloat(newActivityPrice.replace(",", ".")) || 0;
     if (trimmed && price > 0) {
       if (editingActivity) {
-        updateFixedActivity(editingActivity.id, trimmed, price);
-        const updated = getStoredFixedActivities();
-        setFixedActivities(updated);
+        await updateActivityMut.mutateAsync({ id: editingActivity.id, name: trimmed, priceEur: price });
         if (selectedActivityId === editingActivity.id) {
           setActionName(trimmed);
           setFixedPriceAmount(price);
@@ -222,8 +175,7 @@ function AddEditServiceActionModal({
         }
         setEditingActivity(null);
       } else {
-        const item = addFixedActivity(trimmed, price);
-        setFixedActivities((prev) => [...prev, item]);
+        const item = await addActivityMut.mutateAsync({ name: trimmed, priceEur: price });
         setActionName(trimmed);
         setFixedPriceAmount(price);
         setFixedPriceInput(price.toString());
@@ -240,15 +192,14 @@ function AddEditServiceActionModal({
     const act = fixedActivities.find((a) => a.id === id);
     if (act) {
       setActionName(act.name);
-      setFixedPriceAmount(act.priceEur);
-      setFixedPriceInput(act.priceEur.toString());
+      setFixedPriceAmount(act.price_eur);
+      setFixedPriceInput(act.price_eur.toString());
     }
   };
 
   const handleRemoveActivity = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    removeFixedActivity(id);
-    refreshActivities();
+    deleteActivityMut.mutate(id);
     if (selectedActivityId === id) {
       setSelectedActivityId("");
       setActionName("");
@@ -318,10 +269,10 @@ function AddEditServiceActionModal({
                                     (a) => a.id === selectedActivityId,
                                   );
                                   return act
-                                    ? `${act.name} — €${act.priceEur.toFixed(
+                                    ? `${act.name} — €${act.price_eur.toFixed(
                                         2,
                                       )} / ${(
-                                        act.priceEur * EUR_TO_BGN
+                                        act.price_eur * EUR_TO_BGN
                                       ).toFixed(2)} лв.`
                                     : t("selectFixedActivity");
                                 })()
@@ -356,16 +307,16 @@ function AddEditServiceActionModal({
                             }}
                           >
                             <span className="flex-1 truncate min-w-0">
-                              {act.name} — €{act.priceEur.toFixed(2)} /{" "}
-                              {(act.priceEur * EUR_TO_BGN).toFixed(2)} лв.
+                              {act.name} — €{act.price_eur.toFixed(2)} /{" "}
+                              {(act.price_eur * EUR_TO_BGN).toFixed(2)} лв.
                             </span>
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setEditingActivity(act);
+                                setEditingActivity({ id: act.id, name: act.name, priceEur: act.price_eur });
                                 setNewActivityName(act.name);
-                                setNewActivityPrice(act.priceEur.toString());
+                                setNewActivityPrice(act.price_eur.toString());
                                 setActivityPopoverOpen(false);
                                 setAddNewModalOpen(true);
                               }}
@@ -421,7 +372,10 @@ function AddEditServiceActionModal({
                     onClick={() => {
                       setEditingActivity(null);
                       setNewActivityName("");
-                      setNewActivityPrice("0");
+                      const lastPrice = fixedActivities.length > 0
+                        ? fixedActivities[fixedActivities.length - 1].price_eur
+                        : 0;
+                      setNewActivityPrice(lastPrice > 0 ? lastPrice.toString() : "0");
                       setAddNewModalOpen(true);
                     }}
                     className="border-mb-border text-sm"
@@ -690,10 +644,10 @@ const ServiceActionRow = memo(function ServiceActionRow({ index, remove, openEdi
         className="text-mb-silver text-sm flex items-center justify-center"
         title={timeRequired}
       >
-        {isFixed ? "—" : timeRequired || "—"}
+        {isFixed ? "-" : timeRequired || "-"}
       </div>
       <div className="text-white text-sm tabular-nums flex items-center justify-end">
-        {isFixed ? "—" : `€${Number(pricePerHour).toFixed(2)}`}
+        {isFixed ? "-" : `€${Number(pricePerHour).toFixed(2)}`}
       </div>
       <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-end">
         €{total.toFixed(2)}

@@ -100,7 +100,6 @@ export function CreateOfferFormV2({
     handleSubmit,
     formState: { errors },
     getValues,
-    trigger,
   } = methods;
 
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -221,8 +220,6 @@ export function CreateOfferFormV2({
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
     autoSaveTimeoutRef.current = setTimeout(async () => {
       autoSaveTimeoutRef.current = null;
-      const isValid = await trigger();
-      if (!isValid) return;
 
       const data = getValues();
       const currentPrepayments = prepaymentsRef.current;
@@ -338,7 +335,7 @@ export function CreateOfferFormV2({
         console.error("Auto-save failed:", err);
       }
     }, AUTOSAVE_DEBOUNCE_MS);
-  }, [offerId, trigger, getValues, queryClient, showSuccess, t]);
+  }, [offerId, getValues, queryClient, showSuccess, t]);
 
   // Subscribe to form changes for server autosave.
   // methods.watch(callback) fires the callback without causing a re-render —
@@ -730,10 +727,11 @@ export function CreateOfferFormV2({
         );
       }
 
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
       const basePath = pathname.includes("/mb-admin")
         ? pathname.split("/mb-admin")[0] + "/mb-admin"
         : pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics";
-      router.push(`${basePath}/offers/${(newOffer as any).id}`);
+      router.push(`${basePath}/offers`);
     } catch (error) {
       console.error("Error cloning offer:", error);
       showError(

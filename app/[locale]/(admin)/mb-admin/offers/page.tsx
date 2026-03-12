@@ -173,59 +173,51 @@ export default function OffersPage() {
             <Button
               onClick={handleDownloadAll}
               disabled={isDownloading}
-              className="bg-green-600 hover:bg-green-700 text-sm sm:text-base shrink-0"
+              className="bg-green-600 hover:bg-green-700 text-sm sm:text-base shrink-0 h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-4 sm:py-2"
             >
               {isDownloading ? (
-                <>
-                  <svg
-                    className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  <span className="hidden sm:inline">
-                    {t("offers.downloading")}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
+                <svg
+                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 sm:mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
                     stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
-                  <span className="hidden sm:inline">
-                    {t("offers.downloadAll")}
-                  </span>
-                  <span className="sm:hidden">ZIP</span>
-                </>
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
               )}
+              <span className="hidden sm:inline">
+                {isDownloading ? t("offers.downloading") : t("offers.downloadAll")}
+              </span>
             </Button>
             <Link href={`/${locale}/mb-admin/create-offer`}>
-              <Button className="bg-mb-blue hover:bg-mb-blue/90 text-sm sm:text-base shrink-0">
+              <Button className="bg-mb-blue hover:bg-mb-blue/90 text-sm sm:text-base shrink-0 h-9 w-9 p-0 sm:h-auto sm:w-auto sm:px-4 sm:py-2">
                 <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 shrink-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -237,7 +229,7 @@ export default function OffersPage() {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                {t("offers.newOffer")}
+                <span className="hidden sm:inline">{t("offers.newOffer")}</span>
               </Button>
             </Link>
           </div>

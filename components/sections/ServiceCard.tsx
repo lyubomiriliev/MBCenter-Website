@@ -33,14 +33,14 @@ export function ServiceCard({
 
     const ctx = gsap.context(() => {
       gsap.from(cardRef.current, {
-        y: 60,
+        y: 40,
         opacity: 0,
-        duration: 0.8,
-        delay: index * 0.1,
+        duration: 0.5,
+        delay: index * 0.08,
         ease: "power3.out",
         scrollTrigger: {
           trigger: cardRef.current,
-          start: "top 90%",
+          start: "top 97%",
           toggleActions: "play none none none",
         },
       });
