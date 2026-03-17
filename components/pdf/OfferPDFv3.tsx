@@ -658,7 +658,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
         )}
 
         {/* Summary */}
-        <View style={styles.summarySection}>
+        <View style={styles.summarySection} wrap={false}>
           <Text style={styles.summaryTitle}>Обобщение</Text>
           <View style={styles.summaryTable}>
             <View style={styles.summaryHeaderRow} wrap={false}>
