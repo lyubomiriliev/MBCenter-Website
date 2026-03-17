@@ -87,10 +87,10 @@ export function OffersTable({
   const [page, setPage] = useState(1);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<OfferWithRelations | null>(
-    null
+    null,
   );
   const [selectedStatus, setSelectedStatus] = useState<OfferStatus | null>(
-    null
+    null,
   );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -129,7 +129,7 @@ export function OffersTable({
             car:cars(id, model, year, vin, license_plate, mileage),
             items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order),
             service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, total_eur_net, is_fixed_price, fixed_price_amount, sort_order)
-          `
+          `,
           )
           .eq("id", offerId)
           .order("sort_order", {
@@ -173,7 +173,7 @@ export function OffersTable({
       .filter(Boolean) as string[];
 
     await Promise.all(
-      selectedIds.map((id) => supabase.from("offers").delete().eq("id", id))
+      selectedIds.map((id) => supabase.from("offers").delete().eq("id", id)),
     );
     queryClient.invalidateQueries({ queryKey: ["offers"] });
     setRowSelection({});
@@ -182,240 +182,257 @@ export function OffersTable({
 
   const selectedCount = Object.values(rowSelection).filter(Boolean).length;
 
-  const columns = useMemo(() => [
-    !isMechanicView && columnHelper.display({
-      id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          className="rounded border-mb-border bg-transparent"
-          checked={table.getIsAllRowsSelected()}
-          onChange={table.getToggleAllRowsSelectedHandler()}
-        />
+  const columns = useMemo(
+    () => [
+      !isMechanicView &&
+        columnHelper.display({
+          id: "select",
+          header: ({ table }) => (
+            <input
+              type="checkbox"
+              className="rounded border-mb-border bg-transparent"
+              checked={table.getIsAllRowsSelected()}
+              onChange={table.getToggleAllRowsSelectedHandler()}
+            />
+          ),
+          cell: ({ row }) => (
+            <input
+              type="checkbox"
+              className="rounded border-mb-border bg-transparent"
+              checked={row.getIsSelected()}
+              onChange={row.getToggleSelectedHandler()}
+            />
+          ),
+          size: 40,
+        }),
+      columnHelper.accessor(
+        (row) => row.service_card_number || row.offer_number,
+        {
+          id: "offer_number",
+          header: () => t("offers.columns.offerNumber"),
+          cell: (info) => (
+            <Link
+              href={`${basePath}/offers/edit?id=${info.row.original.id}`}
+              className="text-mb-blue hover:underline font-medium"
+            >
+              {info.getValue()}
+            </Link>
+          ),
+        },
       ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          className="rounded border-mb-border bg-transparent"
-          checked={row.getIsSelected()}
-          onChange={row.getToggleSelectedHandler()}
-        />
-      ),
-      size: 40,
-    }),
-    columnHelper.accessor(
-      (row) => row.service_card_number || row.offer_number,
-      {
-        id: "offer_number",
-        header: () => t("offers.columns.offerNumber"),
-        cell: (info) => (
-          <Link
-            href={`${basePath}/offers/edit?id=${info.row.original.id}`}
-            className="text-mb-blue hover:underline font-medium"
-          >
-            {info.getValue()}
-          </Link>
-        ),
-      }
-    ),
-    columnHelper.accessor((row) => row.customer_name || row.client?.name, {
-      id: "client",
-      header: () => t("offers.columns.client"),
-      cell: (info) => info.getValue() || "-",
-    }),
-    columnHelper.accessor(
-      (row) => {
-        const model =
-          row.car_model_text ||
-          (row.car ? `${row.car.model} ${row.car.year || ""}` : null);
-        const detail = (row as any).car_model_detail;
-        if (model && detail) return `${model} ${detail}`;
-        return model;
-      },
-      {
-        id: "car",
-        header: () => t("offers.columns.car"),
+      columnHelper.accessor((row) => row.customer_name || row.client?.name, {
+        id: "client",
+        header: () => t("offers.columns.client"),
         cell: (info) => info.getValue() || "-",
-      }
-    ),
-    columnHelper.accessor(
-      (row) => row.vin_text || row.car?.vin,
-      {
+      }),
+      columnHelper.accessor(
+        (row) => {
+          const model =
+            row.car_model_text ||
+            (row.car ? `${row.car.model} ${row.car.year || ""}` : null);
+          const detail = (row as any).car_model_detail;
+          if (model && detail) return `${model} ${detail}`;
+          return model;
+        },
+        {
+          id: "car",
+          header: () => t("offers.columns.car"),
+          cell: (info) => info.getValue() || "-",
+        },
+      ),
+      columnHelper.accessor((row) => row.vin_text || row.car?.vin, {
         id: "vin",
         header: () => t("offers.columns.vin"),
         cell: (info) => {
           const v = info.getValue();
           return v ? v.toUpperCase() : "-";
         },
-      }
-    ),
-    columnHelper.accessor(
-      (row) => row.license_plate || row.car?.license_plate,
-      {
-        id: "licensePlate",
-        header: () => t("offers.columns.licensePlate"),
-        cell: (info) => info.getValue() || "-",
-      }
-    ),
-    columnHelper.accessor(
-      (row) => (row as { repair_name?: string | null }).repair_name ?? "",
-      {
-        id: "repairName",
-        header: () => t("form.repairName"),
-        cell: (info) => {
-          const v = info.getValue();
-          if (!v) return "-";
-          return v.length > 40 ? `${v.slice(0, 40)}…` : v;
+      }),
+      columnHelper.accessor(
+        (row) => row.license_plate || row.car?.license_plate,
+        {
+          id: "licensePlate",
+          header: () => t("offers.columns.licensePlate"),
+          cell: (info) => info.getValue() || "-",
         },
-      }
-    ),
-    columnHelper.accessor("status", {
-      header: () => t("offers.columns.status"),
-      cell: (info) => (
-        <button
-          onClick={() => {
-            setEditingOffer(info.row.original);
-            setSelectedStatus(info.row.original.status);
-            setStatusDialogOpen(true);
-          }}
-          className="hover:opacity-80 transition-opacity"
-        >
-          <OfferStatusBadge status={info.getValue()} />
-        </button>
       ),
-    }),
-    !isMechanicView && columnHelper.accessor("total_gross", {
-      header: () => (
-        <div className="text-center">{t("offers.columns.total")}</div>
+      columnHelper.accessor(
+        (row) => (row as { repair_name?: string | null }).repair_name ?? "",
+        {
+          id: "repairName",
+          header: () => t("form.repairName"),
+          cell: (info) => {
+            const v = info.getValue();
+            if (!v) return "-";
+            return v.length > 40 ? `${v.slice(0, 40)}…` : v;
+          },
+        },
       ),
-      cell: (info) => {
-        const eur = info.getValue();
-        const bgn = eur * EUR_TO_BGN;
-        return (
-          <div className="text-center">
-            <div className="font-medium">€{eur.toFixed(2)}</div>
-            <div className="text-xs text-mb-silver">{bgn.toFixed(2)} лв.</div>
-          </div>
-        );
-      },
-    }),
-    columnHelper.accessor(
-      (row) => row.service_card_generated_at || row.created_at,
-      {
-        id: "created_at",
-        header: () => t("offers.columns.date"),
-        cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
-      }
-    ),
-    !isMechanicView && columnHelper.display({
-      id: "actions",
-      header: () => t("offers.columns.actions"),
-      cell: (info) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2.5 rounded-md border border-mb-border text-mb-silver hover:text-white hover:bg-mb-black/50"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-mb-anthracite border-mb-border text-white"
+      columnHelper.accessor("status", {
+        header: () => t("offers.columns.status"),
+        cell: (info) => (
+          <button
+            onClick={() => {
+              setEditingOffer(info.row.original);
+              setSelectedStatus(info.row.original.status);
+              setStatusDialogOpen(true);
+            }}
+            className="hover:opacity-80 transition-opacity"
           >
-            <DropdownMenuItem
-              onClick={() => handleClone(info.row.original)}
-              className="cursor-pointer text-white hover:bg-mb-black hover:text-white focus:bg-mb-black focus:text-white"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-              {t("form.clone")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                router.push(`${basePath}/offers/edit?id=${info.row.original.id}`)
-              }
-              className="cursor-pointer text-white hover:bg-mb-black hover:text-white focus:bg-mb-black focus:text-white"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-              {t("form.editDetails")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setDeletingOfferId(info.row.original.id);
-                setDeleteDialogOpen(true);
-              }}
-              className="cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-white focus:bg-red-500/10 focus:text-white"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              {t("form.delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <OfferStatusBadge status={info.getValue()} />
+          </button>
+        ),
+      }),
+      !isMechanicView &&
+        columnHelper.accessor("total_gross", {
+          header: () => (
+            <div className="text-center">{t("offers.columns.total")}</div>
+          ),
+          cell: (info) => {
+            const eur = info.getValue();
+            const bgn = eur * EUR_TO_BGN;
+            return (
+              <div className="text-center">
+                <div className="font-medium">€{eur.toFixed(2)}</div>
+                <div className="text-xs text-mb-silver">
+                  {bgn.toFixed(2)} лв.
+                </div>
+              </div>
+            );
+          },
+        }),
+      columnHelper.accessor(
+        (row) => row.service_card_generated_at || row.created_at,
+        {
+          id: "created_at",
+          header: () => t("offers.columns.date"),
+          cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
+        },
       ),
-    }),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isMechanicView, t, basePath, router, handleClone, setDeletingOfferId, setEditingOffer, setSelectedStatus, setStatusDialogOpen]);
+      !isMechanicView &&
+        columnHelper.display({
+          id: "actions",
+          header: () => t("offers.columns.actions"),
+          cell: (info) => (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2.5 rounded-md border border-mb-border text-mb-silver hover:text-white hover:bg-mb-black/50"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="bg-mb-anthracite border-mb-border text-white"
+              >
+                <DropdownMenuItem
+                  onClick={() => handleClone(info.row.original)}
+                  className="cursor-pointer text-white hover:bg-mb-black hover:text-white focus:bg-mb-black focus:text-white"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  {t("form.clone")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(
+                      `${basePath}/offers/edit?id=${info.row.original.id}`,
+                    )
+                  }
+                  className="cursor-pointer text-white hover:bg-mb-black hover:text-white focus:bg-mb-black focus:text-white"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  {t("form.editDetails")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setDeletingOfferId(info.row.original.id);
+                    setDeleteDialogOpen(true);
+                  }}
+                  className="cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-white focus:bg-red-500/10 focus:text-white"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  {t("form.delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ),
+        }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ],
+    [
+      isMechanicView,
+      t,
+      basePath,
+      router,
+      handleClone,
+      setDeletingOfferId,
+      setEditingOffer,
+      setSelectedStatus,
+      setStatusDialogOpen,
+    ],
+  );
 
   const table = useReactTable({
     data: data?.offers || [],
-    columns: columns.filter(
-      (c): c is ColumnDef<OfferWithRelations, any> => Boolean(c),
+    columns: columns.filter((c): c is ColumnDef<OfferWithRelations, any> =>
+      Boolean(c),
     ),
     state: { sorting, rowSelection },
     onSortingChange: setSorting,
@@ -481,7 +498,7 @@ export function OffersTable({
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                   </TableHead>
                 ))}
@@ -500,7 +517,7 @@ export function OffersTable({
                     <TableCell key={cell.id} className="whitespace-nowrap">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}

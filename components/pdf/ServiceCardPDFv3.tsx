@@ -62,10 +62,10 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     companyInfo: {
-      fontSize: 10,
-      marginTop: 1,
+      fontSize: 11,
+      marginTop: 2,
       color: "#000",
-      lineHeight: 1.4,
+      lineHeight: 1.5,
       fontFamily: fontFamily,
     },
     customerInfo: {
@@ -85,7 +85,7 @@ const createStyles = () => {
       textAlign: "center",
       marginTop: 6,
       marginBottom: 4,
-      letterSpacing: 0.5,
+      letterSpacing: 0,
       fontFamily: fontFamily,
     },
     vinText: {
@@ -124,28 +124,103 @@ const createStyles = () => {
     tableRow: {
       flexDirection: "row",
       borderBottom: "1px solid #000",
-      paddingVertical: 4,
+      paddingVertical: 0,
       paddingHorizontal: 2,
       fontSize: 10,
       minHeight: 22,
-      alignItems: "center",
       fontFamily: fontFamily,
     },
     tableRowAlt: {
       backgroundColor: "#f9f9f9",
     },
-    col1: { flex: 0.05, paddingVertical: 2, paddingHorizontal: 2 },
-    col2: { flex: 0.22, paddingLeft: 4, paddingVertical: 2, paddingRight: 2 },
-    colPartNum: { flex: 0.2, paddingVertical: 2, paddingHorizontal: 2 },
-    col3: { flex: 0.15, paddingVertical: 2, paddingHorizontal: 2 },
-    col4: { flex: 0.08, paddingVertical: 2, paddingHorizontal: 2 },
-    col5: { flex: 0.2, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
-    col6: { flex: 0.2, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
-    colSvc1: { flex: 0.05, paddingHorizontal: 2 },
-    colSvc2: { flex: 0.24, paddingLeft: 4, paddingRight: 2 },
-    colSvc3: { flex: 0.3, paddingHorizontal: 2 },
-    colSvc4: { flex: 0.2, paddingRight: 4, paddingLeft: 2 },
-    colSvc5: { flex: 0.28, paddingRight: 4, paddingLeft: 2 },
+    col1: {
+      flex: 0.05,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col2: {
+      flex: 0.22,
+      paddingLeft: 4,
+      paddingVertical: 4,
+      paddingRight: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colPartNum: {
+      flex: 0.2,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col3: {
+      flex: 0.15,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col4: {
+      flex: 0.08,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col5: {
+      flex: 0.2,
+      paddingRight: 4,
+      paddingVertical: 4,
+      paddingLeft: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col6: {
+      flex: 0.2,
+      paddingRight: 4,
+      paddingVertical: 4,
+      paddingLeft: 2,
+      justifyContent: "center",
+    },
+    colSvc1: {
+      flex: 0.05,
+      paddingHorizontal: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc2: {
+      flex: 0.36,
+      paddingLeft: 4,
+      paddingRight: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc3: {
+      flex: 0.18,
+      paddingHorizontal: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc4: {
+      flex: 0.2,
+      paddingRight: 4,
+      paddingLeft: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc5: {
+      flex: 0.28,
+      paddingRight: 4,
+      paddingLeft: 2,
+      paddingVertical: 4,
+      justifyContent: "center",
+    },
     // Text styles for table cells
     colTextCenter: {
       textAlign: "center",
@@ -185,17 +260,50 @@ const createStyles = () => {
     },
     summaryRow: {
       flexDirection: "row",
-      paddingVertical: 5,
+      paddingVertical: 0,
       paddingHorizontal: 2,
       borderBottom: "1px solid #000",
       fontSize: 9,
       fontFamily: fontFamily,
     },
-    summaryCol1: { flex: 0.35, paddingLeft: 3, paddingRight: 2 },
-    summaryCol2: { flex: 0.4, paddingRight: 3, paddingLeft: 2 },
-    summaryCol3: { flex: 0.24, paddingHorizontal: 2 },
-    summaryCol4: { flex: 0.16, paddingRight: 3, paddingLeft: 2 },
-    summaryCol5: { flex: 0.35, paddingRight: 3, paddingLeft: 2 },
+    summaryCol1: {
+      flex: 0.35,
+      paddingLeft: 3,
+      paddingRight: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol2: {
+      flex: 0.4,
+      paddingRight: 3,
+      paddingLeft: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol3: {
+      flex: 0.24,
+      paddingHorizontal: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol4: {
+      flex: 0.16,
+      paddingRight: 3,
+      paddingLeft: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol5: {
+      flex: 0.35,
+      paddingRight: 3,
+      paddingLeft: 2,
+      paddingVertical: 5,
+      justifyContent: "center",
+    },
     summaryTotalRow: {
       backgroundColor: "#e0e0e0",
       fontWeight: 700,
@@ -347,7 +455,7 @@ export function ServiceCardPDFv3({
           <View style={styles.headerLeft}>
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image
-              src="/assets/logos/mbcenter-specialist.png"
+              src="/assets/logos/mbcenter-specialist2.png"
               style={styles.logo}
             />
             <Text style={styles.companyName}>Ем Би Център ООД</Text>
@@ -479,6 +587,7 @@ export function ServiceCardPDFv3({
                 return (
                   <View
                     key={item.id}
+                    wrap={false}
                     style={[
                       styles.tableRow,
                       index % 2 === 1 ? styles.tableRowAlt : {},
@@ -563,6 +672,7 @@ export function ServiceCardPDFv3({
                   return (
                     <View
                       key={action.id}
+                      wrap={false}
                       style={[
                         styles.tableRow,
                         index % 2 === 1 ? styles.tableRowAlt : {},
@@ -603,24 +713,34 @@ export function ServiceCardPDFv3({
         )}
 
         {/* Summary */}
-        <View style={styles.summarySection}>
+        <View style={styles.summarySection} wrap={false}>
           <Text style={styles.summaryTitle}>Обобщение</Text>
           <View style={styles.summaryTable}>
             <View style={styles.summaryHeaderRow} wrap={false}>
               <View style={styles.summaryCol1}>
-                <Text style={styles.colTextLeft}>Вид на разходите</Text>
+                <Text style={[styles.colTextLeft, { color: "#fff" }]}>
+                  Вид на разходите
+                </Text>
               </View>
               <View style={styles.summaryCol2}>
-                <Text style={styles.colTextRight}>Обща стойност (без ДДС)</Text>
+                <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  Обща стойност (без ДДС)
+                </Text>
               </View>
               <View style={styles.summaryCol3}>
-                <Text style={styles.colTextCenter}>Ставка на ДДС</Text>
+                <Text style={[styles.colTextCenter, { color: "#fff" }]}>
+                  Ставка на ДДС
+                </Text>
               </View>
               <View style={styles.summaryCol4}>
-                <Text style={styles.colTextRight}>ДДС</Text>
+                <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  ДДС
+                </Text>
               </View>
               <View style={styles.summaryCol5}>
-                <Text style={styles.colTextRight}>Обща стойност (с ДДС)</Text>
+                <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  Обща стойност (с ДДС)
+                </Text>
               </View>
             </View>
             {offer.items &&
@@ -746,7 +866,7 @@ export function ServiceCardPDFv3({
                 <Text style={styles.colTextCenter}>20%</Text>
               </View>
               <View style={styles.summaryCol4}>
-                <Text style={styles.colTextRight}>{formatDual(totalVat)}</Text>
+                <Text style={styles.colTextRight}>{formatEur(totalVat)}</Text>
               </View>
               <View style={styles.summaryCol5}>
                 <Text

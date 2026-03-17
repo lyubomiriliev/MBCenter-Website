@@ -22,19 +22,22 @@ const createStyles = () => {
   const fontFamily = fontRegistered ? "NotoSans" : "Helvetica";
   return StyleSheet.create({
     page: {
-      padding: 35,
+      paddingTop: 15,
+      paddingBottom: 30,
+      paddingLeft: 30,
+      paddingRight: 30,
       fontSize: 11,
       fontFamily: fontFamily,
       backgroundColor: "#ffffff",
-      lineHeight: 1.4,
+      lineHeight: 1.3,
     },
     text: { fontFamily: fontFamily, fontSize: 13, lineHeight: 1.2 },
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
-      marginBottom: 20,
-      paddingBottom: 15,
+      marginBottom: 12,
+      paddingBottom: 10,
       borderBottom: "2px solid #000",
     },
     logo: {
@@ -49,17 +52,17 @@ const createStyles = () => {
     headerRight: {
       width: "50%",
       alignItems: "flex-end",
-      paddingTop: 73,
+      paddingTop: 72,
     },
     companyName: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 700,
-      marginTop: 5,
-      marginBottom: 3,
+      marginTop: 4,
+      marginBottom: 2,
       fontFamily: fontFamily,
     },
     companyInfo: {
-      fontSize: 10.5,
+      fontSize: 11,
       marginTop: 2,
       color: "#000",
       lineHeight: 1.5,
@@ -77,18 +80,19 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     title: {
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: 700,
       textAlign: "center",
-      marginTop: 10,
-      marginBottom: 6,
-      letterSpacing: 0.5,
+      marginTop: 6,
+      marginBottom: 4,
+      letterSpacing: 0,
       fontFamily: fontFamily,
     },
     vinText: {
       fontSize: 10,
       textAlign: "center",
-      marginBottom: 8,
+      marginBottom: 5,
+      marginTop: 8,
       fontWeight: 500,
       fontFamily: fontFamily,
     },
@@ -120,27 +124,96 @@ const createStyles = () => {
     tableRow: {
       flexDirection: "row",
       borderBottom: "1px solid #000",
-      paddingVertical: 4,
+      paddingVertical: 0,
       paddingHorizontal: 2,
       fontSize: 10,
       minHeight: 22,
-      alignItems: "center",
       fontFamily: fontFamily,
     },
     tableRowAlt: {
       backgroundColor: "#f5f5f5",
     },
-    col1: { flex: 0.06, paddingVertical: 2, paddingHorizontal: 2 },
-    col2: { flex: 0.2, paddingLeft: 4, paddingVertical: 2, paddingRight: 2 },
-    col3: { flex: 0.18, paddingVertical: 2, paddingHorizontal: 2 },
-    col5: { flex: 0.1, paddingVertical: 2, paddingHorizontal: 2 },
-    col6: { flex: 0.24, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
-    col7: { flex: 0.24, paddingRight: 4, paddingVertical: 2, paddingLeft: 2 },
-    colSvc1: { flex: 0.05, paddingHorizontal: 2 },
-    colSvc2: { flex: 0.32, paddingLeft: 4, paddingRight: 2 },
-    colSvc3: { flex: 0.2, paddingHorizontal: 2 },
-    colSvc4: { flex: 0.24, paddingRight: 4, paddingLeft: 2 },
-    colSvc5: { flex: 0.24, paddingRight: 4, paddingLeft: 2 },
+    col1: {
+      flex: 0.06,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col2: {
+      flex: 0.2,
+      paddingLeft: 4,
+      paddingVertical: 4,
+      paddingRight: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col3: {
+      flex: 0.18,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col5: {
+      flex: 0.1,
+      paddingVertical: 4,
+      paddingHorizontal: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col6: {
+      flex: 0.24,
+      paddingRight: 4,
+      paddingVertical: 4,
+      paddingLeft: 2,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    col7: {
+      flex: 0.24,
+      paddingRight: 4,
+      paddingVertical: 4,
+      paddingLeft: 2,
+      justifyContent: "center",
+    },
+    colSvc1: {
+      flex: 0.05,
+      paddingHorizontal: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc2: {
+      flex: 0.42,
+      paddingLeft: 4,
+      paddingRight: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc3: {
+      flex: 0.12,
+      paddingHorizontal: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc4: {
+      flex: 0.24,
+      paddingRight: 4,
+      paddingLeft: 2,
+      paddingVertical: 4,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    colSvc5: {
+      flex: 0.24,
+      paddingRight: 4,
+      paddingLeft: 2,
+      paddingVertical: 4,
+      justifyContent: "center",
+    },
     // Text styles for table cells
     colTextCenter: {
       textAlign: "center",
@@ -180,19 +253,50 @@ const createStyles = () => {
     },
     summaryRow: {
       flexDirection: "row",
-      paddingVertical: 5,
+      paddingVertical: 0,
       paddingHorizontal: 2,
       borderBottom: "1px solid #000",
       fontSize: 9,
-      minHeight: 22,
-      alignItems: "center",
       fontFamily: fontFamily,
     },
-    summaryCol1: { flex: 0.35, paddingLeft: 3, paddingRight: 2 },
-    summaryCol2: { flex: 0.4, paddingRight: 3, paddingLeft: 2 },
-    summaryCol3: { flex: 0.24, paddingHorizontal: 2 },
-    summaryCol4: { flex: 0.16, paddingRight: 3, paddingLeft: 2 },
-    summaryCol5: { flex: 0.35, paddingRight: 3, paddingLeft: 2 },
+    summaryCol1: {
+      flex: 0.35,
+      paddingLeft: 3,
+      paddingRight: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol2: {
+      flex: 0.4,
+      paddingRight: 3,
+      paddingLeft: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol3: {
+      flex: 0.24,
+      paddingHorizontal: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol4: {
+      flex: 0.16,
+      paddingRight: 3,
+      paddingLeft: 2,
+      paddingVertical: 5,
+      borderRight: "1px solid #000",
+      justifyContent: "center",
+    },
+    summaryCol5: {
+      flex: 0.35,
+      paddingRight: 3,
+      paddingLeft: 2,
+      paddingVertical: 5,
+      justifyContent: "center",
+    },
     summaryTotalRow: {
       backgroundColor: "#e0e0e0",
       fontWeight: 700,
@@ -339,7 +443,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
           <View style={styles.headerLeft}>
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image
-              src="/assets/logos/mbcenter-specialist.png"
+              src="/assets/logos/mbcenter-specialist2.png"
               style={styles.logo}
             />
             <Text style={styles.companyName}>Ем Би Център ООД</Text>
@@ -430,6 +534,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 return (
                   <View
                     key={item.id}
+                    wrap={false}
                     style={[
                       styles.tableRow,
                       index % 2 === 1 ? styles.tableRowAlt : {},
@@ -471,44 +576,48 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
         {/* Service Actions Table */}
         {offer.service_actions && offer.service_actions.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Сервизни активности</Text>
-            <View style={styles.table} wrap={true}>
-              <View style={styles.tableHeader} wrap={false}>
-                <View style={styles.colSvc1}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    №
-                  </Text>
-                </View>
-                <View style={styles.colSvc2}>
-                  <Text style={[styles.colTextLeft, { color: "#fff" }]}>
-                    Сервизна дейност
-                  </Text>
-                </View>
-                <View style={styles.colSvc3}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    Време за ремонт
-                  </Text>
-                </View>
-                <View style={styles.colSvc4}>
-                  <Text style={[styles.colTextRight, { color: "#fff" }]}>
-                    Цена на час (с ДДС)
-                  </Text>
-                </View>
-                <View style={styles.colSvc5}>
-                  <Text style={[styles.colTextRight, { color: "#fff" }]}>
-                    Цена за ремонт (с ДДС)
-                  </Text>
+            <View wrap={false} style={{ marginBottom: 0 }}>
+              <Text style={styles.sectionTitle}>Сервизни активности</Text>
+              <View style={[styles.table, { marginBottom: 0 }]}>
+                <View style={styles.tableHeader}>
+                  <View style={styles.colSvc1}>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>
+                      №
+                    </Text>
+                  </View>
+                  <View style={styles.colSvc2}>
+                    <Text style={[styles.colTextLeft, { color: "#fff" }]}>
+                      Сервизна дейност
+                    </Text>
+                  </View>
+                  <View style={styles.colSvc3}>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>
+                      Време за ремонт
+                    </Text>
+                  </View>
+                  <View style={styles.colSvc4}>
+                    <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                      Цена на час (с ДДС)
+                    </Text>
+                  </View>
+                  <View style={styles.colSvc5}>
+                    <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                      Цена за ремонт (с ДДС)
+                    </Text>
+                  </View>
                 </View>
               </View>
+            </View>
+            <View style={[styles.table, { borderTop: 0 }]}>
               {offer.service_actions
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((action, index) => {
-                  // Input prices already include VAT
-                  const hourlyRateGross = action.price_per_hour_eur_net; // Note: despite name, this is gross
-                  const totalGross = action.total_eur_net; // Note: despite name, this is gross
+                  const hourlyRateGross = action.price_per_hour_eur_net;
+                  const totalGross = action.total_eur_net;
                   return (
                     <View
                       key={action.id}
+                      wrap={false}
                       style={[
                         styles.tableRow,
                         index % 2 === 1 ? styles.tableRowAlt : {},
@@ -692,7 +801,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 <Text style={styles.colTextCenter}>20%</Text>
               </View>
               <View style={styles.summaryCol4}>
-                <Text style={styles.colTextRight}>{formatDual(totalVat)}</Text>
+                <Text style={styles.colTextRight}>{formatEur(totalVat)}</Text>
               </View>
               <View style={styles.summaryCol5}>
                 <Text

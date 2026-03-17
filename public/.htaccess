@@ -1,3 +1,6 @@
+# Custom 404 page (Next.js static export generates /404.html)
+ErrorDocument 404 /404.html
+
 # Ensure OG image is served with correct MIME type (Facebook/Open Graph)
 <Files "og-image.jpg">
   Header set Content-Type "image/jpeg"
