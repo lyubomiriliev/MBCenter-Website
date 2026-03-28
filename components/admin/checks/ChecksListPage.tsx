@@ -33,7 +33,8 @@ interface Inspection {
   corrosion: CheckFormData["corrosion"];
   fluids: CheckFormData["fluids"];
   mileage: CheckFormData["mileage"];
-  glass: CheckFormData["glass"];
+  brakes: CheckFormData["brakes"];
+  suspension: CheckFormData["suspension"];
   summary: string | null;
   created_at: string;
 }
@@ -292,8 +293,9 @@ export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-
         corrosion: inspection.corrosion,
         fluids: inspection.fluids,
         mileage: inspection.mileage,
-        glass: inspection.glass,
-        summary: inspection.summary ?? "",
+        brakes: inspection.brakes,
+        suspension: inspection.suspension,
+        summary: inspection.summary ? inspection.summary.split("\n") : [],
       };
 
       const blob = await Promise.race([

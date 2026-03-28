@@ -334,6 +334,7 @@ export function CreateOfferFormV2({
     if (!offerId) return;
     setIsSaving(true);
     try {
+
       const data = getValues();
       let partsTotal = 0;
       data.parts.forEach((p) => {
@@ -493,12 +494,7 @@ export function CreateOfferFormV2({
         />
       );
 
-      const blob = await Promise.race([
-        pdf(PDFComponent).toBlob(),
-        new Promise<Blob>((_, reject) =>
-          setTimeout(() => reject(new Error("PDF generation timeout")), 30000),
-        ),
-      ]);
+      const blob = await pdf(PDFComponent).toBlob();
 
       console.log("PDF generated successfully, size:", blob.size);
 
@@ -786,14 +782,7 @@ export function CreateOfferFormV2({
     console.log("Service actions count:", data.serviceActions?.length || 0);
 
     setIsSaving(true);
-
-    // Add timeout to prevent infinite hanging
-    const timeoutId = setTimeout(() => {
-      console.error("Form submission timeout after 30 seconds");
-      showError(t("errors.saveFailed"));
-      setIsSaving(false);
-    }, 30000);
-
+    
     try {
       // Calculate totals first (needed for both create and update)
       let partsTotal = 0;
@@ -1114,11 +1103,9 @@ export function CreateOfferFormV2({
           ? pathname.split("/mb-admin")[0] + "/mb-admin"
           : pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics";
 
-        clearTimeout(timeoutId);
         router.push(`${basePath}/offers`);
       } else {
         console.log("Offer updated successfully, refreshing data...");
-        clearTimeout(timeoutId);
 
         // Refetch the updated offer to get fresh data with all relations
         const refreshResult = await refetchOffer();
@@ -1130,7 +1117,6 @@ export function CreateOfferFormV2({
         setBaselinePrepayments([...prepaymentsRef.current]);
         showSuccess(t("saved"));
 
-        // If there's a pending navigation (from the unsaved-changes modal), do it now
         if (pendingNavUrl) {
           const url = pendingNavUrl;
           setPendingNavUrl(null);
@@ -1141,7 +1127,6 @@ export function CreateOfferFormV2({
         }
       }
     } catch (error) {
-      clearTimeout(timeoutId);
       console.error(
         `=== ERROR ${isEditing ? "UPDATING" : "CREATING"} OFFER ===`,
       );

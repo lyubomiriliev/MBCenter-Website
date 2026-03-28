@@ -1,30 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useTranslations, useLocale } from "next-intl";
+import React, { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { pdf } from "@react-pdf/renderer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  CheckPDF,
-  type CheckFormData,
-  type CheckItem,
-  type TireData,
-} from "@/components/pdf/CheckPDF";
+import { CheckPDF, type CheckFormData } from "@/components/pdf/CheckPDF";
 import { supabase } from "@/lib/supabase/client";
 
-const STORAGE_KEY = "mbcenter_check_draft";
+const STORAGE_KEY = "mbcenter_check_draft_v2";
 
 interface InspectionRow {
   check_number: string | null;
@@ -38,7 +28,8 @@ interface InspectionRow {
   corrosion: CheckFormData["corrosion"] | null;
   fluids: CheckFormData["fluids"] | null;
   mileage: CheckFormData["mileage"] | null;
-  glass: CheckFormData["glass"] | null;
+  brakes: CheckFormData["brakes"] | null;
+  suspension: CheckFormData["suspension"] | null;
   summary: string | null;
 }
 
@@ -50,14 +41,6 @@ interface CheckInspectionFormProps {
 /*  Default data                                                       */
 /* ------------------------------------------------------------------ */
 
-const defaultTire = (): TireData => ({
-  brand: "",
-  dot: "",
-  tread: "",
-  condition: "",
-  note: "",
-});
-
 const defaultFormData = (): CheckFormData => ({
   inspectionDate: new Date().toISOString().slice(0, 10),
   mechanic: "",
@@ -65,133 +48,25 @@ const defaultFormData = (): CheckFormData => ({
   carModel: "",
   licensePlate: "",
   vin: "",
-  // Tires
-  tires: {
-    frontLeft: defaultTire(),
-    frontRight: defaultTire(),
-    rearLeft: defaultTire(),
-    rearRight: defaultTire(),
+  mileage: { odometer: "", assessment: "", note: "" },
+  tires: { tread_condition: "", mixed_tires: false },
+  brakes: { front_pads: "", front_discs: "", rear_pads: "", rear_discs: "" },
+  suspension: {
+    front_suspension: "", front_suspension_note: "",
+    rear_suspension: "", rear_suspension_note: "",
+    shocks_springs: "", steering: "", steering_note: ""
   },
-  // Corrosion
-  corrosion: [
-    { label: "Шаси и под автомобила", value: "", note: "" },
-    { label: "Прагове и Вежди (Калници)", value: "", note: "" },
-    { label: "Изпускателна система (Гърнета)", value: "", note: "" },
-  ],
-  // Fluids
-  fluids: [
-    { label: "Моторно масло (Ниво и вид)", value: "", note: "" },
-    { label: "Антифриз (Охладителна течност)", value: "", note: "" },
-    { label: "Спирачна течност", value: "", note: "" },
-    { label: "Видими течове по двигателя/кутията", value: "", note: "" },
-  ],
-  // Mileage
-  mileage: {
-    odometer: "",
-    assessment: "",
-    note: "",
-  },
-  // Glass
-  glass: [
-    { label: "Челно стъкло (Предно)", value: "", note: "" },
-    { label: "Странични и задно стъкла", value: "", note: "" },
-    { label: "Външни огледала (Механизъм/Прибиране)", value: "", note: "" },
-  ],
-  // Summary
-  summary: "",
+  corrosion: { chassis: "", sills: "", exhaust: "" },
+  fluids: { engine_oil: "", coolant: "", brake_fluid: "", leaks: "", leaks_note: "" },
+  summary: [],
 });
 
 /* ------------------------------------------------------------------ */
-/*  Radio option definitions per section                               */
+/*  Form Component                                                     */
 /* ------------------------------------------------------------------ */
 
-const corrosionOptions = [
-  ["none", "Няма / Заводски вид"],
-  ["surface", "Повърхностна ръжда"],
-  ["deep", "Дълбока корозия / Изгнило"],
-];
-
-const fluidOptions: Record<string, string[][]> = {
-  "Моторно масло (Ниво и вид)": [
-    ["ok", "В норма / Бистро"],
-    ["low", "Под минимума"],
-    ["dirty", "Черно / Задължителна смяна"],
-  ],
-  "Антифриз (Охладителна течност)": [
-    ["ok", "В норма"],
-    ["low", "Ниско ниво / Мътен"],
-    ["oil", "Масло в антифриза!"],
-  ],
-  "Спирачна течност": [
-    ["ok", "Съдържание на влага ОК"],
-    ["dirty", "За смяна (>3% влага)"],
-  ],
-  "Видими течове по двигателя/кутията": [
-    ["none", "Напълно сух"],
-    ["sweat", "Леко омасляване"],
-    ["active", "Активен теч"],
-  ],
-};
-
-const glassOptions: Record<string, string[][]> = {
-  "Челно стъкло (Предно)": [
-    ["ok", "Здраво / Оригинално"],
-    ["chips", "Шупли / Драскотини"],
-    ["broken", "Спукано (За смяна)"],
-  ],
-  "Странични и задно стъкла": [
-    ["ok", "Здрави"],
-    ["scratched", "Надраскани"],
-    ["broken", "Счупени"],
-  ],
-  "Външни огледала (Механизъм/Прибиране)": [
-    ["ok", "Работят коректно"],
-    ["damaged", "Счупен корпус/стъкло"],
-    ["broken", "Не работи прибиране/подгрев"],
-  ],
-};
-
-const tireConditionOptions = [
-  ["ok", "ОК"],
-  ["uneven", "Неравномерно"],
-  ["bad", "За смяна"],
-];
-
-const mileageOptions = [
-  ["match", "Съответства (Реален)"],
-  ["suspect", "Има съмнения"],
-  ["manipulated", "Манипулиран!"],
-];
-
-/* ------------------------------------------------------------------ */
-/*  Placeholders per section                                           */
-/* ------------------------------------------------------------------ */
-const corrosionPlaceholders: Record<string, string> = {
-  "Шаси и под автомобила": "Опиши къде...",
-  "Прагове и Вежди (Калници)": "Забележки...",
-  "Изпускателна система (Гърнета)": "Забележки...",
-};
-const fluidPlaceholders: Record<string, string> = {
-  "Моторно масло (Ниво и вид)": "Наличие на стружки/гориво?",
-  "Антифриз (Охладителна течност)": "Измерени градуси на замръзване...",
-  "Спирачна течност": "Забележки...",
-  "Видими течове по двигателя/кутията": "Опиши: гарнитура, семеринг и т.н.",
-};
-const glassPlaceholders: Record<string, string> = {
-  "Челно стъкло (Предно)": "Година на стъклото / Забележки...",
-  "Странични и задно стъкла": "Забележки...",
-  "Външни огледала (Механизъм/Прибиране)": "Забележки...",
-};
-
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
-
-export function CheckInspectionForm({
-  inspectionId,
-}: CheckInspectionFormProps = {}) {
+export function CheckInspectionForm({ inspectionId }: CheckInspectionFormProps = {}) {
   const t = useTranslations("admin.checks");
-  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -205,6 +80,7 @@ export function CheckInspectionForm({
       return defaultFormData();
     }
   });
+
   const [generating, setGenerating] = useState(false);
   const [checkNumber, setCheckNumber] = useState("");
   const [saving, setSaving] = useState(false);
@@ -212,61 +88,58 @@ export function CheckInspectionForm({
   const [cloning, setCloning] = useState(false);
   const [loadingInspection, setLoadingInspection] = useState(isEditMode);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
+  const initialFormRef = useRef<string>("");
+
+  const [mechanicsList, setMechanicsList] = useState<{ id: string; name: string }[]>([]);
+
+  // Navigation guard state
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    type: "success" | "error" | "info";
-    message: string;
-  } | null>(null);
-  const initialFormRef = useRef<string>("");
-  // Track which tire fields have been manually edited by the user (not auto-filled)
-  const tireManuallyEdited = useRef<Record<string, Set<string>>>({
-    frontRight: new Set(),
-    rearLeft: new Set(),
-    rearRight: new Set(),
-  });
-
-  /* Load existing inspection in edit mode */
-  const loadInspection = useCallback(async (id: string) => {
-    setLoadingInspection(true);
-    try {
-      const { data, error } = await supabase
-        .from("inspections")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw error;
-      const row = data as unknown as InspectionRow;
-      if (row) {
-        setCheckNumber(row.check_number?.trim() || "");
-        setForm({
-          inspectionDate:
-            row.inspection_date || new Date().toISOString().slice(0, 10),
-          mechanic: row.mechanic || "",
-          clientName: row.client_name || "",
-          carModel: row.car_model || "",
-          licensePlate: row.license_plate || "",
-          vin: row.vin || "",
-          tires: row.tires || defaultFormData().tires,
-          corrosion: row.corrosion || defaultFormData().corrosion,
-          fluids: row.fluids || defaultFormData().fluids,
-          mileage: row.mileage || defaultFormData().mileage,
-          glass: row.glass || defaultFormData().glass,
-          summary: row.summary || "",
-        });
-      }
-    } catch (err) {
-      console.error("Failed to load inspection:", err);
-    } finally {
-      setLoadingInspection(false);
-    }
-  }, []);
 
   useEffect(() => {
-    if (inspectionId) loadInspection(inspectionId);
-  }, [inspectionId, loadInspection]);
+    supabase.from("mechanics").select("*").order("sort_order").then(({ data }) => {
+      if (data) setMechanicsList((data as any[]).filter(m => m.name !== "50:50"));
+    });
+  }, []);
 
-  /* Persist to localStorage on every change (only for new inspections) */
+  /* Load existing inspection in edit mode */
+  useEffect(() => {
+    if (!inspectionId) return;
+    const loadInspection = async () => {
+      setLoadingInspection(true);
+      try {
+        const { data, error } = await supabase.from("inspections").select("*").eq("id", inspectionId).single();
+        if (error) throw error;
+        const row = data as unknown as InspectionRow;
+        if (row) {
+          setCheckNumber(row.check_number?.trim() || "");
+          setForm({
+            inspectionDate: row.inspection_date || new Date().toISOString().slice(0, 10),
+            mechanic: row.mechanic || "",
+            clientName: row.client_name || "",
+            carModel: row.car_model || "",
+            licensePlate: row.license_plate || "",
+            vin: row.vin || "",
+            tires: row.tires || defaultFormData().tires,
+            brakes: row.brakes || defaultFormData().brakes,
+            suspension: row.suspension || defaultFormData().suspension,
+            corrosion: row.corrosion || defaultFormData().corrosion,
+            fluids: row.fluids || defaultFormData().fluids,
+            mileage: row.mileage || defaultFormData().mileage,
+            summary: row.summary ? row.summary.split("\n") : [],
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load inspection:", err);
+      } finally {
+        setLoadingInspection(false);
+      }
+    };
+    loadInspection();
+  }, [inspectionId]);
+
+  /* Persist to localStorage */
   useEffect(() => {
     if (isEditMode) return;
     try {
@@ -274,7 +147,6 @@ export function CheckInspectionForm({
     } catch {}
   }, [form, isEditMode]);
 
-  /* Track unsaved changes in edit mode */
   useEffect(() => {
     if (!isEditMode || loadingInspection) return;
     if (!initialFormRef.current) {
@@ -284,7 +156,6 @@ export function CheckInspectionForm({
     setHasUnsavedChanges(JSON.stringify(form) !== initialFormRef.current);
   }, [form, isEditMode, loadingInspection]);
 
-  /* beforeunload — warn on tab close/refresh */
   useEffect(() => {
     if (!isEditMode) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -297,143 +168,87 @@ export function CheckInspectionForm({
     return () => window.removeEventListener("beforeunload", handler);
   }, [isEditMode, hasUnsavedChanges]);
 
-  /* Intercept in-app link clicks when there are unsaved changes */
+  // Intercept in-app link clicks when there are unsaved changes
   useEffect(() => {
-    if (!isEditMode) return;
-    const handleClick = (e: MouseEvent) => {
-      if (!hasUnsavedChanges) return;
-      const anchor = (e.target as HTMLElement).closest(
-        "a[href]",
-      ) as HTMLAnchorElement | null;
-      if (!anchor) return;
-      const href = anchor.getAttribute("href");
-      if (!href || href === "#" || href.startsWith("javascript")) return;
+    const handleCaptureClick = (e: MouseEvent) => {
+      if (!isEditMode || !hasUnsavedChanges) return;
+      
+      const target = e.target as HTMLElement;
+      const link = target.closest("a");
+      if (!link) return;
+
+      const href = link.getAttribute("href");
+      if (!href) return;
+      if (href.startsWith("http") && !href.includes(window.location.host)) {
+        return; // External URL
+      }
+
+      if (href === window.location.pathname + window.location.search) {
+        return; // Current URL
+      }
+
       e.preventDefault();
       e.stopPropagation();
       setPendingNavUrl(href);
       setNavModalOpen(true);
     };
-    document.addEventListener("click", handleClick, true);
-    return () => document.removeEventListener("click", handleClick, true);
+
+    document.addEventListener("click", handleCaptureClick, { capture: true });
+    return () => {
+      document.removeEventListener("click", handleCaptureClick, { capture: true });
+    };
   }, [isEditMode, hasUnsavedChanges]);
 
   /* Field updaters */
-  const setField = <K extends keyof CheckFormData>(
-    key: K,
-    val: CheckFormData[K],
-  ) => setForm((p) => ({ ...p, [key]: val }));
+  const setField = <K extends keyof CheckFormData>(key: K, val: CheckFormData[K]) => setForm(p => ({ ...p, [key]: val }));
 
-  const updateCheckItem = (
-    section: "corrosion" | "fluids" | "glass",
-    idx: number,
-    field: keyof CheckItem,
-    val: string,
-  ) =>
-    setForm((p) => {
-      const arr = [...p[section]];
-      arr[idx] = { ...arr[idx], [field]: val };
-      return { ...p, [section]: arr };
-    });
-
-  const updateTire = (
-    pos: keyof CheckFormData["tires"],
-    field: keyof TireData,
-    val: string,
-  ) => {
-    // Mark non-frontLeft fields as manually edited when user types in them
-    if (
-      pos !== "frontLeft" &&
-      (field === "brand" || field === "dot" || field === "tread")
-    ) {
-      tireManuallyEdited.current[pos]?.add(field);
-    }
-
-    setForm((p) => {
-      const updated = {
-        ...p.tires,
-        [pos]: { ...p.tires[pos], [field]: val },
-      };
-      // Auto-fill brand, dot, tread from frontLeft to non-manually-edited tires
-      if (
-        pos === "frontLeft" &&
-        (field === "brand" || field === "dot" || field === "tread")
-      ) {
-        const others: (keyof CheckFormData["tires"])[] = [
-          "frontRight",
-          "rearLeft",
-          "rearRight",
-        ];
-        for (const other of others) {
-          if (!tireManuallyEdited.current[other]?.has(field)) {
-            updated[other] = { ...updated[other], [field]: val };
-          }
-        }
-      }
-      return { ...p, tires: updated };
-    });
+  const updateSubField = <K extends keyof CheckFormData>(section: K, field: string, val: any) => {
+    setForm(p => ({ ...p, [section]: { ...(p[section] as any), [field]: val } }));
   };
 
-  /* Derive checks list path from current pathname */
-  const basePath = pathname.includes("/mb-admin-mechanics")
-    ? pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics"
-    : pathname.split("/mb-admin")[0] + "/mb-admin";
+  const basePath = pathname.includes("/mb-admin-mechanics") ? pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics" : pathname.split("/mb-admin")[0] + "/mb-admin";
   const checksPath = basePath + "/checks";
 
-  /* Save inspection (edit mode) */
+  /* Save inspection */
   const handleSave = async (navUrl?: string) => {
     if (!inspectionId) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("inspections")
-        .update({
-          inspection_date: form.inspectionDate,
-          mechanic: form.mechanic || null,
-          client_name: form.clientName || null,
-          car_model: form.carModel || null,
-          license_plate: form.licensePlate || null,
-          vin: form.vin || null,
-          tires: form.tires,
-          corrosion: form.corrosion,
-          fluids: form.fluids,
-          mileage: form.mileage,
-          glass: form.glass,
-          summary: form.summary || null,
-        } as never)
-        .eq("id", inspectionId);
+      const { error } = await (supabase.from("inspections") as any).update({
+        inspection_date: form.inspectionDate, mechanic: form.mechanic || null, client_name: form.clientName || null,
+        car_model: form.carModel || null, license_plate: form.licensePlate || null, vin: form.vin || null,
+        tires: form.tires, brakes: form.brakes, suspension: form.suspension, corrosion: form.corrosion,
+        fluids: form.fluids, mileage: form.mileage, summary: form.summary.length > 0 ? form.summary.join("\n") : null
+      }).eq("id", inspectionId);
       if (error) throw error;
       initialFormRef.current = JSON.stringify(form);
       setHasUnsavedChanges(false);
       setToast({ type: "success", message: "Проверката е запазена успешно!" });
+      
       if (navUrl) {
-        setPendingNavUrl(null);
         setNavModalOpen(false);
+        setPendingNavUrl(null);
         router.push(navUrl);
       }
     } catch (err) {
-      console.error("Save failed:", err);
       setToast({ type: "error", message: "Грешка при запазване!" });
     } finally {
-      setSaving(false);
+      // Small timeout to prevent momentary flashes if router.push blocks UI
+      setTimeout(() => setSaving(false), 300);
     }
   };
 
   /* Delete inspection */
   const handleDelete = async () => {
     if (!inspectionId) return;
-    if (!confirm("Сигурни ли сте, че искате да изтриете тази проверка?"))
-      return;
+    if (!confirm("Сигурни ли сте, че искате да изтриете тази проверка?")) return;
     setDeleting(true);
     try {
-      const { error } = await supabase
-        .from("inspections")
-        .delete()
-        .eq("id", inspectionId);
+      const { error } = await supabase.from("inspections").delete().eq("id", inspectionId);
       if (error) throw error;
       setToast({ type: "success", message: "Проверката е изтрита." });
       setTimeout(() => router.push(checksPath), 500);
     } catch (err) {
-      console.error("Delete failed:", err);
       setToast({ type: "error", message: "Грешка при изтриване!" });
       setDeleting(false);
     }
@@ -443,75 +258,40 @@ export function CheckInspectionForm({
   const handleClone = async () => {
     setCloning(true);
     try {
-      const { data, error } = await supabase
-        .from("inspections")
-        .insert({
-          check_number: "",
-          inspection_date: form.inspectionDate,
-          mechanic: form.mechanic || null,
-          client_name: form.clientName || null,
-          car_model: form.carModel || null,
-          license_plate: form.licensePlate || null,
-          vin: form.vin || null,
-          tires: form.tires,
-          corrosion: form.corrosion,
-          fluids: form.fluids,
-          mileage: form.mileage,
-          glass: form.glass,
-          summary: form.summary || null,
-        } as never)
-        .select()
-        .single();
+      const { data, error } = await (supabase.from("inspections") as any).insert({
+        check_number: "", inspection_date: form.inspectionDate, mechanic: form.mechanic || null,
+        client_name: form.clientName || null, car_model: form.carModel || null, license_plate: form.licensePlate || null, vin: form.vin || null,
+        tires: form.tires, brakes: form.brakes, suspension: form.suspension, corrosion: form.corrosion,
+        fluids: form.fluids, mileage: form.mileage, summary: form.summary.length > 0 ? form.summary.join("\n") : null
+      }).select().single();
       if (error) throw error;
       const newId = (data as { id: string } | null)?.id;
       if (newId) {
-        setToast({
-          type: "success",
-          message: "Проверката е клонирана успешно!",
-        });
+        setToast({ type: "success", message: "Проверката е клонирана успешно!" });
         setHasUnsavedChanges(false);
         router.push(`${basePath}/checks/edit?id=${newId}`);
       }
     } catch (err) {
-      console.error("Clone failed:", err);
       setToast({ type: "error", message: "Грешка при клониране!" });
     } finally {
       setCloning(false);
     }
   };
 
-  /* PDF generation → download → clear draft → redirect */
+  /* PDF generation */
   const handleGeneratePDF = async () => {
     setGenerating(true);
     try {
-      let filenameBase = "";
-      if (isEditMode && inspectionId) {
-        filenameBase = checkNumber;
-      } else {
-        const { data: inserted, error: insertError } = await supabase
-          .from("inspections")
-          .insert({
-            check_number: "",
-            inspection_date: form.inspectionDate,
-            mechanic: form.mechanic || null,
-            client_name: form.clientName || null,
-            car_model: form.carModel || null,
-            license_plate: form.licensePlate || null,
-            vin: form.vin || null,
-            tires: form.tires,
-            corrosion: form.corrosion,
-            fluids: form.fluids,
-            mileage: form.mileage,
-            glass: form.glass,
-            summary: form.summary || null,
-          } as never)
-          .select("check_number")
-          .single();
+      let filenameBase = checkNumber;
+      if (!isEditMode || !inspectionId) {
+        const { data: inserted, error: insertError } = await (supabase.from("inspections") as any).insert({
+          check_number: "", inspection_date: form.inspectionDate, mechanic: form.mechanic || null,
+          client_name: form.clientName || null, car_model: form.carModel || null, license_plate: form.licensePlate || null, vin: form.vin || null,
+          tires: form.tires, brakes: form.brakes, suspension: form.suspension, corrosion: form.corrosion,
+          fluids: form.fluids, mileage: form.mileage, summary: form.summary.length > 0 ? form.summary.join("\n") : null
+        }).select("check_number").single();
         if (insertError) throw insertError;
-        filenameBase =
-          (
-            inserted as { check_number: string | null } | null
-          )?.check_number?.trim() || "";
+        filenameBase = (inserted as { check_number: string | null } | null)?.check_number?.trim() || "";
       }
 
       const { registerPDFFonts } = await import("@/lib/pdf-fonts");
@@ -519,46 +299,19 @@ export function CheckInspectionForm({
       const fontsReady = await registerPDFFonts();
       setFontRegistered(fontsReady);
 
-      const blob = await Promise.race([
-        pdf(<CheckPDF data={form} />).toBlob(),
-        new Promise<Blob>((_, reject) =>
-          setTimeout(() => reject(new Error("PDF generation timeout")), 30000),
-        ),
-      ]);
+      const blob = await pdf(<CheckPDF data={form} />).toBlob();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = filenameBase
-        ? `${filenameBase}.pdf`
-        : `Проверка_${form.clientName || "без_име"}_${form.inspectionDate}.pdf`;
+      link.download = filenameBase ? `${filenameBase}.pdf` : `Проверка_${form.clientName || "без_име"}_${form.inspectionDate}.pdf`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      setTimeout(() => { document.body.removeChild(link); URL.revokeObjectURL(url); }, 100);
 
       if (isEditMode && inspectionId) {
-        const { error } = await supabase
-          .from("inspections")
-          .update({
-            inspection_date: form.inspectionDate,
-            mechanic: form.mechanic || null,
-            client_name: form.clientName || null,
-            car_model: form.carModel || null,
-            license_plate: form.licensePlate || null,
-            vin: form.vin || null,
-            tires: form.tires,
-            corrosion: form.corrosion,
-            fluids: form.fluids,
-            mileage: form.mileage,
-            glass: form.glass,
-            summary: form.summary || null,
-          } as never)
-          .eq("id", inspectionId);
-        if (error) console.error("Failed to update inspection:", error);
+        await handleSave();
       } else {
         localStorage.removeItem(STORAGE_KEY);
         router.push(checksPath);
@@ -570,737 +323,346 @@ export function CheckInspectionForm({
     }
   };
 
-  /* Shared classes */
-  const sectionHeader =
-    "bg-mb-anthracite text-white px-4 py-2.5 rounded-lg text-base font-bold mt-8 mb-4";
-  const radioLabel =
-    "flex items-center gap-2 cursor-pointer text-sm text-gray-300 hover:text-white transition-colors";
+  /* Shared UI components */
+  const sectionHeader = "bg-mb-anthracite text-white px-4 py-2.5 rounded-lg text-base font-bold mt-8 mb-4";
+  const rowClass = "flex flex-col md:flex-row md:items-center py-4 border-b border-mb-border gap-4";
+  const labelClass = "md:w-[260px] text-sm font-semibold text-white shrink-0";
+  const radioGroupClass = "flex flex-wrap items-center gap-x-6 gap-y-3 flex-1";
+  
+  const recommendations = form.summary || [];
+  
+  const updateRecommendation = (idx: number, val: string) => {
+    const newRecs = [...recommendations];
+    newRecs[idx] = val;
+    setField("summary", newRecs);
+  };
+  
+  const addRecommendation = () => {
+    if (recommendations.length < 50) {
+      setField("summary", [...recommendations, ""]);
+    }
+  };
+  
+  const removeRecommendation = (idx: number) => {
+    const newRecs = recommendations.filter((_, i) => i !== idx);
+    setField("summary", newRecs);
+  };
+  
+  const RadioOption = ({ section, field, value, label }: { section: keyof CheckFormData, field: string, value: string, label: string }) => (
+    <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300 hover:text-white transition-colors">
+      <input type="radio" checked={(form[section] as any)[field] === value} onChange={() => updateSubField(section, field as any, value)} className="w-4 h-4 text-mb-blue bg-mb-black border-mb-border focus:ring-mb-blue rounded-full" />
+      {label}
+    </label>
+  );
 
   if (loadingInspection) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <svg
-            className="animate-spin h-8 w-8 text-mb-blue mx-auto"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              fill="none"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-          <p className="text-mb-silver">Зареждане на проверка...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex-1 flex items-center justify-center p-10 text-white">Зареждане на проверка...</div>;
   }
 
-  const editActionsAside = isEditMode ? (
-    <aside
-      className="
-        fixed bottom-4 left-[20px] right-[20px] z-50 flex flex-col gap-2
-        rounded-xl border border-mb-border bg-mb-anthracite/95 p-2.5 shadow-xl backdrop-blur-sm
-        lg:bottom-6 lg:left-auto lg:right-6 lg:w-max lg:max-w-none lg:flex-row lg:flex-wrap
-        lg:items-center lg:justify-end lg:gap-3 lg:p-3
-      "
-    >
-      <div className="flex w-full min-w-0 flex-row gap-2 lg:contents">
-        <Button
-          onClick={() => handleSave()}
-          disabled={saving}
-          className="min-w-0 flex-1 justify-center bg-emerald-600 px-2 hover:bg-emerald-700 sm:px-3 lg:w-auto lg:flex-none lg:shrink-0 lg:px-4"
-        >
-          {saving ? (
-            <svg className="mr-2 h-4 w-4 shrink-0 animate-spin" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="mr-2 h-4 w-4 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          )}
-          Запази
-        </Button>
-        <Button
-          onClick={handleClone}
-          disabled={cloning}
-          className="min-w-0 flex-1 justify-center bg-mb-blue px-2 hover:bg-mb-blue/90 sm:px-3 lg:w-auto lg:flex-none lg:shrink-0 lg:px-4"
-        >
-          {cloning ? (
-            <svg className="mr-2 h-4 w-4 shrink-0 animate-spin" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="mr-2 h-4 w-4 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
-              />
-            </svg>
-          )}
-          Клонирай
-        </Button>
-      </div>
-      <Button
-        onClick={handleDelete}
-        disabled={deleting}
-        className="w-full justify-center bg-red-600 px-3 hover:bg-red-700 sm:px-4 lg:w-auto lg:shrink-0"
-      >
-        {deleting ? (
-          <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              fill="none"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="mr-2 h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
-        )}
-        Изтрий
-      </Button>
-    </aside>
-  ) : null;
-
   return (
-    <div
-      className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${isEditMode ? "pb-52 lg:pb-28" : ""}`}
-    >
-      <div
-        className={
-          isEditMode
-            ? "mx-auto w-full max-w-5xl"
-            : "mx-auto max-w-5xl space-y-6"
-        }
-      >
-        <div className={isEditMode ? "space-y-6" : "contents"}>
-          {/* ─── Header info grid ─── */}
-          <div className="bg-mb-black border border-mb-border rounded-xl p-6">
-            <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-mb-blue"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              {t("formTitle")}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <Label className="text-mb-silver text-xs mb-1.5 block">
-                  {t("inspectionDate")}
-                </Label>
-                <Input
-                  type="date"
-                  value={form.inspectionDate}
-                  onChange={(e) => setField("inspectionDate", e.target.value)}
-                  className="bg-mb-anthracite border-mb-border text-white [color-scheme:dark]"
-                />
-              </div>
-              <div>
-                <Label className="text-mb-silver text-xs mb-1.5 block">
-                  {t("mechanic")}
-                </Label>
-                <Input
-                  value={form.mechanic}
-                  onChange={(e) => setField("mechanic", e.target.value)}
-                  className="bg-mb-anthracite border-mb-border text-white"
-                  placeholder=""
-                />
-              </div>
-              <div>
-                <Label className="text-mb-silver text-xs mb-1.5 block">
-                  {t("clientName")}
-                </Label>
-                <Input
-                  value={form.clientName}
-                  onChange={(e) => setField("clientName", e.target.value)}
-                  className="bg-mb-anthracite border-mb-border text-white"
-                  placeholder=""
-                />
-              </div>
-              <div>
-                <Label className="text-mb-silver text-xs mb-1.5 block">
-                  {t("carModel")}
-                </Label>
-                <Input
-                  value={form.carModel}
-                  onChange={(e) => setField("carModel", e.target.value)}
-                  className="bg-mb-anthracite border-mb-border text-white"
-                  placeholder="Mercedes"
-                />
-              </div>
-              <div>
-                <Label className="text-mb-silver text-xs mb-1.5 block">
-                  {t("licensePlate")}
-                </Label>
-                <Input
-                  value={form.licensePlate}
-                  onChange={(e) => setField("licensePlate", e.target.value)}
-                  className="bg-mb-anthracite border-mb-border text-white"
-                  placeholder="СВ1234АА"
-                />
-              </div>
-              <div>
-                <Label className="text-mb-silver text-xs mb-1.5 block">
-                  {t("vin")}
-                </Label>
-                <Input
-                  value={form.vin}
-                  onChange={(e) => setField("vin", e.target.value)}
-                  className="bg-mb-anthracite border-mb-border text-white"
-                  placeholder="WDD"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ─── 1. Tires ─── */}
-          <div>
-            <h3 className={sectionHeader}>1. {t("sections.tires")}</h3>
-            <div className="bg-mb-black border border-mb-border rounded-xl overflow-hidden">
-              {/* Tire header — hidden on mobile, shown on md+ */}
-              <div className="hidden md:grid grid-cols-[1.5fr_1fr_1fr_2fr_2fr] gap-0 bg-mb-anthracite border-b border-mb-border px-4 py-2.5 text-xs font-bold text-mb-silver uppercase tracking-wide">
-                <span>Позиция</span>
-                <span>Марка / Сезон</span>
-                <span>ДОТ (Година)</span>
-                <span>Грайфер (мм)</span>
-                <span>Състояние / Износване</span>
-              </div>
-              {(
-                [
-                  ["frontLeft", "Предна Лява"],
-                  ["frontRight", "Предна Дясна"],
-                  ["rearLeft", "Задна Лява"],
-                  ["rearRight", "Задна Дясна"],
-                ] as [keyof CheckFormData["tires"], string][]
-              ).map(([pos, posLabel]) => (
-                <div
-                  key={pos}
-                  className="border-b border-mb-border last:border-b-0 px-4 py-3"
-                >
-                  {/* Desktop row */}
-                  <div className="hidden md:grid grid-cols-[1.5fr_1fr_1fr_2fr_2fr] gap-2 items-center">
-                    <span className="text-sm font-medium text-white">
-                      {posLabel}
-                    </span>
-                    <Input
-                      value={form.tires[pos].brand}
-                      onChange={(e) => updateTire(pos, "brand", e.target.value)}
-                      className="bg-mb-anthracite border-mb-border text-white text-xs h-8 mr-2"
-                      placeholder="Michelin Л"
-                    />
-                    <Input
-                      value={form.tires[pos].dot}
-                      onChange={(e) => updateTire(pos, "dot", e.target.value)}
-                      className="bg-mb-anthracite border-mb-border text-white text-xs h-8 mr-2"
-                      placeholder="XXXX"
-                    />
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={form.tires[pos].tread}
-                      onChange={(e) => updateTire(pos, "tread", e.target.value)}
-                      className="bg-mb-anthracite border-mb-border text-white text-xs h-8 mr-2"
-                      placeholder="мм"
-                    />
-                    <div className="flex flex-wrap gap-3 ml-5">
-                      {tireConditionOptions.map(([val, label]) => (
-                        <label key={val} className={radioLabel}>
-                          <input
-                            type="radio"
-                            name={`tire_${pos}`}
-                            value={val}
-                            checked={form.tires[pos].condition === val}
-                            onChange={() => updateTire(pos, "condition", val)}
-                            className="accent-mb-blue w-3.5 h-3.5"
-                          />
-                          <span>{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Mobile card */}
-                  <div className="flex flex-col gap-3 md:hidden">
-                    <span className="text-sm font-semibold text-white bg-mb-anthracite -mx-4 px-4 py-1.5 -mt-3">
-                      {posLabel}
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-xs text-mb-silver mb-1 block">
-                          Марка / Сезон
-                        </span>
-                        <Input
-                          value={form.tires[pos].brand}
-                          onChange={(e) =>
-                            updateTire(pos, "brand", e.target.value)
-                          }
-                          className="bg-mb-anthracite border-mb-border text-white text-xs h-8"
-                          placeholder="Michelin Лятна"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-xs text-mb-silver mb-1 block">
-                          ДОТ (Година)
-                        </span>
-                        <Input
-                          value={form.tires[pos].dot}
-                          onChange={(e) =>
-                            updateTire(pos, "dot", e.target.value)
-                          }
-                          className="bg-mb-anthracite border-mb-border text-white text-xs h-8"
-                          placeholder="4222"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-xs text-mb-silver mb-1 block">
-                        Грайфер (мм)
-                      </span>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={form.tires[pos].tread}
-                        onChange={(e) =>
-                          updateTire(pos, "tread", e.target.value)
-                        }
-                        className="bg-mb-anthracite border-mb-border text-white text-xs h-8 w-full"
-                        placeholder="мм"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-xs text-mb-silver mb-1 block">
-                        Състояние / Износване
-                      </span>
-                      <div className="flex flex-col gap-2">
-                        {tireConditionOptions.map(([val, label]) => (
-                          <label key={val} className={radioLabel}>
-                            <input
-                              type="radio"
-                              name={`tire_${pos}`}
-                              value={val}
-                              checked={form.tires[pos].condition === val}
-                              onChange={() => updateTire(pos, "condition", val)}
-                              className="accent-mb-blue w-3.5 h-3.5"
-                            />
-                            <span>{label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ─── 2. Corrosion ─── */}
-          <div>
-            <h3 className={sectionHeader}>2. {t("sections.corrosion")}</h3>
-            <div className="bg-mb-black border border-mb-border rounded-xl divide-y divide-mb-border">
-              {form.corrosion.map((item, i) => (
-                <div
-                  key={i}
-                  className="grid grid-cols-[2fr_3fr_2fr] items-center gap-4 px-4 py-3.5"
-                >
-                  <span className="text-sm font-medium text-white">
-                    {item.label}
-                  </span>
-                  <div className="flex flex-wrap gap-3">
-                    {corrosionOptions.map(([val, label]) => (
-                      <label key={val} className={radioLabel}>
-                        <input
-                          type="radio"
-                          name={`corrosion_${i}`}
-                          value={val}
-                          checked={item.value === val}
-                          onChange={() =>
-                            updateCheckItem("corrosion", i, "value", val)
-                          }
-                          className={`w-3.5 h-3.5 ${val === "deep" ? "accent-red-500" : "accent-mb-blue"}`}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <Input
-                    value={item.note}
-                    onChange={(e) =>
-                      updateCheckItem("corrosion", i, "note", e.target.value)
-                    }
-                    className="bg-mb-anthracite border-mb-border text-white text-xs h-8"
-                    placeholder={
-                      corrosionPlaceholders[item.label] || "Забележки"
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ─── 3. Fluids ─── */}
-          <div>
-            <h3 className={sectionHeader}>3. {t("sections.fluids")}</h3>
-            <div className="bg-mb-black border border-mb-border rounded-xl divide-y divide-mb-border">
-              {form.fluids.map((item, i) => {
-                const opts = fluidOptions[item.label] || [];
-                return (
-                  <div
-                    key={i}
-                    className="grid grid-cols-[2fr_3fr_2fr] items-center gap-4 px-4 py-3.5"
-                  >
-                    <span className="text-sm font-medium text-white">
-                      {item.label}
-                    </span>
-                    <div className="flex flex-wrap gap-3">
-                      {opts.map(([val, label]) => (
-                        <label key={val} className={radioLabel}>
-                          <input
-                            type="radio"
-                            name={`fluid_${i}`}
-                            value={val}
-                            checked={item.value === val}
-                            onChange={() =>
-                              updateCheckItem("fluids", i, "value", val)
-                            }
-                            className={`w-3.5 h-3.5 ${val === "oil" || val === "active" ? "accent-red-500" : "accent-mb-blue"}`}
-                          />
-                          <span>{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <Input
-                      value={item.note}
-                      onChange={(e) =>
-                        updateCheckItem("fluids", i, "note", e.target.value)
-                      }
-                      className="bg-mb-anthracite border-mb-border text-white text-xs h-8"
-                      placeholder={
-                        fluidPlaceholders[item.label] || "Забележки..."
-                      }
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ─── 4. Mileage ─── */}
-          <div>
-            <h3 className={sectionHeader}>4. {t("sections.mileage")}</h3>
-            <div className="bg-mb-black border border-mb-border rounded-xl divide-y divide-mb-border">
-              <div className="grid grid-cols-[2fr_3fr_2fr] items-center gap-4 px-4 py-3.5">
-                <span className="text-sm font-medium text-white">
-                  Показание на километраж
-                </span>
-                <Input
-                  type="number"
-                  value={form.mileage.odometer}
-                  onChange={(e) =>
-                    setField("mileage", {
-                      ...form.mileage,
-                      odometer: e.target.value,
-                    })
-                  }
-                  className="bg-mb-anthracite border-mb-border text-white text-sm h-9"
-                  placeholder="Въведи километри по табло..."
-                />
-                <div />
-              </div>
-              <div className="grid grid-cols-[2fr_3fr_2fr] items-center gap-4 px-4 py-3.5">
-                <div>
-                  <span className="text-sm font-medium text-white block">
-                    Оценка на реален пробег
-                  </span>
-                  <span className="text-xs text-mb-silver">
-                    (След компютърна диагностика и визуален оглед)
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {mileageOptions.map(([val, label]) => (
-                    <label key={val} className={radioLabel}>
-                      <input
-                        type="radio"
-                        name="mileage_assessment"
-                        value={val}
-                        checked={form.mileage.assessment === val}
-                        onChange={() =>
-                          setField("mileage", {
-                            ...form.mileage,
-                            assessment: val,
-                          })
-                        }
-                        className={`w-3.5 h-3.5 ${val === "manipulated" ? "accent-red-500" : "accent-mb-blue"}`}
-                      />
-                      <span>{label}</span>
-                    </label>
+    <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${isEditMode ? "pb-52 lg:pb-28" : ""}`}>
+      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
+      
+      <div className="mx-auto max-w-5xl space-y-6">
+        
+        {/* Header info */}
+        <div className="bg-mb-black border border-mb-border rounded-xl p-6">
+          <h2 className="text-lg font-bold text-white mb-5">ПРОТОКОЛ ЗА ТЕХНИЧЕСКО СЪСТОЯНИЕ</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+             <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">МЕХАНИК:</Label>
+              <Select value={form.mechanic} onValueChange={(val) => setField("mechanic", val)}>
+                <SelectTrigger className="bg-mb-anthracite border-mb-border text-white h-10">
+                  <SelectValue placeholder="Изберете механик..." />
+                </SelectTrigger>
+                <SelectContent className="bg-mb-anthracite border-mb-border">
+                  {mechanicsList.map((m) => (
+                    <SelectItem key={m.id} value={m.name} className="text-white hover:bg-mb-black cursor-pointer">
+                      {m.name}
+                    </SelectItem>
                   ))}
-                </div>
-                <Input
-                  value={form.mileage.note}
-                  onChange={(e) =>
-                    setField("mileage", {
-                      ...form.mileage,
-                      note: e.target.value,
-                    })
-                  }
-                  className="bg-mb-anthracite border-mb-border text-white text-xs h-8"
-                  placeholder="Запаметени км в модули / коментар..."
-                />
-              </div>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">ДАТА:</Label>
+              <Input type="date" value={form.inspectionDate} onChange={(e) => setField("inspectionDate", e.target.value)} className="bg-mb-anthracite border-mb-border text-white [color-scheme:dark]" />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">ИМЕ НА КЛИЕНТ:</Label>
+              <Input value={form.clientName} onChange={(e) => setField("clientName", e.target.value)} className="bg-mb-anthracite border-mb-border text-white" />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">МАРКА И МОДЕЛ:</Label>
+              <Input value={form.carModel} onChange={(e) => setField("carModel", e.target.value)} className="bg-mb-anthracite border-mb-border text-white" />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">РЕГИСТРАЦИОНЕН НОМЕР:</Label>
+              <Input value={form.licensePlate} onChange={(e) => setField("licensePlate", e.target.value)} className="bg-mb-anthracite border-mb-border text-white" />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">VIN (РАМА):</Label>
+              <Input value={form.vin} onChange={(e) => setField("vin", e.target.value)} className="bg-mb-anthracite border-mb-border text-white uppercase" />
             </div>
           </div>
-
-          {/* ─── 5. Glass ─── */}
-          <div>
-            <h3 className={sectionHeader}>5. {t("sections.glass")}</h3>
-            <div className="bg-mb-black border border-mb-border rounded-xl divide-y divide-mb-border">
-              {form.glass.map((item, i) => {
-                const opts = glassOptions[item.label] || [];
-                return (
-                  <div
-                    key={i}
-                    className="grid grid-cols-[2fr_3fr_2fr] items-center gap-4 px-4 py-3.5"
-                  >
-                    <span className="text-sm font-medium text-white">
-                      {item.label}
-                    </span>
-                    <div className="flex flex-wrap gap-3">
-                      {opts.map(([val, label]) => (
-                        <label key={val} className={radioLabel}>
-                          <input
-                            type="radio"
-                            name={`glass_${i}`}
-                            value={val}
-                            checked={item.value === val}
-                            onChange={() =>
-                              updateCheckItem("glass", i, "value", val)
-                            }
-                            className="accent-mb-blue w-3.5 h-3.5"
-                          />
-                          <span>{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <Input
-                      value={item.note}
-                      onChange={(e) =>
-                        updateCheckItem("glass", i, "note", e.target.value)
-                      }
-                      className="bg-mb-anthracite border-mb-border text-white text-xs h-8"
-                      placeholder={
-                        glassPlaceholders[item.label] || "Забележки..."
-                      }
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ─── Summary ─── */}
-          <div>
-            <h3 className={sectionHeader}>{t("sections.summary")}</h3>
-            <div className="bg-mb-black border border-mb-border rounded-xl p-4">
-              <Textarea
-                value={form.summary}
-                onChange={(e) => setField("summary", e.target.value)}
-                rows={6}
-                className="bg-mb-anthracite border-mb-border text-white resize-y"
-                placeholder="Опишете други открити проблеми, грешки от диагностиката и спешни препоръки..."
-              />
-            </div>
-          </div>
-
-          {/* ─── Generate PDF button ─── */}
-          <Button
-            onClick={handleGeneratePDF}
-            disabled={generating}
-            className="w-full py-6 text-lg font-bold bg-mb-blue hover:bg-mb-blue/90 text-white rounded-xl"
-          >
-            {generating ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                {t("generating")}
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                {t("generatePdf")}
-              </span>
-            )}
-          </Button>
         </div>
+
+        <div className="bg-mb-black border border-mb-border rounded-xl p-6">
+          {/* 1. ПРОБЕГ */}
+          <h3 className={sectionHeader}>1. ПРОБЕГ НА АВТОМОБИЛА</h3>
+          <div className={rowClass}>
+            <div className={labelClass}>Показание на километраж:</div>
+            <Input type="number" placeholder="напр. 150000" className="w-48 bg-mb-anthracite border-mb-border text-white" value={form.mileage.odometer} onChange={e => updateSubField("mileage", "odometer", e.target.value)} />
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Оценка на реален пробег:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="mileage" field="assessment" value="match" label="Съответства" />
+              <RadioOption section="mileage" field="assessment" value="manipulated" label="Има съмнения / Манипулиран" />
+              <Input className="w-full md:max-w-xs bg-mb-anthracite border-mb-border text-white" placeholder="Бележка..." value={form.mileage.note} onChange={e => updateSubField("mileage", "note", e.target.value)} />
+            </div>
+          </div>
+
+          {/* 2. ГУМИ */}
+          <h3 className={sectionHeader}>2. СЪСТОЯНИЕ НА ГУМИТЕ</h3>
+          <div className={rowClass}>
+            <div className={labelClass}>Общо състояние грайфер:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="tires" field="tread_condition" value="good" label="Добро" />
+              <RadioOption section="tires" field="tread_condition" value="worn" label="Захабени" />
+              <RadioOption section="tires" field="tread_condition" value="replace" label="За смяна" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Различни гуми:</div>
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300 hover:text-white transition-colors">
+              <input type="checkbox" checked={form.tires.mixed_tires} onChange={(e) => updateSubField("tires", "mixed_tires", e.target.checked)} className="w-4 h-4 text-mb-blue bg-mb-black border-mb-border focus:ring-mb-blue rounded" />
+              Наличие на различни гуми (марка/шарка)
+            </label>
+          </div>
+
+          {/* 3. СПИРАЧНА СИСТЕМА */}
+          <h3 className={sectionHeader}>3. СПИРАЧНА СИСТЕМА</h3>
+          <div className={rowClass}>
+            <div className={labelClass}>Предни накладки:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="brakes" field="front_pads" value="good" label="Добри" />
+              <RadioOption section="brakes" field="front_pads" value="worn" label="Износени" />
+              <RadioOption section="brakes" field="front_pads" value="replace" label="За смяна" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Предни дискове:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="brakes" field="front_discs" value="good" label="Добри" />
+              <RadioOption section="brakes" field="front_discs" value="lipped" label="Имат ръб / Криви" />
+              <RadioOption section="brakes" field="front_discs" value="below_min" label="Под минимум" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Задни накладки:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="brakes" field="rear_pads" value="good" label="Добри" />
+              <RadioOption section="brakes" field="rear_pads" value="worn" label="Износени" />
+              <RadioOption section="brakes" field="rear_pads" value="replace" label="За смяна" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Задни дискове:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="brakes" field="rear_discs" value="good" label="Добри" />
+              <RadioOption section="brakes" field="rear_discs" value="lipped" label="Имат ръб / Криви" />
+              <RadioOption section="brakes" field="rear_discs" value="below_min" label="Под минимум" />
+            </div>
+          </div>
+
+          {/* 4. ОКАЧВАНЕ */}
+          <h3 className={sectionHeader}>4. ОКАЧВАНЕ И ХОДОВА ЧАСТ</h3>
+          <div className={rowClass}>
+            <div className={labelClass}>Предно окачване (Носачи/Тампони/Шарнири):</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="suspension" field="front_suspension" value="good" label="Здраво" />
+              <RadioOption section="suspension" field="front_suspension" value="play" label="Има луфт / Напукани" />
+              <RadioOption section="suspension" field="front_suspension" value="repair" label="За ремонт" />
+              <Input className="w-full md:max-w-xs bg-mb-anthracite border-mb-border text-white" placeholder="Бележка..." value={form.suspension.front_suspension_note} onChange={e => updateSubField("suspension", "front_suspension_note", e.target.value)} />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Задно окачване (Носачи/Тампони):</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="suspension" field="rear_suspension" value="good" label="Здраво" />
+              <RadioOption section="suspension" field="rear_suspension" value="play" label="Има луфт / Напукани" />
+              <RadioOption section="suspension" field="rear_suspension" value="repair" label="За ремонт" />
+              <Input className="w-full md:max-w-xs bg-mb-anthracite border-mb-border text-white" placeholder="Бележка..." value={form.suspension.rear_suspension_note} onChange={e => updateSubField("suspension", "rear_suspension_note", e.target.value)} />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Амортисьори и пружини:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="suspension" field="shocks_springs" value="good" label="Изправни" />
+              <RadioOption section="suspension" field="shocks_springs" value="leaking" label="Омаслени" />
+              <RadioOption section="suspension" field="shocks_springs" value="broken" label="Счупена пружина" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Кормилна система:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="suspension" field="steering" value="good" label="Изправна" />
+              <RadioOption section="suspension" field="steering" value="leak_play" label="Теч / Луфт" />
+              <Input className="w-full md:max-w-xs bg-mb-anthracite border-mb-border text-white" placeholder="Бележка..." value={form.suspension.steering_note} onChange={e => updateSubField("suspension", "steering_note", e.target.value)} />
+            </div>
+          </div>
+
+          {/* 5. КОРОЗИЯ */}
+          <h3 className={sectionHeader}>5. КОРОЗИЯ И КУПЕ (РЪЖДА)</h3>
+          <div className={rowClass}>
+            <div className={labelClass}>Шаси и под автомобила:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="corrosion" field="chassis" value="none" label="Няма" />
+              <RadioOption section="corrosion" field="chassis" value="surface" label="Повърхностна" />
+              <RadioOption section="corrosion" field="chassis" value="deep" label="Дълбока / Изгнило" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Прагове и вежди:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="corrosion" field="sills" value="good" label="Здрави" />
+              <RadioOption section="corrosion" field="sills" value="starting" label="Започваща ръжда" />
+              <RadioOption section="corrosion" field="sills" value="rusted" label="Изгнили" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Изпускателна система (Гърнета):</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="corrosion" field="exhaust" value="good" label="Здрава" />
+              <RadioOption section="corrosion" field="exhaust" value="rusted" label="Ръждясала" />
+              <RadioOption section="corrosion" field="exhaust" value="holes" label="Пробита / Заварки" />
+            </div>
+          </div>
+
+          {/* 6. ТЕЧНОСТИ */}
+          <h3 className={sectionHeader}>6. ТЕЧНОСТИ И ТЕЧОВЕ</h3>
+          <div className={rowClass}>
+            <div className={labelClass}>Моторно масло:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="fluids" field="engine_oil" value="ok" label="В норма" />
+              <RadioOption section="fluids" field="engine_oil" value="low" label="Ниско ниво" />
+              <RadioOption section="fluids" field="engine_oil" value="replace" label="За смяна" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Антифриз (Охладителна течност):</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="fluids" field="coolant" value="ok" label="В норма" />
+              <RadioOption section="fluids" field="coolant" value="low" label="Ниско ниво" />
+              <RadioOption section="fluids" field="coolant" value="replace" label="За смяна / Мътен" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Спирачна течност:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="fluids" field="brake_fluid" value="ok" label="В норма" />
+              <RadioOption section="fluids" field="brake_fluid" value="replace" label="За смяна (>3% влага)" />
+            </div>
+          </div>
+          <div className={rowClass}>
+            <div className={labelClass}>Видими течове двигател / кутия:</div>
+            <div className={radioGroupClass}>
+              <RadioOption section="fluids" field="leaks" value="none" label="Няма (Сух)" />
+              <RadioOption section="fluids" field="leaks" value="sweat" label="Леко омасляване" />
+              <RadioOption section="fluids" field="leaks" value="active" label="Активен теч" />
+              <Input className="w-full md:max-w-xs bg-mb-anthracite border-mb-border text-white" placeholder="Бележка..." value={form.fluids.leaks_note} onChange={e => updateSubField("fluids", "leaks_note", e.target.value)} />
+            </div>
+          </div>
+
+          {/* ПРЕПОРЪКИ */}
+          <div className="flex items-center justify-between mt-8 mb-4 bg-mb-anthracite px-4 py-2.5 rounded-lg">
+            <h3 className="text-white text-base font-bold">ПРЕПОРЪКИ ОТ МЕХАНИКА</h3>
+            {recommendations.length < 50 && (
+              <Button onClick={addRecommendation} variant="outline" size="sm" className="h-8 border-mb-border text-xs text-white bg-mb-black hover:bg-mb-blue hover:border-mb-blue transition-colors">
+                + Добави препоръка
+              </Button>
+            )}
+          </div>
+          
+          {recommendations.length === 0 ? (
+            <div className="text-mb-silver text-sm italic py-4 border border-dashed border-mb-border rounded-lg text-center">
+              Няма добавени препоръки (Тази секция ще бъде скрита в PDF-а)
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recommendations.map((rec, idx) => (
+                <div key={idx} className="flex items-center gap-3">
+                  <span className="text-mb-silver font-bold text-sm min-w-[20px]">{idx + 1}.</span>
+                  <Input 
+                    value={rec} 
+                    onChange={(e) => updateRecommendation(idx, e.target.value)} 
+                    placeholder={`Препоръка ${idx + 1}...`}
+                    className="flex-1 bg-mb-anthracite border-mb-border text-white"
+                  />
+                  <Button onClick={() => removeRecommendation(idx)} variant="ghost" size="icon" className="h-10 w-10 text-red-500 hover:text-red-400 hover:bg-red-500/10 shrink-0">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+          <Button onClick={handleGeneratePDF} disabled={generating} className="flex-1 bg-mb-blue hover:bg-mb-blue/90 h-12 text-base font-bold text-white shadow-xl shadow-mb-blue/20">
+            {generating ? "Генериране..." : (isEditMode ? "Изтегли PDF и Запази" : "Създай Проверка и Изтегли PDF")}
+          </Button>
+          {!isEditMode && (
+            <Button onClick={() => setForm(defaultFormData())} variant="outline" className="h-12 border-mb-border text-mb-silver hover:text-white hover:bg-mb-anthracite">
+              Изчисти
+            </Button>
+          )}
+        </div>
+
+        {isEditMode && (
+          <aside className="fixed bottom-4 left-[20px] right-[20px] z-50 flex flex-col gap-2 rounded-xl border border-mb-border bg-mb-anthracite/95 p-2.5 shadow-xl backdrop-blur-sm lg:bottom-6 lg:left-auto lg:right-6 lg:w-max lg:max-w-none lg:flex-row lg:flex-wrap lg:items-center lg:justify-end lg:gap-3 lg:p-3">
+            <div className="flex w-full min-w-0 flex-row gap-2 lg:contents">
+              <Button onClick={() => handleSave()} disabled={saving || !hasUnsavedChanges} className="flex-1 bg-emerald-600 hover:bg-emerald-700">Запази</Button>
+              <Button onClick={handleClone} disabled={cloning} className="flex-1 bg-mb-blue hover:bg-mb-blue/90">Клонирай</Button>
+            </div>
+            <Button onClick={handleDelete} disabled={deleting} className="w-full justify-center bg-red-600">Изтрий</Button>
+          </aside>
+        )}
       </div>
-      {editActionsAside}
 
-      {/* Toast notifications */}
-      {toast && (
-        <Toast
-          type={toast.type}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
-
-      {/* Unsaved changes navigation guard modal */}
-      <Dialog
-        open={navModalOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingNavUrl(null);
-            setNavModalOpen(false);
-          }
-        }}
-      >
-        <DialogContent className="bg-mb-anthracite border-mb-border">
+      <Dialog open={navModalOpen} onOpenChange={setNavModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-mb-anthracite border border-mb-border rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-white">
-              {locale === "bg" ? "Незапазени промени" : "Unsaved changes"}
-            </DialogTitle>
+            <DialogTitle className="text-white">Незапазени промени</DialogTitle>
           </DialogHeader>
           <p className="text-gray-300 text-sm py-2">
-            {locale === "bg"
-              ? "Имате незапазени промени. Искате ли да ги запазите преди да напуснете?"
-              : "You have unsaved changes. Do you want to save them before leaving?"}
+            Имате незапазени промени. Искате ли да ги запазите преди да напуснете?
           </p>
-          <DialogFooter className="flex gap-2 flex-col sm:flex-row">
+          <DialogFooter className="flex gap-2 flex-col sm:flex-row mt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                setHasUnsavedChanges(false);
                 const url = pendingNavUrl!;
                 setPendingNavUrl(null);
                 setNavModalOpen(false);
                 router.push(url);
               }}
-              className="border-mb-border text-mb-anthracite hover:text-mb-silver hover:bg-mb-black/40"
+              className="border-mb-border bg-mb-anthracite text-white hover:text-mb-silver hover:bg-mb-black"
             >
-              {locale === "bg" ? "Откажи промените" : "Discard changes"}
+              Откажи промените
             </Button>
             <Button
               type="button"
               disabled={saving}
               onClick={() => handleSave(pendingNavUrl!)}
-              className="bg-mb-blue hover:bg-mb-blue/90"
+              className="bg-mb-blue hover:bg-mb-blue/90 text-white"
             >
-              {saving
-                ? locale === "bg"
-                  ? "Запазване..."
-                  : "Saving..."
-                : locale === "bg"
-                  ? "Запази и напусни"
-                  : "Save and leave"}
+              {saving ? "Запазване..." : "Запази и напусни"}
             </Button>
           </DialogFooter>
         </DialogContent>
