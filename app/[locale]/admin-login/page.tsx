@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
 
       // Redirect based on role (keep loading state for smooth transition)
       const targetRoute =
-        userRole === "admin"
+        userRole === "admin" || userRole === "reception"
           ? `/${locale}/mb-admin/offers`
           : `/${locale}/mb-admin-mechanics/offers`;
 

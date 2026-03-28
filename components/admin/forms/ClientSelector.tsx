@@ -32,9 +32,9 @@ export function ClientSelector() {
         {t("clientInfo")}
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Customer Name */}
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2">
           <Label htmlFor="customerName">{t("clientName")} *</Label>
           <Input
             {...register("customerName")}

@@ -19,7 +19,8 @@ export default function AdminLayout({
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000,
+        staleTime: 15 * 1000,       // 15s — admin data changes frequently
+        gcTime: 2 * 60 * 1000,      // 2 min in-memory cache
         refetchOnWindowFocus: false,
       },
     },
@@ -28,7 +29,7 @@ export default function AdminLayout({
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseAuthProvider>
-        <AdminGuard requiredRole="admin" redirectTo={`/${locale}/admin-login`}>
+        <AdminGuard requiredRole={["admin", "reception"]} redirectTo={`/${locale}/admin-login`}>
           <SidebarProvider>
             <div className="min-h-screen bg-mb-black">
               <NavigationLoader />

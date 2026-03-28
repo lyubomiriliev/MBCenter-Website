@@ -83,7 +83,7 @@ export function CarSelector() {
         {t("carInfo")}
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Model Selector */}
         <div className="space-y-2">
           <Label htmlFor="carModel">{t("carModel")} *</Label>
@@ -171,7 +171,7 @@ export function CarSelector() {
         </div>
 
         {/* Repair Name */}
-        <div className="space-y-2 md:col-span-2">
+        <div className="space-y-2 md:col-span-2 lg:col-span-3">
           <Label htmlFor="repairName">{t("repairName")}</Label>
           <Input
             {...register("repairName")}
@@ -201,19 +201,17 @@ export function CarSelector() {
           />
         </div>
 
-        {/* Mileage (Пробег) */}
-        <div className="space-y-2 md:col-span-2">
+        {/* Mileage */}
+        <div className="space-y-2">
           <Label htmlFor="carMileage">{t("carMileage")}</Label>
           <div className="flex gap-2">
-            <div className="flex-1">
-              <Input
-                type="number"
-                min="0"
-                {...register("carMileage", { valueAsNumber: true })}
-                placeholder="0"
-                className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
-              />
-            </div>
+            <Input
+              type="number"
+              min="0"
+              {...register("carMileage", { valueAsNumber: true })}
+              placeholder="0"
+              className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+            />
             <select
               {...register("carMileageUnit")}
               className="w-24 rounded-md bg-gray-100 text-gray-900 border-mb-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue"

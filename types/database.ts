@@ -9,7 +9,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = "admin" | "mechanic";
+export type UserRole = "admin" | "mechanic" | "reception";
 export type OfferStatus =
   | "draft"
   | "sent"
@@ -331,6 +331,49 @@ export interface Database {
           created_at?: string;
         };
       };
+      hourly_activities: {
+        Row: {
+          id: string;
+          name: string;
+          price_per_hour_eur: number;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          price_per_hour_eur: number;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          price_per_hour_eur?: number;
+          sort_order?: number;
+          created_at?: string;
+        };
+      };
+      mechanics: {
+        Row: {
+          id: string;
+          name: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -359,6 +402,9 @@ export type OfferPayment =
   Database["public"]["Tables"]["offer_payments"]["Row"];
 export type FixedActivity =
   Database["public"]["Tables"]["fixed_activities"]["Row"];
+export type HourlyActivity =
+  Database["public"]["Tables"]["hourly_activities"]["Row"];
+export type Mechanic = Database["public"]["Tables"]["mechanics"]["Row"];
 
 export type InsertProfile = Database["public"]["Tables"]["profiles"]["Insert"];
 export type InsertClient = Database["public"]["Tables"]["clients"]["Insert"];
@@ -372,6 +418,8 @@ export type InsertOfferPayment =
   Database["public"]["Tables"]["offer_payments"]["Insert"];
 export type InsertFixedActivity =
   Database["public"]["Tables"]["fixed_activities"]["Insert"];
+export type InsertHourlyActivity =
+  Database["public"]["Tables"]["hourly_activities"]["Insert"];
 
 export type UpdateProfile = Database["public"]["Tables"]["profiles"]["Update"];
 export type UpdateClient = Database["public"]["Tables"]["clients"]["Update"];

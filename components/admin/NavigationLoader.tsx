@@ -7,12 +7,14 @@ export function NavigationLoader() {
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(false);
   const currentPathRef = useRef(pathname);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear spinner when navigation completes (pathname changes)
   useEffect(() => {
     if (pathname !== currentPathRef.current) {
       currentPathRef.current = pathname;
       setIsLoading(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     }
   }, [pathname]);
 
@@ -35,10 +37,16 @@ export function NavigationLoader() {
       )
         return;
       setIsLoading(true);
+      // Safety: auto-dismiss after 8s in case navigation hangs
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => setIsLoading(false), 8000);
     };
 
-    document.addEventListener("click", handleClick, true);
-    return () => document.removeEventListener("click", handleClick, true);
+    document.addEventListener("click", handleClick, { passive: true });
+    return () => {
+      document.removeEventListener("click", handleClick);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
   if (!isLoading) return null;

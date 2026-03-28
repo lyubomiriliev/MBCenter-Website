@@ -218,11 +218,14 @@ export function useSupabaseAuth() {
     return roles.includes(state.profile.role);
   };
 
-  // Check if user is admin
-  const isAdmin = (): boolean => hasRole("admin");
+  // Check if user is admin or reception (same privileges except Settings)
+  const isAdmin = (): boolean => hasRole(["admin", "reception"]);
 
-  // Check if user is mechanic (or admin, since admin has all permissions)
-  const isMechanic = (): boolean => hasRole(["mechanic", "admin"]);
+  // Check if user is the true super-admin (hides Settings from reception)
+  const isSuperAdmin = (): boolean => hasRole("admin");
+
+  // Check if user is mechanic (or admin/reception, since they have all permissions)
+  const isMechanic = (): boolean => hasRole(["mechanic", "admin", "reception"]);
 
   return {
     ...state,
@@ -230,6 +233,7 @@ export function useSupabaseAuth() {
     signOut,
     hasRole,
     isAdmin,
+    isSuperAdmin,
     isMechanic,
     isAuthenticated: !!state.user && !!state.profile,
   };

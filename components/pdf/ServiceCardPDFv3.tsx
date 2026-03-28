@@ -22,8 +22,8 @@ const createStyles = () => {
   const fontFamily = fontRegistered ? "NotoSans" : "Helvetica";
   return StyleSheet.create({
     page: {
-      paddingTop: 15,
-      paddingBottom: 30,
+      paddingTop: 8,
+      paddingBottom: 8,
       paddingLeft: 30,
       paddingRight: 30,
       fontSize: 11,
@@ -41,9 +41,9 @@ const createStyles = () => {
       borderBottom: "2px solid #000",
     },
     logo: {
-      width: 200,
-      height: 60,
-      marginBottom: 8,
+      width: 160,
+      height: 40,
+      marginBottom: 0,
       objectFit: "contain",
     },
     headerLeft: {
@@ -52,7 +52,7 @@ const createStyles = () => {
     headerRight: {
       width: "50%",
       alignItems: "flex-end",
-      paddingTop: 72,
+      paddingTop: 44,
     },
     companyName: {
       fontSize: 13,
@@ -62,14 +62,14 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     companyInfo: {
-      fontSize: 11,
+      fontSize: 10,
       marginTop: 2,
       color: "#000",
       lineHeight: 1.5,
       fontFamily: fontFamily,
     },
     customerInfo: {
-      fontSize: 11,
+      fontSize: 10,
       marginTop: 2,
       textAlign: "right",
       lineHeight: 1.5,
@@ -113,13 +113,13 @@ const createStyles = () => {
       flexDirection: "row",
       backgroundColor: "#000",
       color: "#fff",
-      paddingVertical: 4,
+      paddingVertical: 0,
       paddingHorizontal: 2,
       fontWeight: 700,
       fontSize: 9,
       borderBottom: "1px solid #000",
       fontFamily: fontFamily,
-      minHeight: 20,
+      minHeight: 18,
     },
     tableRow: {
       flexDirection: "row",
@@ -131,17 +131,17 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     tableRowAlt: {
-      backgroundColor: "#f9f9f9",
+      backgroundColor: "#f0f0f0",
     },
     col1: {
-      flex: 0.05,
+      flex: 0.04,
       paddingVertical: 4,
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     col2: {
-      flex: 0.22,
+      flex: 0.27,
       paddingLeft: 4,
       paddingVertical: 4,
       paddingRight: 2,
@@ -149,28 +149,28 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colPartNum: {
-      flex: 0.2,
+      flex: 0.21,
       paddingVertical: 4,
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     col3: {
-      flex: 0.15,
+      flex: 0.12,
       paddingVertical: 4,
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     col4: {
-      flex: 0.08,
+      flex: 0.06,
       paddingVertical: 4,
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     col5: {
-      flex: 0.2,
+      flex: 0.14,
       paddingRight: 4,
       paddingVertical: 4,
       paddingLeft: 2,
@@ -178,7 +178,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     col6: {
-      flex: 0.2,
+      flex: 0.18,
       paddingRight: 4,
       paddingVertical: 4,
       paddingLeft: 2,
@@ -200,14 +200,14 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colSvc3: {
-      flex: 0.18,
+      flex: 0.16,
       paddingHorizontal: 2,
       paddingVertical: 4,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     colSvc4: {
-      flex: 0.2,
+      flex: 0.22,
       paddingRight: 4,
       paddingLeft: 2,
       paddingVertical: 4,
@@ -215,7 +215,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colSvc5: {
-      flex: 0.28,
+      flex: 0.22,
       paddingRight: 4,
       paddingLeft: 2,
       paddingVertical: 4,
@@ -228,7 +228,7 @@ const createStyles = () => {
       fontSize: 9,
     },
     colTextLeft: { textAlign: "left", fontFamily: fontFamily, fontSize: 9 },
-    colTextRight: { textAlign: "right", fontFamily: fontFamily, fontSize: 9 },
+    colTextRight: { textAlign: "center", fontFamily: fontFamily, fontSize: 9 },
     summarySection: {
       marginTop: 20,
       padding: 12,
@@ -250,13 +250,13 @@ const createStyles = () => {
       flexDirection: "row",
       backgroundColor: "#000",
       color: "#fff",
-      paddingVertical: 4,
+      paddingVertical: 0,
       paddingHorizontal: 2,
       fontWeight: 700,
       fontSize: 9,
       borderBottom: "1px solid #000",
       fontFamily: fontFamily,
-      minHeight: 20,
+      minHeight: 18,
     },
     summaryRow: {
       flexDirection: "row",
@@ -385,7 +385,7 @@ function formatTimeDisplay(timeText: string | null): string {
   const m = Math.round((hours - h) * 60);
   if (h > 0 && m > 0) return `${h}ч ${m}мин`;
   if (h > 0) return `${h}ч`;
-  if (m > 0) return `${m}мин`;
+  if (m > 0) return `0ч ${m}мин`;
   return "-";
 }
 
@@ -458,7 +458,7 @@ export function ServiceCardPDFv3({
               src="/assets/logos/mbcenter-specialist2.png"
               style={styles.logo}
             />
-            <Text style={styles.companyName}>Ем Би Център ООД</Text>
+            <Text style={styles.companyName}>ЕМ БИ ЦЕНТЪР ООД</Text>
             <Text style={styles.companyInfo}>
               ул. Околовръстен път 155, 1700 София
             </Text>
@@ -523,7 +523,10 @@ export function ServiceCardPDFv3({
                 </View>
                 <View style={styles.col2}>
                   <Text
-                    style={[styles.colTextLeft, { color: "#fff", fontSize: 8 }]}
+                    style={[
+                      styles.colTextCenter,
+                      { color: "#fff", fontSize: 8 },
+                    ]}
                   >
                     Продукт
                   </Text>
@@ -561,17 +564,17 @@ export function ServiceCardPDFv3({
                 <View style={styles.col5}>
                   <Text
                     style={[
-                      styles.colTextRight,
+                      styles.colTextCenter,
                       { color: "#fff", fontSize: 8 },
                     ]}
                   >
-                    Цена на брой (с ДДС)
+                    Цена на брой
                   </Text>
                 </View>
                 <View style={styles.col6}>
                   <Text
                     style={[
-                      styles.colTextRight,
+                      styles.colTextCenter,
                       { color: "#fff", fontSize: 8 },
                     ]}
                   >
@@ -615,12 +618,12 @@ export function ServiceCardPDFv3({
                       <Text style={styles.colTextCenter}>{item.quantity}</Text>
                     </View>
                     <View style={styles.col5}>
-                      <Text style={styles.colTextRight}>
+                      <Text style={styles.colTextCenter}>
                         {formatEur(unitPriceGross)}
                       </Text>
                     </View>
                     <View style={styles.col6}>
-                      <Text style={styles.colTextRight}>
+                      <Text style={styles.colTextCenter}>
                         {formatEur(totalGross)}
                       </Text>
                     </View>
@@ -631,9 +634,8 @@ export function ServiceCardPDFv3({
           </>
         )}
 
-        {/* Service Actions Table - start on new page when 10+ parts to avoid header glitch */}
         {offer.service_actions && offer.service_actions.length > 0 && (
-          <View break={sortedParts.length >= 10}>
+          <View break={sortedParts.length >= 20}>
             <Text style={styles.sectionTitle}>Сервизни активности</Text>
             <View style={styles.table} wrap={true}>
               <View style={styles.tableHeader} wrap={false}>
@@ -653,12 +655,12 @@ export function ServiceCardPDFv3({
                   </Text>
                 </View>
                 <View style={styles.colSvc4}>
-                  <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
                     Цена на час (с ДДС)
                   </Text>
                 </View>
                 <View style={styles.colSvc5}>
-                  <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
                     Цена за ремонт (с ДДС)
                   </Text>
                 </View>
@@ -694,14 +696,14 @@ export function ServiceCardPDFv3({
                         </Text>
                       </View>
                       <View style={styles.colSvc4}>
-                        <Text style={styles.colTextRight}>
+                        <Text style={styles.colTextCenter}>
                           {action.is_fixed_price
                             ? "—"
                             : formatEur(hourlyRateGross)}
                         </Text>
                       </View>
                       <View style={styles.colSvc5}>
-                        <Text style={styles.colTextRight}>
+                        <Text style={styles.colTextCenter}>
                           {formatEur(totalGross)}
                         </Text>
                       </View>
@@ -940,7 +942,7 @@ export function ServiceCardPDFv3({
           <View style={styles.footerRow}>
             <Text style={styles.footerRowText}>гр. София</Text>
             <Text style={styles.footerRowText}>
-              {new Date(offer.created_at).toLocaleString("bg-BG")}
+              {new Date(offer.created_at).toLocaleString("bg-BG", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
             </Text>
           </View>
           {offer.created_by_name && (
@@ -952,9 +954,6 @@ export function ServiceCardPDFv3({
           <View style={styles.stampRow}>
             <View style={styles.stampField}>
               <Text style={styles.stampLabel}>Печат и подпис:</Text>
-              <Text style={styles.stampDots}>
-                ....................................
-              </Text>
             </View>
           </View>
         </View>

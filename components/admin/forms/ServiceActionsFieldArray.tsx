@@ -44,6 +44,12 @@ import {
   useUpdateFixedActivity,
   useDeleteFixedActivity,
 } from "@/hooks/useFixedActivities";
+import {
+  useHourlyActivities,
+  useAddHourlyActivity,
+  useUpdateHourlyActivity,
+  useDeleteHourlyActivity,
+} from "@/hooks/useHourlyActivities";
 
 export type FixedActivityItem = { id: string; name: string; priceEur: number };
 
@@ -73,12 +79,26 @@ function AddEditServiceActionModal({
   const addActivityMut = useAddFixedActivity();
   const updateActivityMut = useUpdateFixedActivity();
   const deleteActivityMut = useDeleteFixedActivity();
+
+  const { data: hourlyActivities = [] } = useHourlyActivities();
+  const addHourlyMut = useAddHourlyActivity();
+  const updateHourlyMut = useUpdateHourlyActivity();
+  const deleteHourlyMut = useDeleteHourlyActivity();
+
   const [addNewModalOpen, setAddNewModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<FixedActivityItem | null>(null);
   const [newActivityName, setNewActivityName] = useState("");
   const [newActivityPrice, setNewActivityPrice] = useState("0");
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [activityPopoverOpen, setActivityPopoverOpen] = useState(false);
+
+  // Hourly presets state
+  const [hourlyPresetPopoverOpen, setHourlyPresetPopoverOpen] = useState(false);
+  const [selectedHourlyId, setSelectedHourlyId] = useState<string>("");
+  const [addHourlyModalOpen, setAddHourlyModalOpen] = useState(false);
+  const [editingHourly, setEditingHourly] = useState<{ id: string; name: string; pricePerHour: number } | null>(null);
+  const [newHourlyName, setNewHourlyName] = useState("");
+  const [newHourlyPrice, setNewHourlyPrice] = useState("65");
 
   const reset = useCallback((vals: ServiceActionFormData | null, activities: FixedActivityItem[]) => {
     if (vals) {
@@ -111,6 +131,11 @@ function AddEditServiceActionModal({
     setAddNewModalOpen(false);
     setNewActivityName("");
     setNewActivityPrice("0");
+    setSelectedHourlyId("");
+    setAddHourlyModalOpen(false);
+    setEditingHourly(null);
+    setNewHourlyName("");
+    setNewHourlyPrice("65");
   }, []);
 
   const activitiesForReset = useMemo(
@@ -205,6 +230,49 @@ function AddEditServiceActionModal({
       setActionName("");
       setFixedPriceAmount(0);
       setFixedPriceInput("0");
+    }
+  };
+
+  const handleSelectHourlyPreset = (id: string) => {
+    setSelectedHourlyId(id);
+    const act = hourlyActivities.find((a) => a.id === id);
+    if (act) {
+      setActionName(act.name);
+      setPricePerHour(act.price_per_hour_eur);
+      setPriceInput(act.price_per_hour_eur.toString());
+    }
+    setHourlyPresetPopoverOpen(false);
+  };
+
+  const handleSaveHourlyPreset = async () => {
+    const name = newHourlyName.trim();
+    const price = parseFloat(newHourlyPrice.replace(",", ".")) || 0;
+    if (!name || price <= 0) return;
+    if (editingHourly) {
+      await updateHourlyMut.mutateAsync({ id: editingHourly.id, name, pricePerHourEur: price });
+      if (selectedHourlyId === editingHourly.id) {
+        setActionName(name);
+        setPricePerHour(price);
+        setPriceInput(price.toString());
+      }
+      setEditingHourly(null);
+    } else {
+      const item = await addHourlyMut.mutateAsync({ name, pricePerHourEur: price });
+      setActionName(name);
+      setPricePerHour(price);
+      setPriceInput(price.toString());
+      setSelectedHourlyId(item.id);
+    }
+    setNewHourlyName("");
+    setNewHourlyPrice("65");
+    setAddHourlyModalOpen(false);
+  };
+
+  const handleRemoveHourlyPreset = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    deleteHourlyMut.mutate(id);
+    if (selectedHourlyId === id) {
+      setSelectedHourlyId("");
     }
   };
 
@@ -482,18 +550,163 @@ function AddEditServiceActionModal({
             </>
           ) : (
             <>
-              {/* Hourly Rate: Activity Name */}
+              {/* Hourly Rate: Preset Picker + Name */}
               <div className="space-y-2">
                 <Label className="text-gray-200">
                   {t("serviceActionName")} *
                 </Label>
+                <div className="space-y-2">
+                  {hourlyActivities.length > 0 && (
+                    <Popover open={hourlyPresetPopoverOpen} onOpenChange={setHourlyPresetPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between bg-gray-100 text-gray-900 border-mb-border h-10 font-normal"
+                        >
+                          <span className="truncate text-gray-500 text-sm">
+                            {selectedHourlyId
+                              ? hourlyActivities.find((a) => a.id === selectedHourlyId)?.name ?? "Избери предефинирана дейност..."
+                              : "Избери предефинирана дейност..."}
+                          </span>
+                          <svg className="h-4 w-4 opacity-50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
+                        align="start"
+                      >
+                        {hourlyActivities.map((act) => (
+                          <div
+                            key={act.id}
+                            className="flex items-center gap-1 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100"
+                            onClick={() => handleSelectHourlyPreset(act.id)}
+                          >
+                            <span className="flex-1 truncate min-w-0">
+                              {act.name} — €{act.price_per_hour_eur.toFixed(2)}/ч.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingHourly({ id: act.id, name: act.name, pricePerHour: act.price_per_hour_eur });
+                                setNewHourlyName(act.name);
+                                setNewHourlyPrice(act.price_per_hour_eur.toString());
+                                setHourlyPresetPopoverOpen(false);
+                                setAddHourlyModalOpen(true);
+                              }}
+                              className="shrink-0 p-0.5 rounded text-blue-500 hover:bg-blue-100"
+                              aria-label="Edit"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveHourlyPreset(e, act.id)}
+                              className="shrink-0 p-0.5 rounded text-red-400 hover:bg-red-100"
+                              aria-label={t("remove")}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingHourly(null);
+                      setNewHourlyName("");
+                      const lastPrice = hourlyActivities.length > 0
+                        ? hourlyActivities[hourlyActivities.length - 1].price_per_hour_eur
+                        : 65;
+                      setNewHourlyPrice(lastPrice.toString());
+                      setAddHourlyModalOpen(true);
+                    }}
+                    className="border-mb-border text-sm"
+                  >
+                    + Добави предефинирана дейност
+                  </Button>
+                </div>
                 <Input
                   value={actionName}
-                  onChange={(e) => setActionName(e.target.value)}
+                  onChange={(e) => {
+                    setActionName(e.target.value);
+                    setSelectedHourlyId("");
+                  }}
                   placeholder={t("serviceActionName")}
                   className="bg-gray-100 text-gray-900 border-mb-border"
                 />
               </div>
+
+              {/* Add/Edit Hourly Preset Modal */}
+              <Dialog
+                open={addHourlyModalOpen}
+                onOpenChange={(v) => {
+                  if (!v) { setEditingHourly(null); setNewHourlyName(""); setNewHourlyPrice("65"); }
+                  setAddHourlyModalOpen(v);
+                }}
+              >
+                <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">
+                      {editingHourly ? "Редактирай дейност" : "Добави предефинирана дейност"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label className="text-gray-200">{t("serviceActionName")} *</Label>
+                      <Input
+                        value={newHourlyName}
+                        onChange={(e) => setNewHourlyName(e.target.value)}
+                        placeholder={t("serviceActionName")}
+                        className="bg-gray-100 text-gray-900 border-mb-border"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-200">{t("pricePerHour")} (EUR) *</Label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={newHourlyPrice}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) setNewHourlyPrice(val);
+                        }}
+                        placeholder="65.00"
+                        className="bg-gray-100 text-gray-900 border-mb-border"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAddHourlyModalOpen(false)}
+                      className="bg-red-500 hover:bg-red-600 text-white border-red-500"
+                    >
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSaveHourlyPreset}
+                      disabled={addHourlyMut.isPending || updateHourlyMut.isPending}
+                      className="bg-green-500 hover:bg-green-600"
+                    >
+                      {t("ok")}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <div className="space-y-2">
                 <Label className="text-gray-200">{t("timeRequired")}</Label>
                 <Input

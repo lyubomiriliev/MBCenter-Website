@@ -147,8 +147,6 @@ export function useOffers(filters: OffersFilters = {}) {
         totalPages: Math.ceil((count || 0) / pageSize),
       };
     },
-    staleTime: 30 * 1000, // Consider data fresh for 30 seconds (increased from 10s)
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (increased from 5min)
     refetchOnWindowFocus: false,
   });
 }
@@ -214,8 +212,6 @@ export function useOffer(id: string | undefined) {
       return data as OfferWithRelations;
     },
     enabled: !!id,
-    staleTime: 60 * 1000, // Consider data fresh for 60 seconds (increased from 30s)
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (increased from 5min)
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -242,6 +238,8 @@ export function useCreateOffer() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: 1,
+    retryDelay: 1000,
     mutationFn: async (data: {
       offer: Omit<InsertOffer, "offer_number">;
       items: Omit<InsertOfferItem, "offer_id">[];
@@ -295,6 +293,8 @@ export function useUpdateOffer() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: 1,
+    retryDelay: 1000,
     mutationFn: async (data: {
       id: string;
       offer: UpdateOffer;
@@ -349,6 +349,8 @@ export function useUpdateOfferStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: 1,
+    retryDelay: 1000,
     mutationFn: async ({ id, status }: { id: string; status: OfferStatus }) => {
       const res = await supabase
         .from("offers")
@@ -371,6 +373,8 @@ export function useDeleteOffer() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: 1,
+    retryDelay: 1000,
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("offers").delete().eq("id", id);
 
@@ -387,6 +391,8 @@ export function useCloneOffer() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    retry: 1,
+    retryDelay: 1000,
     mutationFn: async (sourceId: string) => {
       const { data: source, error: fetchError } = await supabase
         .from("offers")

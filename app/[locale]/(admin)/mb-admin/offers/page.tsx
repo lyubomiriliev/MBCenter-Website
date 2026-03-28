@@ -9,9 +9,6 @@ import { OfferFilters } from "@/components/admin/offers/OfferFilters";
 import { Button } from "@/components/ui/button";
 import type { OfferStatus } from "@/types/database";
 import { supabase } from "@/lib/supabase/client";
-import { pdf } from "@react-pdf/renderer";
-import JSZip from "jszip";
-import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import type { OfferWithRelations } from "@/types/database";
 import { Toast } from "@/components/ui/toast";
 import { useNotification } from "@/hooks/useNotification";
@@ -38,9 +35,16 @@ export default function OffersPage() {
   const handleDownloadAll = async () => {
     setIsDownloading(true);
     try {
-      // Register fonts first (critical for Cyrillic support)
-      const { registerPDFFonts } = await import("@/lib/pdf-fonts");
-      const { setFontRegistered } = await import("@/components/pdf/OfferPDFv3");
+      // Lazy-load heavy dependencies only when needed
+      const [{ pdf }, { default: JSZip }, offerPDFMod, { registerPDFFonts }] =
+        await Promise.all([
+          import("@react-pdf/renderer"),
+          import("jszip"),
+          import("@/components/pdf/OfferPDFv3"),
+          import("@/lib/pdf-fonts"),
+        ]);
+      const { OfferPDFv3, setFontRegistered } = offerPDFMod;
+
       const fontsReady = await registerPDFFonts();
       setFontRegistered(fontsReady);
 

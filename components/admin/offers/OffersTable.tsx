@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import {
   createColumnHelper,
   RowSelectionState,
   ColumnDef,
+  VisibilityState,
 } from "@tanstack/react-table";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -59,6 +60,38 @@ import type { OfferWithRelations, OfferStatus } from "@/types/database";
 
 const EUR_TO_BGN = 1.95583;
 
+const OFFER_COLUMNS_KEY = "mb_offer_columns_visibility";
+
+const SETTINGS_TO_COLUMN_ID: Record<string, string> = {
+  offerNumber: "offer_number",
+  clientInfo: "client",
+  vehicleInfo: "car",
+  repairName: "repairName",
+  status: "status",
+  createdAt: "created_at",
+  totalGross: "total_gross",
+  actions: "actions",
+};
+
+function loadColumnVisibility(): VisibilityState {
+  try {
+    const stored = localStorage.getItem(OFFER_COLUMNS_KEY);
+    if (!stored) return {};
+    const settings = JSON.parse(stored) as Record<string, boolean>;
+    const visibility: VisibilityState = {};
+    for (const [settingsKey, columnId] of Object.entries(
+      SETTINGS_TO_COLUMN_ID,
+    )) {
+      if (settingsKey in settings) {
+        visibility[columnId] = settings[settingsKey];
+      }
+    }
+    return visibility;
+  } catch {
+    return {};
+  }
+}
+
 interface OffersTableProps {
   isMechanicView?: boolean;
   filters?: {
@@ -85,6 +118,17 @@ export function OffersTable({
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [page, setPage] = useState(1);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  useEffect(() => {
+    setColumnVisibility(loadColumnVisibility());
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === OFFER_COLUMNS_KEY)
+        setColumnVisibility(loadColumnVisibility());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<OfferWithRelations | null>(
     null,
@@ -109,53 +153,54 @@ export function OffersTable({
   const deleteOffer = useDeleteOffer();
   const cloneOffer = useCloneOffer();
 
-  const prefetchOffer = async (offerId: string) => {
-    await queryClient.prefetchQuery({
-      queryKey: ["offer", offerId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("offers")
-          .select(
-            `
-            id, offer_number, customer_name, customer_phone, customer_email,
-            client_id, car_model_text, car_model_detail, repair_name, car_year, vin_text,
-            license_plate, mileage, mileage_unit, car_id, created_by_name, discount_percent,
-            discount_parts_percent, discount_services_percent,
-            notes, notes_internal, notes_service, performed_by, prepayments_eur,
-            service_card_number, service_card_generated_at,
-            status, total_net, total_gross,
-            created_at, updated_at,
-            client:clients(id, name, phone, email),
-            car:cars(id, model, year, vin, license_plate, mileage),
-            items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order),
-            service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, total_eur_net, is_fixed_price, fixed_price_amount, sort_order)
-          `,
-          )
-          .eq("id", offerId)
-          .order("sort_order", {
-            referencedTable: "offer_items",
-            ascending: true,
-          })
-          .order("sort_order", {
-            referencedTable: "service_actions",
-            ascending: true,
-          })
-          .single();
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-        if (error) throw error;
-        return data as OfferWithRelations;
-      },
-      staleTime: 60 * 1000,
-    });
-  };
+  const prefetchOffer = useCallback((offerId: string) => {
+    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+    prefetchTimerRef.current = setTimeout(async () => {
+      await queryClient.prefetchQuery({
+        queryKey: ["offer", offerId],
+        queryFn: async () => {
+          const { data, error } = await supabase
+            .from("offers")
+            .select(
+              `
+              id, offer_number, customer_name, customer_phone, customer_email,
+              client_id, car_model_text, car_model_detail, repair_name, car_year, vin_text,
+              license_plate, mileage, mileage_unit, car_id, created_by_name, discount_percent,
+              discount_parts_percent, discount_services_percent,
+              notes, notes_internal, notes_service, performed_by, prepayments_eur,
+              service_card_number, service_card_generated_at,
+              status, total_net, total_gross,
+              created_at, updated_at,
+              client:clients(id, name, phone, email),
+              car:cars(id, model, year, vin, license_plate, mileage),
+              items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order),
+              service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, total_eur_net, is_fixed_price, fixed_price_amount, sort_order)
+            `,
+            )
+            .eq("id", offerId)
+            .order("sort_order", {
+              referencedTable: "offer_items",
+              ascending: true,
+            })
+            .order("sort_order", {
+              referencedTable: "service_actions",
+              ascending: true,
+            })
+            .single();
 
-  const handleClone = async (offer: OfferWithRelations) => {
-    cloneOffer.mutate(offer.id, {
-      onSuccess: () => {
-        // List refetches via query invalidation
-      },
-    });
-  };
+          if (error) throw error;
+          return data as OfferWithRelations;
+        },
+        staleTime: 60 * 1000,
+      });
+    }, 150);
+  }, [queryClient]);
+
+  const handleClone = useCallback((offer: OfferWithRelations) => {
+    cloneOffer.mutate(offer.id);
+  }, [cloneOffer]);
 
   const handleDelete = async (offerId: string) => {
     deleteOffer.mutate(offerId, {
@@ -172,9 +217,9 @@ export function OffersTable({
       .map((idx) => data?.offers[Number(idx)]?.id)
       .filter(Boolean) as string[];
 
-    await Promise.all(
-      selectedIds.map((id) => supabase.from("offers").delete().eq("id", id)),
-    );
+    if (selectedIds.length === 0) return;
+
+    await supabase.from("offers").delete().in("id", selectedIds);
     queryClient.invalidateQueries({ queryKey: ["offers"] });
     setRowSelection({});
     setBulkDeleteDialogOpen(false);
@@ -264,7 +309,14 @@ export function OffersTable({
           cell: (info) => {
             const v = info.getValue();
             if (!v) return "-";
-            return v.length > 40 ? `${v.slice(0, 40)}…` : v;
+            return (
+              <span
+                className="block max-w-[200px] xl:max-w-[380px] 2xl:max-w-none 2xl:whitespace-normal"
+                title={v}
+              >
+                {v}
+              </span>
+            );
           },
         },
       ),
@@ -414,7 +466,6 @@ export function OffersTable({
             </DropdownMenu>
           ),
         }),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
     [
       isMechanicView,
@@ -434,9 +485,10 @@ export function OffersTable({
     columns: columns.filter((c): c is ColumnDef<OfferWithRelations, any> =>
       Boolean(c),
     ),
-    state: { sorting, rowSelection },
+    state: { sorting, rowSelection, columnVisibility },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableRowSelection: !isMechanicView,
@@ -514,7 +566,14 @@ export function OffersTable({
                   onMouseEnter={() => prefetchOffer(row.original.id)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="whitespace-nowrap">
+                    <TableCell
+                      key={cell.id}
+                      className={
+                        cell.column.id === "repairName"
+                          ? "whitespace-nowrap 2xl:whitespace-normal"
+                          : "whitespace-nowrap"
+                      }
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

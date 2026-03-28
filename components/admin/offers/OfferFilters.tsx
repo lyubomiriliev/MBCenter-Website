@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,36 @@ interface OfferFiltersProps {
   }) => void;
 }
 
+const FILTERS_SESSION_KEY = "mb_offers_filters";
+
+function saveFilters(filters: {
+  status: OfferStatus | "all";
+  search: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  sessionStorage.setItem(FILTERS_SESSION_KEY, JSON.stringify(filters));
+}
+
+function loadFilters() {
+  try {
+    const raw = sessionStorage.getItem(FILTERS_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as {
+      status: OfferStatus | "all";
+      search: string;
+      dateFrom?: string;
+      dateTo?: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearOfferFilters() {
+  sessionStorage.removeItem(FILTERS_SESSION_KEY);
+}
+
 export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
   const t = useTranslations("admin.offers");
   const [status, setStatus] = useState<OfferStatus | "all">("all");
@@ -37,23 +67,68 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
+  // Restore from sessionStorage on mount
+  useEffect(() => {
+    const saved = loadFilters();
+    if (!saved) return;
+    const restoredDateFrom = saved.dateFrom
+      ? new Date(saved.dateFrom)
+      : undefined;
+    const restoredDateTo = saved.dateTo ? new Date(saved.dateTo) : undefined;
+    setStatus(saved.status);
+    setSearch(saved.search);
+    setDateFrom(restoredDateFrom);
+    setDateTo(restoredDateTo);
+    onFiltersChange?.({
+      status: saved.status,
+      search: saved.search,
+      dateFrom: restoredDateFrom,
+      dateTo: restoredDateTo,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleStatusChange = (value: OfferStatus | "all") => {
     setStatus(value);
+    saveFilters({
+      status: value,
+      search,
+      dateFrom: dateFrom?.toISOString(),
+      dateTo: dateTo?.toISOString(),
+    });
     onFiltersChange?.({ status: value, search, dateFrom, dateTo });
   };
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
+    saveFilters({
+      status,
+      search: value,
+      dateFrom: dateFrom?.toISOString(),
+      dateTo: dateTo?.toISOString(),
+    });
     onFiltersChange?.({ status, search: value, dateFrom, dateTo });
   };
 
   const handleDateFromChange = (date: Date | undefined) => {
     setDateFrom(date);
+    saveFilters({
+      status,
+      search,
+      dateFrom: date?.toISOString(),
+      dateTo: dateTo?.toISOString(),
+    });
     onFiltersChange?.({ status, search, dateFrom: date, dateTo });
   };
 
   const handleDateToChange = (date: Date | undefined) => {
     setDateTo(date);
+    saveFilters({
+      status,
+      search,
+      dateFrom: dateFrom?.toISOString(),
+      dateTo: date?.toISOString(),
+    });
     onFiltersChange?.({ status, search, dateFrom, dateTo: date });
   };
 
@@ -62,6 +137,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
     setSearch("");
     setDateFrom(undefined);
     setDateTo(undefined);
+    clearOfferFilters();
     onFiltersChange?.({
       status: "all",
       search: "",
@@ -75,8 +151,8 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
   return (
     <div className="bg-mb-anthracite border border-mb-border rounded-lg p-4">
       <div className="flex flex-wrap gap-4 items-end">
-        {/* Search */}
-        <div className="flex-1 min-w-[200px]">
+        {/* Search — capped at ~2/3 of container */}
+        <div className="w-full max-w-[55%] min-w-[200px]">
           <label className="text-xs text-mb-silver mb-1.5 block">
             {t("filters.search")}
           </label>
@@ -136,7 +212,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal bg-gray-100 text-gray-900 border-mb-border",
-                  !dateFrom && "text-gray-500"
+                  !dateFrom && "text-gray-500",
                 )}
               >
                 <svg
@@ -182,7 +258,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal bg-gray-100 text-gray-900 border-mb-border",
-                  !dateTo && "text-gray-500"
+                  !dateTo && "text-gray-500",
                 )}
               >
                 <svg

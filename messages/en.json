@@ -1219,9 +1219,12 @@
     },
     "sidebar": {
       "dashboard": "Dashboard",
+      "settings": "Settings",
       "offers": "Offers",
       "createOffer": "Create Offer",
       "clients": "Clients",
+      "checks": "Checks",
+      "createCheck": "New Check",
       "backToSite": "Back to Site",
       "logout": "Logout"
     },
@@ -1286,6 +1289,40 @@
         "dateTo": "To",
         "selectDate": "Select date",
         "clear": "Clear Filters"
+      }
+    },
+    "checks": {
+      "title": "Checks",
+      "subtitle": "Manage technical inspections",
+      "createCheck": "New Check",
+      "editCheck": "Edit Check",
+      "createCheckSubtitle": "Create a new technical condition report",
+      "noResults": "No checks found",
+      "error": "Error loading checks",
+      "generatePdf": "Generate PDF",
+      "generating": "Generating...",
+      "downloadPdf": "Download PDF",
+      "formTitle": "Detailed Technical Condition Report",
+      "inspectionDate": "Inspection Date",
+      "mechanic": "Mechanic / Evaluator",
+      "clientName": "Client Name",
+      "carModel": "Make and Model",
+      "licensePlate": "License Plate",
+      "vin": "VIN (Chassis)",
+      "sections": {
+        "tires": "Tire Condition",
+        "corrosion": "Corrosion and Body (Rust)",
+        "fluids": "Fluids and Leaks",
+        "mileage": "Vehicle Mileage",
+        "glass": "Glass and Mirrors",
+        "summary": "Summary and Mechanic Recommendations"
+      },
+      "deleteConfirm": {
+        "title": "Delete inspection",
+        "description": "Are you sure you want to delete this inspection? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleting": "Deleting..."
       }
     },
     "form": {

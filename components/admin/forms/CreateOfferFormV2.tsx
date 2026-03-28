@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
@@ -46,6 +46,7 @@ import type {
   InsertServiceAction,
   Offer,
   UpdateOffer,
+  Mechanic,
 } from "@/types/database";
 
 interface CreateOfferFormV2Props {
@@ -54,7 +55,6 @@ interface CreateOfferFormV2Props {
 }
 
 const AUTOSAVE_KEY = "mbcenter_offer_draft";
-const AUTOSAVE_DEBOUNCE_MS = 3000;
 
 export function CreateOfferFormV2({
   offerId,
@@ -79,6 +79,10 @@ export function CreateOfferFormV2({
   const [performedBySaving, setPerformedBySaving] = useState(false);
   const [notesFromServiceInput, setNotesFromServiceInput] = useState("");
   const [notesFromServiceSaving, setNotesFromServiceSaving] = useState(false);
+  const [baselinePrepayments, setBaselinePrepayments] = useState<number[]>([]);
+  const [navModalOpen, setNavModalOpen] = useState(false);
+  const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
+  const [mechanicsList, setMechanicsList] = useState<Mechanic[]>([]);
 
   const updateOfferMutation = useUpdateOffer();
 
@@ -102,9 +106,16 @@ export function CreateOfferFormV2({
     getValues,
   } = methods;
 
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { isDirty } = useFormState({ control: methods.control });
+
+  const prepaymentsDirty = useMemo(() => {
+    if (!isEditing) return false;
+    return JSON.stringify(prepayments) !== JSON.stringify(baselinePrepayments);
+  }, [isEditing, prepayments, baselinePrepayments]);
+
+  const hasUnsavedChanges = isDirty || prepaymentsDirty;
+
   const localSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastAutoSaveRef = useRef<string | null>(null);
   const formLoadedRef = useRef(false);
   const changedAfterLastCardRef = useRef(true);
   const prepaymentsRef = useRef(prepayments);
@@ -115,10 +126,24 @@ export function CreateOfferFormV2({
 
   useEffect(() => {
     if (savedOffer) setPerformedBySelection(savedOffer.performed_by ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id, savedOffer?.performed_by]);
+
+  // Load mechanics list from Supabase
+  useEffect(() => {
+    if (!isMechanicView) return;
+    supabase
+      .from("mechanics")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        if (data) setMechanicsList(data as Mechanic[]);
+      });
+  }, [isMechanicView]);
 
   useEffect(() => {
     if (savedOffer) setNotesFromServiceInput(savedOffer.notes ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id, savedOffer?.notes]);
 
   // Load existing offer data into form when editing
@@ -131,9 +156,12 @@ export function CreateOfferFormV2({
     const savedPrepayments = (
       existingOffer as { prepayments_eur?: number[] | null }
     ).prepayments_eur;
-    if (Array.isArray(savedPrepayments) && savedPrepayments.length > 0) {
-      setPrepayments(savedPrepayments);
-    }
+    const initialPrepayments =
+      Array.isArray(savedPrepayments) && savedPrepayments.length > 0
+        ? savedPrepayments
+        : [];
+    setPrepayments(initialPrepayments);
+    setBaselinePrepayments([...initialPrepayments]);
 
     const yearFallback = existingOffer.created_at
       ? new Date(existingOffer.created_at).getFullYear()
@@ -197,163 +225,14 @@ export function CreateOfferFormV2({
     const name = existingOffer.created_by_name ?? "";
     if (name) {
       setTimeout(() => {
-        methods.setValue("createdByName", name, { shouldValidate: true });
+        methods.setValue("createdByName", name, {
+          shouldValidate: true,
+          shouldDirty: false,
+        });
       }, 0);
     }
     formLoadedRef.current = true;
-    const loadedPrepayments = (
-      existingOffer as { prepayments_eur?: number[] | null }
-    ).prepayments_eur;
-    const initialPrepayments = Array.isArray(loadedPrepayments)
-      ? loadedPrepayments
-      : [];
-    lastAutoSaveRef.current = JSON.stringify({
-      form: methods.getValues(),
-      prepayments: initialPrepayments,
-    });
   }, [existingOffer, isEditing, methods]);
-
-  // Stable save function — reads values at save time via getValues(), no watch() subscription.
-  // Using useCallback means this reference is stable and won't cause effect re-runs.
-  const saveOffer = useCallback(async () => {
-    if (!formLoadedRef.current || !offerId) return;
-    if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-    autoSaveTimeoutRef.current = setTimeout(async () => {
-      autoSaveTimeoutRef.current = null;
-
-      const data = getValues();
-      const currentPrepayments = prepaymentsRef.current;
-      const currentSnapshot = JSON.stringify({ form: data, prepayments: currentPrepayments });
-      if (lastAutoSaveRef.current === currentSnapshot) return;
-
-      try {
-        let partsTotal = 0;
-        data.parts.forEach((p) => {
-          partsTotal += (p.unitPrice || 0) * (p.quantity || 1);
-        });
-        let serviceTotal = 0;
-        data.serviceActions.forEach((action) => {
-          if (action.isFixedPrice && action.fixedPriceAmount) {
-            serviceTotal += action.fixedPriceAmount;
-          } else {
-            const hours = parseTimeToHours(action.timeRequired || "0");
-            serviceTotal += hours * (action.pricePerHour || 0);
-          }
-        });
-        const subtotal = partsTotal + serviceTotal;
-        const discount = subtotal * ((data.discountPercent || 0) / 100);
-        const netTotal = subtotal - discount;
-        const vat = netTotal * 0.2;
-        const grossTotal = netTotal + vat;
-
-        const updateData: UpdateOffer = {
-          customer_name: data.customerName,
-          customer_phone: data.customerPhone || null,
-          customer_email: data.clientEmail || null,
-          car_model_text: data.carModel,
-          car_model_detail: data.carModelDetail || null,
-          repair_name: data.repairName || null,
-          vin_text: data.vinText || null,
-          license_plate: data.carLicensePlate || null,
-          mileage: data.carMileage ?? null,
-          mileage_unit: data.carMileageUnit || "km",
-          car_year: data.carYear ?? null,
-          created_by_name: data.createdByName,
-          total_net: netTotal,
-          total_vat: vat,
-          total_gross: grossTotal,
-          discount_percent: data.discountPercent || 0,
-          discount_parts_percent: data.discountPartsPercent || 0,
-          discount_services_percent: data.discountServicesPercent || 0,
-          notes: data.notes || null,
-          notes_internal: data.notesInternal || null,
-          notes_service: data.notesService || null,
-          prepayments_eur: currentPrepayments.length > 0 ? currentPrepayments : null,
-        };
-
-        const offerRes = await supabase
-          .from("offers")
-          .update(updateData as never)
-          .eq("id", offerId)
-          .select()
-          .single();
-
-        if (offerRes.error) throw new Error(offerRes.error.message);
-
-        await Promise.all([
-          supabase.from("offer_items").delete().eq("offer_id", offerId),
-          supabase.from("service_actions").delete().eq("offer_id", offerId),
-        ]);
-
-        const partsInserts = data.parts.map((part, i) => ({
-          offer_id: offerId,
-          type: "part" as const,
-          description: part.description,
-          brand: part.brand || null,
-          part_number: part.partNumber || null,
-          unit_price: part.unitPrice,
-          quantity: part.quantity,
-          total: part.unitPrice * part.quantity,
-          sort_order: i,
-        }));
-        const serviceInserts = data.serviceActions.map((action, i) => {
-          const isFixed = action.isFixedPrice ?? false;
-          const hours = isFixed
-            ? 0
-            : parseTimeToHours(action.timeRequired || "0");
-          const total = isFixed
-            ? action.fixedPriceAmount || 0
-            : hours * action.pricePerHour;
-          return {
-            offer_id: offerId,
-            action_name: action.actionName,
-            time_required_text: action.timeRequired || null,
-            price_per_hour_eur_net: action.pricePerHour,
-            total_eur_net: total,
-            is_fixed_price: isFixed,
-            fixed_price_amount: isFixed ? action.fixedPriceAmount || null : null,
-            sort_order: i,
-          };
-        });
-
-        if (partsInserts.length > 0) {
-          await supabase.from("offer_items").insert(partsInserts as never);
-        }
-        if (serviceInserts.length > 0) {
-          await supabase.from("service_actions").insert(serviceInserts as never);
-        }
-
-        lastAutoSaveRef.current = currentSnapshot;
-        changedAfterLastCardRef.current = true;
-        // Invalidate queries — React Query will refetch in the background.
-        // existingOffer updating will call setSavedOffer via the load useEffect.
-        // Do NOT call refetchOffer() here — it was causing form resets during typing.
-        queryClient.invalidateQueries({ queryKey: ["offers"] });
-        queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
-        showSuccess(t("saved"));
-      } catch (err) {
-        console.error("Auto-save failed:", err);
-      }
-    }, AUTOSAVE_DEBOUNCE_MS);
-  }, [offerId, getValues, queryClient, showSuccess, t]);
-
-  // Subscribe to form changes for server autosave.
-  // methods.watch(callback) fires the callback without causing a re-render —
-  // unlike watch() which returns a value and forces a re-render on every keystroke.
-  useEffect(() => {
-    if (!isEditing) return;
-    const subscription = methods.watch(saveOffer);
-    return () => {
-      subscription.unsubscribe();
-      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-    };
-  }, [isEditing, methods, saveOffer]);
-
-  // Trigger autosave when prepayments change (not covered by form subscription)
-  useEffect(() => {
-    if (!isEditing) return;
-    saveOffer();
-  }, [prepayments, isEditing, saveOffer]);
 
   // Load from localStorage on mount (only for new offers)
   useEffect(() => {
@@ -386,12 +265,48 @@ export function CreateOfferFormV2({
     }
   }, [isEditing, methods]);
 
+  // beforeunload — warn if there are unsaved changes when closing/refreshing tab
+  useEffect(() => {
+    if (!isEditing) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isEditing, hasUnsavedChanges]);
+
+  // Intercept in-app link clicks when there are unsaved changes
+  useEffect(() => {
+    if (!isEditing) return;
+    const handleClick = (e: MouseEvent) => {
+      if (!hasUnsavedChanges) return;
+      const anchor = (e.target as HTMLElement).closest(
+        "a[href]",
+      ) as HTMLAnchorElement | null;
+      if (!anchor) return;
+      // Skip download links (programmatically triggered for PDF generation)
+      if (anchor.hasAttribute("download")) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href === "#" || href.startsWith("javascript")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingNavUrl(href);
+      setNavModalOpen(true);
+    };
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [isEditing, hasUnsavedChanges]);
+
   // Subscription-based localStorage autosave for new (unsaved) offers.
   // No individual watch() calls needed — no re-renders per keystroke.
   useEffect(() => {
     if (isEditing) return;
     const subscription = methods.watch(() => {
-      if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
+      if (localSaveTimeoutRef.current)
+        clearTimeout(localSaveTimeoutRef.current);
       localSaveTimeoutRef.current = setTimeout(() => {
         const formData = methods.getValues();
         try {
@@ -410,9 +325,127 @@ export function CreateOfferFormV2({
     });
     return () => {
       subscription.unsubscribe();
-      if (localSaveTimeoutRef.current) clearTimeout(localSaveTimeoutRef.current);
+      if (localSaveTimeoutRef.current)
+        clearTimeout(localSaveTimeoutRef.current);
     };
   }, [isEditing, methods]);
+
+  const saveEditedOffer = async (navUrl?: string) => {
+    if (!offerId) return;
+    setIsSaving(true);
+    try {
+      const data = getValues();
+      let partsTotal = 0;
+      data.parts.forEach((p) => {
+        partsTotal += (p.unitPrice || 0) * (p.quantity || 1);
+      });
+      let serviceTotal = 0;
+      data.serviceActions.forEach((action) => {
+        if (action.isFixedPrice && action.fixedPriceAmount) {
+          serviceTotal += action.fixedPriceAmount;
+        } else {
+          serviceTotal +=
+            parseTimeToHours(action.timeRequired || "0") *
+            (action.pricePerHour || 0);
+        }
+      });
+      const subtotal = partsTotal + serviceTotal;
+      const netTotal =
+        subtotal - subtotal * ((data.discountPercent || 0) / 100);
+      const vat = netTotal * 0.2;
+
+      const updateData: UpdateOffer = {
+        customer_name: data.customerName,
+        customer_phone: data.customerPhone || null,
+        customer_email: data.clientEmail || null,
+        car_model_text: data.carModel,
+        car_model_detail: data.carModelDetail || null,
+        repair_name: data.repairName || null,
+        vin_text: data.vinText || null,
+        license_plate: data.carLicensePlate || null,
+        mileage: data.carMileage ?? null,
+        mileage_unit: data.carMileageUnit || "km",
+        car_year: data.carYear ?? null,
+        created_by_name: data.createdByName,
+        total_net: netTotal,
+        total_vat: vat,
+        total_gross: netTotal + vat,
+        discount_percent: data.discountPercent || 0,
+        discount_parts_percent: data.discountPartsPercent || 0,
+        discount_services_percent: data.discountServicesPercent || 0,
+        notes: data.notes || null,
+        notes_internal: data.notesInternal || null,
+        notes_service: data.notesService || null,
+        prepayments_eur:
+          prepaymentsRef.current.length > 0 ? prepaymentsRef.current : null,
+      };
+
+      const { error: offerErr } = await supabase
+        .from("offers")
+        .update(updateData as never)
+        .eq("id", offerId);
+      if (offerErr) throw new Error(offerErr.message);
+
+      await Promise.all([
+        supabase.from("offer_items").delete().eq("offer_id", offerId),
+        supabase.from("service_actions").delete().eq("offer_id", offerId),
+      ]);
+
+      const partsInserts = data.parts.map((part, i) => ({
+        offer_id: offerId,
+        type: "part" as const,
+        description: part.description,
+        brand: part.brand || null,
+        part_number: part.partNumber || null,
+        unit_price: part.unitPrice,
+        quantity: part.quantity,
+        total: part.unitPrice * part.quantity,
+        sort_order: i,
+      }));
+      const serviceInserts = data.serviceActions.map((action, i) => {
+        const isFixed = action.isFixedPrice ?? false;
+        const hours = isFixed
+          ? 0
+          : parseTimeToHours(action.timeRequired || "0");
+        const total = isFixed
+          ? action.fixedPriceAmount || 0
+          : hours * action.pricePerHour;
+        return {
+          offer_id: offerId,
+          action_name: action.actionName,
+          time_required_text: action.timeRequired || null,
+          price_per_hour_eur_net: action.pricePerHour,
+          total_eur_net: total,
+          is_fixed_price: isFixed,
+          fixed_price_amount: isFixed ? action.fixedPriceAmount || null : null,
+          sort_order: i,
+        };
+      });
+
+      if (partsInserts.length > 0)
+        await supabase.from("offer_items").insert(partsInserts as never);
+      if (serviceInserts.length > 0)
+        await supabase.from("service_actions").insert(serviceInserts as never);
+
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
+      changedAfterLastCardRef.current = true;
+      methods.reset(methods.getValues());
+      setBaselinePrepayments([...prepaymentsRef.current]);
+      showSuccess(t("saved"));
+
+      if (navUrl) {
+        setPendingNavUrl(null);
+        setNavModalOpen(false);
+        router.push(navUrl);
+      }
+    } catch (err) {
+      console.error("Save failed:", err);
+      showError(t("errors.saveFailed"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const fetchOfferWithRelations = async (
     id: string,
@@ -565,28 +598,28 @@ export function CreateOfferFormV2({
           sort_order: index,
         })),
         service_actions: formValues.serviceActions.map((action, index) => {
-            const isFixed = action.isFixedPrice ?? false;
-            const hours = isFixed
-              ? 0
-              : parseTimeToHours(action.timeRequired || "0");
-            const total = isFixed
-              ? action.fixedPriceAmount || 0
-              : hours * action.pricePerHour;
-            return {
-              id: `action-${index}`,
-              offer_id: "temp",
-              action_name: action.actionName,
-              time_required_text: action.timeRequired || null,
-              price_per_hour_eur_net: action.pricePerHour,
-              total_eur_net: total,
-              is_fixed_price: isFixed,
-              fixed_price_amount: isFixed
-                ? action.fixedPriceAmount || null
-                : null,
-              sort_order: index,
-              created_at: new Date().toISOString(),
-            };
-          }),
+          const isFixed = action.isFixedPrice ?? false;
+          const hours = isFixed
+            ? 0
+            : parseTimeToHours(action.timeRequired || "0");
+          const total = isFixed
+            ? action.fixedPriceAmount || 0
+            : hours * action.pricePerHour;
+          return {
+            id: `action-${index}`,
+            offer_id: "temp",
+            action_name: action.actionName,
+            time_required_text: action.timeRequired || null,
+            price_per_hour_eur_net: action.pricePerHour,
+            total_eur_net: total,
+            is_fixed_price: isFixed,
+            fixed_price_amount: isFixed
+              ? action.fixedPriceAmount || null
+              : null,
+            sort_order: index,
+            created_at: new Date().toISOString(),
+          };
+        }),
       };
 
       // Register fonts before generating PDF
@@ -1093,7 +1126,19 @@ export function CreateOfferFormV2({
           console.log("Offer data refreshed");
         }
 
-        setIsSaving(false);
+        methods.reset(methods.getValues());
+        setBaselinePrepayments([...prepaymentsRef.current]);
+        showSuccess(t("saved"));
+
+        // If there's a pending navigation (from the unsaved-changes modal), do it now
+        if (pendingNavUrl) {
+          const url = pendingNavUrl;
+          setPendingNavUrl(null);
+          setNavModalOpen(false);
+          router.push(url);
+        } else {
+          setIsSaving(false);
+        }
       }
     } catch (error) {
       clearTimeout(timeoutId);
@@ -1136,8 +1181,8 @@ export function CreateOfferFormV2({
     setIsSaving(false);
   };
 
-  // Show loading state when fetching existing offer
-  if (isEditing && offerLoading) {
+  // Show loading state when fetching existing offer (initial load only)
+  if (isEditing && offerLoading && !formLoadedRef.current) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
@@ -1259,7 +1304,7 @@ export function CreateOfferFormV2({
                 </span>
                 <p className="text-white">
                   {savedOffer.mileage != null
-                    ? `${savedOffer.mileage} ${savedOffer.mileage_unit || "км"}`
+                    ? `${savedOffer.mileage} ${savedOffer.mileage_unit === "km" ? (locale === "bg" ? "км" : "km") : savedOffer.mileage_unit}`
                     : "-"}
                 </p>
               </div>
@@ -1298,15 +1343,11 @@ export function CreateOfferFormV2({
                     <option value="" className="bg-mb-anthracite">
                       {t("performedByChoose")}
                     </option>
-                    <option value="50:50" className="bg-mb-anthracite">
-                      50:50
-                    </option>
-                    <option value="Жоро" className="bg-mb-anthracite">
-                      Жоро
-                    </option>
-                    <option value="Любо" className="bg-mb-anthracite">
-                      Любо
-                    </option>
+                    {mechanicsList.map((m) => (
+                      <option key={m.id} value={m.name} className="bg-mb-anthracite">
+                        {m.name}
+                      </option>
+                    ))}
                   </select>
                   <Button
                     type="button"
@@ -1345,6 +1386,8 @@ export function CreateOfferFormV2({
           </CardContent>
         </Card>
 
+        {/* Notes + Parts – side by side on 2K/4K screens */}
+        <div className="grid grid-cols-1 2xl:grid-cols-2 2xl:gap-6">
         {/* Забележки от сервиза - editable by mechanic */}
         <Card className="bg-mb-anthracite border-mb-border">
           <CardContent className="pt-6">
@@ -1425,6 +1468,7 @@ export function CreateOfferFormV2({
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     );
   }
@@ -1855,6 +1899,58 @@ export function CreateOfferFormV2({
                   </Button>
                 )}
 
+                {/* Save Button (only for existing offers) */}
+                {isEditing && (
+                  <Button
+                    type="button"
+                    disabled={isSaving || !hasUnsavedChanges}
+                    onClick={() => saveEditedOffer()}
+                    className="w-full bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50"
+                  >
+                    {isSaving && !navModalOpen ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        {t("saving")}
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {hasUnsavedChanges ? t("performedBySave") : t("saved")}
+                      </>
+                    )}
+                  </Button>
+                )}
+
                 {/* Offer Metadata Info - prefer savedOffer (refreshed after actions) over existingOffer (initial load) */}
                 {isEditing &&
                   (savedOffer ?? existingOffer) &&
@@ -1964,6 +2060,59 @@ export function CreateOfferFormV2({
               className="bg-mb-blue hover:bg-mb-blue/90"
             >
               {t("ok")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unsaved changes navigation guard modal */}
+      <Dialog
+        open={navModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingNavUrl(null);
+            setNavModalOpen(false);
+          }
+        }}
+      >
+        <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {locale === "bg" ? "Незапазени промени" : "Unsaved changes"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-300 text-sm py-2">
+            {locale === "bg"
+              ? "Имате незапазени промени. Искате ли да ги запазите преди да напуснете?"
+              : "You have unsaved changes. Do you want to save them before leaving?"}
+          </p>
+          <DialogFooter className="flex gap-2 flex-col sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const url = pendingNavUrl!;
+                setPendingNavUrl(null);
+                setNavModalOpen(false);
+                router.push(url);
+              }}
+              className="border-mb-border text-mb-anthracite hover:text-mb-silver hover:bg-mb-black/40"
+            >
+              {locale === "bg" ? "Откажи промените" : "Discard changes"}
+            </Button>
+            <Button
+              type="button"
+              disabled={isSaving}
+              onClick={() => saveEditedOffer(pendingNavUrl!)}
+              className="bg-mb-blue hover:bg-mb-blue/90"
+            >
+              {isSaving
+                ? locale === "bg"
+                  ? "Запазване..."
+                  : "Saving..."
+                : locale === "bg"
+                  ? "Запази и напусни"
+                  : "Save and leave"}
             </Button>
           </DialogFooter>
         </DialogContent>
