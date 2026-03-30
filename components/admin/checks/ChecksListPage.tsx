@@ -43,6 +43,7 @@ function ActionsDropdown({
   onDownload,
   onDelete,
   onClone,
+  onCreateQuote,
   downloading,
   deleting,
   cloning,
@@ -50,6 +51,7 @@ function ActionsDropdown({
   onDownload: () => void;
   onDelete: () => void;
   onClone: () => void;
+  onCreateQuote: () => void;
   downloading: boolean;
   deleting: boolean;
   cloning: boolean;
@@ -80,7 +82,12 @@ function ActionsDropdown({
   const dropdown = open ? (
     <div
       onMouseDown={(e) => e.stopPropagation()}
-      style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999 }}
+      style={{
+        position: "fixed",
+        top: pos.top,
+        right: pos.right,
+        zIndex: 9999,
+      }}
       className="w-44 bg-mb-anthracite border border-mb-border rounded-md shadow-xl py-1"
     >
       <button
@@ -109,7 +116,12 @@ function ActionsDropdown({
             />
           </svg>
         ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -119,6 +131,29 @@ function ActionsDropdown({
           </svg>
         )}
         Изтегли PDF
+      </button>
+
+      <button
+        onClick={() => {
+          setOpen(false);
+          onCreateQuote();
+        }}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-mb-black transition-colors"
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        Създай оферта
       </button>
 
       <button
@@ -147,7 +182,12 @@ function ActionsDropdown({
             />
           </svg>
         ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -167,7 +207,12 @@ function ActionsDropdown({
         disabled={deleting}
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -189,7 +234,12 @@ function ActionsDropdown({
         onClick={openDropdown}
         className="h-8 px-2.5 rounded-md border border-mb-border text-mb-silver hover:text-white hover:bg-mb-black/50"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -211,7 +261,11 @@ function ActionsDropdown({
   );
 }
 
-export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-mechanics" }) {
+export function ChecksListPage({
+  basePath,
+}: {
+  basePath: "mb-admin" | "mb-admin-mechanics";
+}) {
   const t = useTranslations("admin");
   const locale = useLocale();
   const router = useRouter();
@@ -226,42 +280,49 @@ export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
+  const [creatingQuoteId, setCreatingQuoteId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const fetchInspections = useCallback(async (signal?: AbortSignal) => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from("inspections")
-        .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
-        .abortSignal(signal as AbortSignal);
+  const fetchInspections = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        let query = supabase
+          .from("inspections")
+          .select("*", { count: "exact" })
+          .order("created_at", { ascending: false })
+          .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-      if (search.trim()) {
-        const term = `%${search.trim()}%`;
-        query = query.or(
-          `client_name.ilike.${term},car_model.ilike.${term},license_plate.ilike.${term},vin.ilike.${term},check_number.ilike.${term}`,
-        );
-      }
+        if (signal) {
+          query = query.abortSignal(signal);
+        }
 
-      const { data, error, count } = await query;
-      if (error) {
-        if (error.message?.includes("aborted")) return;
-        throw error;
+        if (search.trim()) {
+          const term = `%${search.trim()}%`;
+          query = query.or(
+            `client_name.ilike.${term},car_model.ilike.${term},license_plate.ilike.${term},vin.ilike.${term},check_number.ilike.${term}`,
+          );
+        }
+
+        const { data, error, count } = await query;
+        if (error) {
+          if (error.message?.includes("aborted")) return;
+          throw error;
+        }
+        setInspections((data as Inspection[]) ?? []);
+        setTotalCount(count ?? 0);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        console.error("Failed to fetch inspections:", err);
+      } finally {
+        setLoading(false);
       }
-      setInspections((data as Inspection[]) ?? []);
-      setTotalCount(count ?? 0);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") return;
-      console.error("Failed to fetch inspections:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, page]);
+    },
+    [search, page],
+  );
 
   // Reset to page 1 when search changes
   useEffect(() => {
@@ -351,7 +412,12 @@ export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-
   const handleClone = async (inspection: Inspection) => {
     setCloningId(inspection.id);
     try {
-      const { id: _id, check_number: _cn, created_at: _ca, ...rest } = inspection;
+      const {
+        id: _id,
+        check_number: _cn,
+        created_at: _ca,
+        ...rest
+      } = inspection;
       const { error } = await supabase
         .from("inspections")
         .insert({ ...rest, check_number: "" } as never);
@@ -361,6 +427,50 @@ export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-
       console.error("Clone failed:", err);
     } finally {
       setCloningId(null);
+    }
+  };
+
+  const handleCreateQuote = async (inspection: Inspection) => {
+    setCreatingQuoteId(inspection.id);
+    try {
+      // Pre-populate a new offer draft with vehicle and client data from this review
+      const draftData = {
+        customerName: inspection.client_name || "",
+        customerPhone: "",
+        clientEmail: "",
+        carModel: inspection.car_model || "Mercedes-Benz",
+        carModelDetail: "",
+        vinText: inspection.vin || "",
+        carLicensePlate: inspection.license_plate || "",
+        carMileage: null,
+        carMileageUnit: "km",
+        carYear: null,
+        repairName: "",
+        createdByName: "",
+        createdBy: "",
+        parts: [],
+        serviceActions: [],
+        discountPercent: 0,
+        discountPartsPercent: 0,
+        discountServicesPercent: 0,
+        notes: "",
+        notesInternal: "",
+        notesService: "",
+        status: "draft",
+      };
+      try {
+        localStorage.setItem(
+          "mbcenter_offer_draft",
+          JSON.stringify({
+            formData: draftData,
+            prepayments: [],
+            timestamp: new Date().toISOString(),
+          }),
+        );
+      } catch {}
+      router.push(`${routePrefix}/create-offer`);
+    } finally {
+      setCreatingQuoteId(null);
     }
   };
 
@@ -383,132 +493,149 @@ export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-
             onClick={() => router.push(`${routePrefix}/create-check`)}
             className="bg-mb-blue hover:bg-mb-blue/90 text-white"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             {t("checks.createCheck")}
           </Button>
         }
       />
 
-      <div className="flex-1 overflow-y-auto bg-black p-4 sm:p-6">
-        <div className="mb-4 max-w-sm">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Търсене по клиент, автомобил, регистрация, VIN, №..."
-            className="bg-white border-mb-border text-gray-900 placeholder:text-gray-400"
-          />
-        </div>
-
-        <div className="bg-mb-anthracite border border-mb-border rounded-xl overflow-x-auto">
-          <div className="grid grid-cols-[170px_160px_160px_130px_110px_1fr_44px] gap-0 bg-mb-black border-b border-mb-border px-4 py-3 text-xs font-bold text-mb-silver uppercase tracking-wide">
-            <span>№ Проверка</span>
-            <span>Клиент</span>
-            <span>Автомобил</span>
-            <span>VIN</span>
-            <span>Регистрация</span>
-            <span>Дата</span>
-            <span />
+      <div className="flex-1 overflow-y-auto bg-black p-4 sm:p-6 flex flex-col items-center">
+        <div className="w-full max-w-7xl">
+          <div className="mb-4 max-w-sm">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Търсене по клиент, автомобил, регистрация, VIN, №..."
+              className="bg-white border-mb-border text-gray-900 placeholder:text-gray-400"
+            />
           </div>
 
-          {loading ? (
-            <div className="px-4 py-12 text-center text-mb-silver">Зареждане...</div>
-          ) : inspections.length === 0 ? (
-            <div className="px-4 py-12 text-center space-y-4">
-              <svg
-                className="w-12 h-12 text-mb-silver/30 mx-auto"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                />
-              </svg>
-              <p className="text-mb-silver">Няма намерени проверки</p>
-              <Button
-                onClick={() => router.push(`${routePrefix}/create-check`)}
-                className="bg-mb-blue hover:bg-mb-blue/90 text-white"
-              >
-                {t("checks.createCheck")}
-              </Button>
+          <div className="bg-mb-anthracite border border-mb-border rounded-xl overflow-x-auto">
+            <div className="grid grid-cols-[180px_1fr_1fr_140px_120px_100px_44px] gap-0 bg-mb-black border-b border-mb-border px-4 py-3 text-xs font-bold text-mb-silver uppercase tracking-wide">
+              <span>№ Проверка</span>
+              <span>Клиент</span>
+              <span>Автомобил</span>
+              <span>VIN</span>
+              <span>Рег. Номер</span>
+              <span>Дата</span>
+              <span />
             </div>
-          ) : (
-            inspections.map((inspection, i) => (
-              <div
-                key={inspection.id}
-                className={`grid grid-cols-[170px_160px_160px_130px_110px_1fr_44px] gap-0 items-center px-4 py-3 border-b border-mb-border last:border-b-0 transition-colors ${i % 2 === 1 ? "bg-mb-black/20" : ""}`}
-              >
-                <span
-                  onClick={() =>
-                    router.push(`${routePrefix}/checks/edit?id=${inspection.id}`)
-                  }
-                  className="text-mb-blue font-mono text-sm font-medium whitespace-nowrap pr-3 cursor-pointer hover:underline"
-                >
-                  {inspection.check_number}
-                </span>
-                <span className="text-white text-sm truncate pr-3">
-                  {inspection.client_name || "—"}
-                </span>
-                <span className="text-mb-silver text-sm truncate pr-3">
-                  {inspection.car_model || "—"}
-                </span>
-                <span className="text-mb-silver text-sm truncate pr-3 font-mono uppercase">
-                  {inspection.vin || "—"}
-                </span>
-                <span className="text-mb-silver text-sm truncate pr-3">
-                  {inspection.license_plate || "—"}
-                </span>
-                <span className="text-mb-silver text-sm whitespace-nowrap">
-                  {formatDate(inspection.inspection_date)}
-                </span>
-                <div className="flex justify-end">
-                  <ActionsDropdown
-                    onDownload={() => handleDownload(inspection)}
-                    onDelete={() => openDeleteDialog(inspection.id)}
-                    onClone={() => handleClone(inspection)}
-                    downloading={downloadingId === inspection.id}
-                    deleting={deletingId === inspection.id}
-                    cloning={cloningId === inspection.id}
-                  />
-                </div>
-              </div>
-            ))
-          )}
-        </div>
 
-        <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <p className="text-xs text-mb-silver/50">
-            {totalCount > 0
-              ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, totalCount)} от ${totalCount} проверки`
-              : "0 проверки"}
-          </p>
-          {totalPages > 1 && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                className="border-mb-border text-mb-silver"
-              >
-                Предишна
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages || loading}
-                className="border-mb-border text-mb-silver"
-              >
-                Следваща
-              </Button>
-            </div>
-          )}
+            {loading ? (
+              <div className="px-4 py-12 text-center text-mb-silver">
+                Зареждане...
+              </div>
+            ) : inspections.length === 0 ? (
+              <div className="px-4 py-12 text-center space-y-4">
+                <svg
+                  className="w-12 h-12 text-mb-silver/30 mx-auto"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                  />
+                </svg>
+                <p className="text-mb-silver">Няма намерени проверки</p>
+                <Button
+                  onClick={() => router.push(`${routePrefix}/create-check`)}
+                  className="bg-mb-blue hover:bg-mb-blue/90 text-white"
+                >
+                  {t("checks.createCheck")}
+                </Button>
+              </div>
+            ) : (
+              inspections.map((inspection, i) => (
+                <div
+                  key={inspection.id}
+                  className={`grid grid-cols-[180px_1fr_1fr_140px_120px_100px_44px] gap-0 items-center px-4 py-3 border-b border-mb-border last:border-b-0 transition-colors ${i % 2 === 1 ? "bg-mb-black/20" : ""}`}
+                >
+                  <span
+                    onClick={() =>
+                      router.push(
+                        `${routePrefix}/checks/edit?id=${inspection.id}`,
+                      )
+                    }
+                    className="text-mb-blue font-mono text-sm font-medium whitespace-nowrap pr-3 cursor-pointer hover:underline"
+                  >
+                    {inspection.check_number}
+                  </span>
+                  <span className="text-white text-sm truncate pr-3">
+                    {inspection.client_name || "—"}
+                  </span>
+                  <span className="text-mb-silver text-sm truncate pr-3">
+                    {inspection.car_model || "—"}
+                  </span>
+                  <span className="text-mb-silver text-sm truncate pr-3 font-mono uppercase">
+                    {inspection.vin || "—"}
+                  </span>
+                  <span className="text-mb-silver text-sm truncate pr-3">
+                    {inspection.license_plate || "—"}
+                  </span>
+                  <span className="text-mb-silver text-sm whitespace-nowrap">
+                    {formatDate(inspection.inspection_date)}
+                  </span>
+                  <div className="flex justify-end">
+                    <ActionsDropdown
+                      onDownload={() => handleDownload(inspection)}
+                      onDelete={() => openDeleteDialog(inspection.id)}
+                      onClone={() => handleClone(inspection)}
+                      onCreateQuote={() => handleCreateQuote(inspection)}
+                      downloading={downloadingId === inspection.id}
+                      deleting={deletingId === inspection.id}
+                      cloning={cloningId === inspection.id}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-xs text-mb-silver/50">
+              {totalCount > 0
+                ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, totalCount)} от ${totalCount} проверки`
+                : "0 проверки"}
+            </p>
+            {totalPages > 1 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || loading}
+                  className="border-mb-border text-mb-silver"
+                >
+                  Предишна
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || loading}
+                  className="border-mb-border text-mb-silver"
+                >
+                  Следваща
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -521,7 +648,9 @@ export function ChecksListPage({ basePath }: { basePath: "mb-admin" | "mb-admin-
       >
         <DialogContent className="bg-mb-anthracite border-mb-border max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">{t("checks.deleteConfirm.title")}</DialogTitle>
+            <DialogTitle className="text-white">
+              {t("checks.deleteConfirm.title")}
+            </DialogTitle>
             <DialogDescription className="text-mb-silver">
               {t("checks.deleteConfirm.description")}
             </DialogDescription>

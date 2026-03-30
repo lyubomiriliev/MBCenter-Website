@@ -21,6 +21,8 @@ export function NavigationLoader() {
   // Show spinner when any internal link is clicked
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
+      // If the event was cancelled (e.g. by an unsaved-changes guard), don't show spinner
+      if (e.defaultPrevented) return;
       const anchor = (e.target as Element).closest("a[href]");
       if (!anchor) return;
       const href = anchor.getAttribute("href");
@@ -42,7 +44,7 @@ export function NavigationLoader() {
       timeoutRef.current = setTimeout(() => setIsLoading(false), 8000);
     };
 
-    document.addEventListener("click", handleClick, { passive: true });
+    document.addEventListener("click", handleClick);
     return () => {
       document.removeEventListener("click", handleClick);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);

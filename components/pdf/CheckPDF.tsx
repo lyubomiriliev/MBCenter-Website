@@ -1,5 +1,12 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Image, Svg, Path } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Image,
+} from "@react-pdf/renderer";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -12,25 +19,25 @@ export interface CheckFormData {
   carModel: string;
   licensePlate: string;
   vin: string;
-  
+
   mileage: {
     odometer: string;
     assessment: string; // "match" | "manipulated"
     note: string;
   };
-  
+
   tires: {
     tread_condition: string; // "good" | "worn" | "replace"
     mixed_tires: boolean;
   };
-  
+
   brakes: {
     front_pads: string; // "good" | "worn" | "replace"
     front_discs: string; // "good" | "lipped" | "below_min"
     rear_pads: string;
     rear_discs: string;
   };
-  
+
   suspension: {
     front_suspension: string; // "good" | "play" | "repair"
     front_suspension_note: string;
@@ -40,13 +47,13 @@ export interface CheckFormData {
     steering: string; // "good" | "leak_play"
     steering_note: string;
   };
-  
+
   corrosion: {
     chassis: string; // "none" | "surface" | "deep"
     sills: string; // "good" | "starting" | "rusted"
     exhaust: string; // "good" | "rusted" | "holes"
   };
-  
+
   fluids: {
     engine_oil: string; // "ok" | "low" | "replace"
     coolant: string; // "ok" | "low" | "replace"
@@ -54,18 +61,199 @@ export interface CheckFormData {
     leaks: string; // "none" | "sweat" | "active"
     leaks_note: string;
   };
-  
+
   summary: string[];
 }
 
 /* ------------------------------------------------------------------ */
-/*  Font state (set from form before generation)                       */
+/*  Font state                                                         */
 /* ------------------------------------------------------------------ */
 
 export let fontRegistered = false;
 export const setFontRegistered = (v: boolean) => {
   fontRegistered = !!v;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Color helpers                                                      */
+/* ------------------------------------------------------------------ */
+
+// Returns green / yellow / red based on severity
+function statusColor(level: "good" | "warn" | "bad"): string {
+  if (level === "good") return "#16a34a"; // green-600
+  if (level === "warn") return "#d97706"; // amber-600
+  return "#dc2626"; // red-600
+}
+
+function statusBg(level: "good" | "warn" | "bad"): string {
+  if (level === "good") return "#dcfce7"; // green-100
+  if (level === "warn") return "#fef3c7"; // amber-100
+  return "#fee2e2"; // red-100
+}
+
+/* Maps field values → severity level */
+function tireConditionLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "worn") return "warn";
+  return "bad";
+}
+function padLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "worn") return "warn";
+  return "bad";
+}
+function discLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "lipped") return "warn";
+  return "bad";
+}
+function suspLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "play") return "warn";
+  return "bad";
+}
+function shocksLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "leaking") return "warn";
+  return "bad";
+}
+function steeringLevel(v: string): "good" | "warn" | "bad" {
+  return v === "good" ? "good" : "bad";
+}
+function chassisLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "none") return "good";
+  if (v === "surface") return "warn";
+  return "bad";
+}
+function sillsLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "starting") return "warn";
+  return "bad";
+}
+function exhaustLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "good") return "good";
+  if (v === "rusted") return "warn";
+  return "bad";
+}
+function oilLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "ok") return "good";
+  if (v === "low") return "warn";
+  return "bad";
+}
+function leaksLevel(v: string): "good" | "warn" | "bad" {
+  if (v === "none") return "good";
+  if (v === "sweat") return "warn";
+  return "bad";
+}
+function mileageLevel(v: string): "good" | "warn" | "bad" {
+  return v === "match" ? "good" : "bad";
+}
+function brakeFluidLevel(v: string): "good" | "warn" | "bad" {
+  return v === "ok" ? "good" : "warn";
+}
+
+/* Human-readable labels for each value */
+const LABELS: Record<string, string> = {
+  // tires
+  good: "Добро",
+  worn: "Захабени",
+  replace: "За смяна",
+  // discs
+  lipped: "Имат ръб / Криви",
+  below_min: "Под минимум",
+  // suspension
+  play: "Има луфт / Напукани",
+  repair: "За ремонт",
+  // shocks
+  leaking: "Омаслени",
+  broken: "Счупена пружина",
+  // steering
+  leak_play: "Теч / Луфт",
+  // corrosion chassis
+  none: "Няма",
+  surface: "Повърхностна",
+  deep: "Дълбока / Изгнило",
+  // sills
+  starting: "Започваща ръжда",
+  rusted: "Изгнили",
+  // exhaust
+  holes: "Пробита / Заварки",
+  // fluids
+  ok: "В норма",
+  low: "Ниско ниво",
+  // brake fluid
+  // ok covered above
+  // leaks
+  sweat: "Леко омасляване",
+  active: "Активен теч",
+  // mileage
+  match: "Съответства",
+  manipulated: "Има съмнения / Манипулиран",
+  // brake fluid replace
+};
+
+function label(v: string): string {
+  if (LABELS[v]) return LABELS[v];
+  if (v === "replace") return "За смяна";
+  if (v === "good") return "Добро";
+  if (v === "ok") return "В норма";
+  return v || "—";
+}
+
+function padLabel(v: string): string {
+  if (v === "good") return "Добри";
+  if (v === "worn") return "Износени";
+  return "За смяна";
+}
+function discLabel(v: string): string {
+  if (v === "good") return "Добри";
+  if (v === "lipped") return "Имат ръб / Криви";
+  return "Под минимум";
+}
+function suspLabel(v: string): string {
+  if (v === "good") return "Здраво";
+  if (v === "play") return "Има луфт / Напукани";
+  return "За ремонт";
+}
+function shocksLabel(v: string): string {
+  if (v === "good") return "Изправни";
+  if (v === "leaking") return "Омаслени";
+  return "Счупена пружина";
+}
+function steeringLabel(v: string): string {
+  return v === "good" ? "Изправна" : "Теч / Луфт";
+}
+function exhaustLabel(v: string): string {
+  if (v === "good") return "Здрава";
+  if (v === "rusted") return "Ръждясала";
+  return "Пробита / Заварки";
+}
+function sillsLabel(v: string): string {
+  if (v === "good") return "Здрави";
+  if (v === "starting") return "Започваща ръжда";
+  return "Изгнили";
+}
+function leaksLabel(v: string): string {
+  if (v === "none") return "Няма (Сух)";
+  if (v === "sweat") return "Леко омасляване";
+  return "Активен теч";
+}
+function oilLabel(v: string): string {
+  if (v === "ok") return "В норма";
+  if (v === "low") return "Ниско ниво";
+  return "За смяна";
+}
+function brakeFluidLabel(v: string): string {
+  return v === "ok" ? "В норма" : "За смяна (>3% влага)";
+}
+function chassisLabel(v: string): string {
+  if (v === "none") return "Няма";
+  if (v === "surface") return "Повърхностна";
+  return "Дълбока / Изгнило";
+}
+function mileageLabel(v: string): string {
+  return v === "match" ? "Съответства" : "Има съмнения / Манипулиран";
+}
 
 /* ------------------------------------------------------------------ */
 /*  Styles                                                             */
@@ -75,217 +263,276 @@ const createStyles = () => {
   const ff = fontRegistered ? "NotoSans" : "Helvetica";
   return StyleSheet.create({
     page: {
-      paddingTop: 30,
-      paddingBottom: 40,
-      paddingHorizontal: 30,
+      paddingTop: 28,
+      paddingBottom: 44,
+      paddingHorizontal: 32,
       fontSize: 8,
       fontFamily: ff,
       backgroundColor: "#fff",
       lineHeight: 1.4,
     },
-    /* Header */
+
+    /* ── Header ── */
     headerContainer: {
-      marginTop: -22,
       alignItems: "center",
-      marginBottom: 16,
+      marginBottom: 10,
     },
     logo: {
-      width: 140,
-      height: 35,
+      width: 130,
+      height: 32,
       objectFit: "contain",
-      marginBottom: 10,
+      marginBottom: 8,
     },
-    headerProto: {
-      fontSize: 14,
+    headerTitle: {
+      fontSize: 13,
       fontWeight: 700,
+      letterSpacing: 0.5,
+      textAlign: "center",
     },
     headerDivider: {
-      borderTop: "0.5px solid #000",
+      borderTop: "1px solid #000",
       marginTop: 8,
-      marginBottom: 20,
+      marginBottom: 14,
       width: "100%",
     },
-    /* Info grid */
-    infoRow: {
+
+    /* ── Info grid (3-col) ── */
+    infoGrid: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 22,
+      marginBottom: 4,
     },
-    infoCol: {
-      width: "47%",
-      flexDirection: "column",
+    infoCell: {
+      flex: 1,
+      paddingRight: 12,
     },
-    infoLabel: {
-      fontSize: 8,
+    infoCellLast: {
+      flex: 1,
+      paddingRight: 0,
+    },
+    infoCellLabel: {
+      fontSize: 7,
       fontWeight: 700,
-      color: "#555",
-      marginBottom: 8,
+      color: "#888",
+      textTransform: "uppercase",
+      marginBottom: 3,
+      letterSpacing: 0.4,
     },
-    infoValueContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      borderBottom: "1px solid #000",
+    infoCellValue: {
+      fontSize: 9.5,
+      color: "#111",
+      fontWeight: 700,
+      borderBottom: "1px solid #ccc",
       paddingBottom: 4,
+      minHeight: 16,
     },
-    infoValue: {
-      fontSize: 10,
-      fontFamily: ff,
-      color: "#000",
-      minHeight: 14,
-    },
-    chevronIcon: {
-      width: 10,
-      height: 10,
-    },
-    /* Section headers */
-    sectionHeader: {
-      backgroundColor: "#000",
-      color: "#fff",
-      paddingVertical: 5,
-      paddingHorizontal: 8,
-      fontSize: 11.5,
-      fontWeight: 700,
-      marginTop: 6,
+    infoGridDivider: {
+      borderTop: "0.5px solid #e5e7eb",
+      marginTop: 10,
       marginBottom: 10,
     },
-    /* Rows */
-    rowUnderline: {
+
+    /* ── Section ── */
+    sectionTitle: {
+      fontSize: 9.5,
+      fontWeight: 700,
+      color: "#111",
+      borderBottom: "1.5px solid #111",
+      paddingBottom: 4,
+      marginTop: 14,
+      marginBottom: 8,
+      textTransform: "uppercase",
+      letterSpacing: 0.3,
+    },
+    sectionNumber: {
+      fontSize: 9.5,
+      fontWeight: 700,
+      color: "#111",
+      marginRight: 6,
+    },
+
+    /* ── Table rows ── */
+    tableRow: {
       flexDirection: "row",
       alignItems: "center",
-      borderBottom: "1px dashed #ddd",
-      paddingBottom: 6,
-      marginBottom: 8,
-      minHeight: 18,
+      borderBottom: "0.5px solid #e5e7eb",
+      paddingVertical: 5,
+      minHeight: 22,
     },
-    label: {
-      width: 185,
-      paddingRight: 12,
-      fontSize: 9.5,
+    tableRowAlt: {
+      backgroundColor: "#f9fafb",
+    },
+    rowLabel: {
+      width: 200,
+      fontSize: 8.5,
+      color: "#374151",
+      paddingRight: 10,
       fontWeight: 700,
-      color: "#333",
     },
-    labelSmall: {
-      width: 185,
-      paddingRight: 12,
-      fontSize: 9.5,
-      fontWeight: 700,
-      color: "#333",
-    },
-    valueBlock: {
+    rowValue: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
       flexWrap: "wrap",
+      gap: 6,
     },
-    /* Radio / Checkbox */
-    controlWrap: {
+    rowNote: {
+      fontSize: 8,
+      color: "#6b7280",
+      marginLeft: 8,
+    },
+
+    /* ── Status badge ── */
+    badge: {
+      paddingVertical: 2,
+      paddingHorizontal: 6,
+      borderRadius: 3,
+      fontSize: 8,
+      fontWeight: 700,
+    },
+
+    /* ── Checkbox indicator ── */
+    checkRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginRight: 16,
     },
-    radioOuter: {
-      width: 10.5,
-      height: 10.5,
-      borderRadius: 6,
-      border: "1px solid #000",
+    checkBox: {
+      width: 9,
+      height: 9,
+      border: "1px solid #374151",
+      marginRight: 5,
       justifyContent: "center",
       alignItems: "center",
-      marginRight: 4,
     },
-    radioInner: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: "#000",
+    checkBoxFilled: {
+      width: 5,
+      height: 5,
+      backgroundColor: "#374151",
     },
-    checkboxOuter: {
-      width: 10.5,
-      height: 10.5,
-      border: "1px solid #000",
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: 4,
+    checkLabel: {
+      fontSize: 8.5,
+      color: "#374151",
     },
-    checkboxInner: {
-      width: 6,
-      height: 6,
-      backgroundColor: "#000",
-    },
-    controlLabel: {
+
+    /* ── Recommendations ── */
+    recoTitle: {
       fontSize: 9.5,
-      color: "#333",
-      paddingTop: 1.5,
+      fontWeight: 700,
+      color: "#111",
+      borderBottom: "1.5px solid #111",
+      paddingBottom: 4,
+      marginTop: 14,
+      marginBottom: 8,
+      textTransform: "uppercase",
+      letterSpacing: 0.3,
     },
-    /* Notes */
-    noteLine: {
+    recoItem: {
+      flexDirection: "row",
+      marginBottom: 5,
+      alignItems: "flex-start",
+    },
+    recoNum: {
+      fontSize: 8.5,
+      fontWeight: 700,
+      color: "#374151",
+      width: 16,
+    },
+    recoText: {
       flex: 1,
-      borderBottom: "1px dashed #ccc",
-      minHeight: 14,
-      fontSize: 9.5,
-      marginLeft: 10,
-      paddingBottom: 1,
-      color: "#000",
+      fontSize: 8.5,
+      color: "#111",
+      borderBottom: "0.5px solid #d1d5db",
+      paddingBottom: 3,
     },
-    /* Recommendations */
-    recoLine: {
-      borderBottom: "1px solid #999",
-      height: 20,
-      marginBottom: 6,
-      fontSize: 10.5,
-      color: "#000",
-    },
-    /* Footer signatures */
-    signatures: {
+
+    /* ── Signatures ── */
+    signaturesContainer: {
       flexDirection: "row",
       justifyContent: "space-between",
       marginTop: 40,
-      paddingHorizontal: 20,
+      paddingHorizontal: 10,
     },
     signatureCol: {
-      alignItems: "center",
-      width: 160,
+      alignItems: "flex-start",
+      width: 180,
     },
     sigLabel: {
-      fontSize: 9,
+      fontSize: 8.5,
       fontWeight: 700,
-      marginBottom: 16,
-      alignSelf: "flex-start",
+      marginBottom: 18,
     },
     sigLine: {
-      borderBottom: "1px dotted #000",
+      borderBottom: "1px solid #000",
       width: "100%",
-      height: 10,
       marginBottom: 4,
     },
     sigSub: {
-      fontSize: 8,
-      color: "#666",
+      fontSize: 7.5,
+      color: "#111",
+    },
+
+    /* ── Footer ── */
+    pageFooter: {
+      position: "absolute",
+      bottom: 18,
+      left: 32,
+      right: 32,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      borderTop: "0.5px solid #e5e7eb",
+      paddingTop: 6,
+    },
+    footerText: {
+      fontSize: 7,
+      color: "#9ca3af",
     },
   });
 };
 
 /* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
+/*  Sub-components                                                     */
 /* ------------------------------------------------------------------ */
 
-const Radio = ({ checked, label, styles }: { checked: boolean; label: string; styles: any }) => (
-  <View style={styles.controlWrap}>
-    <View style={styles.radioOuter}>
-      {checked && <View style={styles.radioInner} />}
+function Badge({
+  text,
+  level,
+  styles,
+}: {
+  text: string;
+  level: "good" | "warn" | "bad";
+  styles: any;
+}) {
+  return (
+    <View
+      style={[
+        styles.badge,
+        { backgroundColor: statusBg(level), color: statusColor(level) },
+      ]}
+    >
+      <Text style={{ color: statusColor(level), fontSize: 8, fontWeight: 700 }}>
+        {text}
+      </Text>
     </View>
-    <Text style={styles.controlLabel}>{label}</Text>
-  </View>
-);
+  );
+}
 
-const Checkbox = ({ checked, label, styles }: { checked: boolean; label: string; styles: any }) => (
-  <View style={styles.controlWrap}>
-    <View style={styles.checkboxOuter}>
-      {checked && <View style={styles.checkboxInner} />}
+function CheckItem({
+  checked,
+  text,
+  styles,
+}: {
+  checked: boolean;
+  text: string;
+  styles: any;
+}) {
+  return (
+    <View style={styles.checkRow}>
+      <View style={styles.checkBox}>
+        {checked && <View style={styles.checkBoxFilled} />}
+      </View>
+      <Text style={styles.checkLabel}>{text}</Text>
     </View>
-    <Text style={styles.controlLabel}>{label}</Text>
-  </View>
-);
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -301,269 +548,371 @@ export function CheckPDF({ data }: CheckPDFProps) {
   const formatDate = (d: string) => {
     if (!d) return "—";
     const [y, m, day] = d.split("-");
-    return `${day} - ${m} - ${y}`;
+    return `${day}.${m}.${y}`;
   };
 
-  // Convert summary text into lines for the recommendation section
   const summaryLines = data.summary ? data.summary.filter(Boolean) : [];
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={styles.headerContainer}>
           <Image
             src="/assets/logos/mbcenter-specialist2.png"
             style={styles.logo}
           />
-          <Text style={styles.headerProto}>ПРОТОКОЛ ЗА ТЕХНИЧЕСКО СЪСТОЯНИЕ</Text>
+          <Text style={styles.headerTitle}>
+            ПОДРОБЕН ПРОТОКОЛ ЗА ТЕХНИЧЕСКО СЪСТОЯНИЕ
+          </Text>
         </View>
         <View style={styles.headerDivider} />
 
-        {/* Info Grid */}
-        <View style={styles.infoRow}>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>МЕХАНИК:</Text>
-            <View style={styles.infoValueContainer}>
-              <Text style={styles.infoValue}>{data.mechanic}</Text>
-              <Svg style={styles.chevronIcon} viewBox="0 0 24 24">
-                <Path d="M6 9l6 6 6-6" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-            </View>
+        {/* ── Info grid row 1: Date | Mechanic | Client ── */}
+        <View style={styles.infoGrid}>
+          <View style={styles.infoCell}>
+            <Text style={styles.infoCellLabel}>ДАТА НА ПРЕГЛЕД</Text>
+            <Text style={styles.infoCellValue}>
+              {formatDate(data.inspectionDate)}
+            </Text>
           </View>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>ДАТА:</Text>
-            <View style={styles.infoValueContainer}>
-              <Text style={styles.infoValue}>{formatDate(data.inspectionDate)}</Text>
-            </View>
+          <View style={styles.infoCell}>
+            <Text style={styles.infoCellLabel}>МЕХАНИК / ПРЕГЛЕЖДАЩ</Text>
+            <Text style={styles.infoCellValue}>{data.mechanic}</Text>
           </View>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>ИМЕ НА КЛИЕНТ:</Text>
-            <View style={styles.infoValueContainer}>
-              <Text style={styles.infoValue}>{data.clientName}</Text>
-            </View>
-          </View>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>МАРКА И МОДЕЛ:</Text>
-            <View style={styles.infoValueContainer}>
-              <Text style={styles.infoValue}>{data.carModel}</Text>
-            </View>
+          <View style={styles.infoCellLast}>
+            <Text style={styles.infoCellLabel}>ИМЕ НА КЛИЕНТ</Text>
+            <Text style={styles.infoCellValue}>{data.clientName}</Text>
           </View>
         </View>
 
-        <View style={[styles.infoRow, { marginBottom: 14 }]}>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>РЕГИСТРАЦИОНЕН НОМЕР:</Text>
-            <View style={styles.infoValueContainer}>
-              <Text style={styles.infoValue}>{data.licensePlate}</Text>
-            </View>
+        {/* ── Info grid row 2: Car | Plate | VIN ── */}
+        <View style={[styles.infoGrid, { marginTop: 10 }]}>
+          <View style={styles.infoCell}>
+            <Text style={styles.infoCellLabel}>МАРКА И МОДЕЛ</Text>
+            <Text style={styles.infoCellValue}>{data.carModel}</Text>
           </View>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>VIN (РАМА):</Text>
-            <View style={styles.infoValueContainer}>
-              <Text style={styles.infoValue}>{data.vin ? data.vin.toUpperCase() : ""}</Text>
-            </View>
+          <View style={styles.infoCell}>
+            <Text style={styles.infoCellLabel}>РЕГ. НОМЕР</Text>
+            <Text style={styles.infoCellValue}>{data.licensePlate}</Text>
+          </View>
+          <View style={styles.infoCellLast}>
+            <Text style={styles.infoCellLabel}>VIN (РАМА)</Text>
+            <Text style={styles.infoCellValue}>
+              {data.vin ? data.vin.toUpperCase() : "—"}
+            </Text>
           </View>
         </View>
 
+        {/* ═══════════════════════════════════════════════════════════ */}
         {/* 1. ПРОБЕГ */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         <View wrap={false}>
-          <Text style={styles.sectionHeader}>1. ПРОБЕГ НА АВТОМОБИЛА</Text>
-          <View style={styles.rowUnderline}>
-            <Text style={styles.label}>Показание на километраж:</Text>
-            <Text style={[styles.infoValue, { flex: 0.5, marginLeft: 10 }]}>{data.mileage.odometer}</Text>
-            <View style={{ flex: 0.5 }} />
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>1. </Text>
+            Пробег на автомобила
+          </Text>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Показание на километраж</Text>
+            <View style={styles.rowValue}>
+              <Text style={{ fontSize: 10, fontWeight: 700, color: "#111" }}>
+                {data.mileage.odometer ? `${data.mileage.odometer} КМ` : "—"}
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Оценка на реален пробег:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.mileage.assessment === "match"} label="Съответства" styles={styles} />
-            <Radio checked={data.mileage.assessment === "manipulated"} label="Има съмнения / Манипулиран" styles={styles} />
-            <Text style={styles.noteLine}>{data.mileage.note}</Text>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Оценка на реален пробег</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={mileageLabel(data.mileage.assessment)}
+                level={mileageLevel(data.mileage.assessment)}
+                styles={styles}
+              />
+              {data.mileage.note ? (
+                <Text style={styles.rowNote}>{data.mileage.note}</Text>
+              ) : null}
+            </View>
           </View>
         </View>
 
+        {/* ═══════════════════════════════════════════════════════════ */}
         {/* 2. ГУМИ */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         <View wrap={false}>
-          <Text style={styles.sectionHeader}>2. СЪСТОЯНИЕ НА ГУМИТЕ</Text>
-          <View style={styles.rowUnderline}>
-            <Text style={styles.label}>Общо състояние грайфер:</Text>
-            <View style={styles.valueBlock}>
-              <Radio checked={data.tires.tread_condition === "good"} label="Добро" styles={styles} />
-              <Radio checked={data.tires.tread_condition === "worn"} label="Захабени" styles={styles} />
-              <Radio checked={data.tires.tread_condition === "replace"} label="За смяна" styles={styles} />
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>2. </Text>
+            Състояние на гумите
+          </Text>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Общо състояние грайфер</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={label(data.tires.tread_condition)}
+                level={tireConditionLevel(data.tires.tread_condition)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Различни гуми</Text>
+            <View style={styles.rowValue}>
+              <CheckItem
+                checked={data.tires.mixed_tires}
+                text="Наличие на различни гуми (марка / шарка)"
+                styles={styles}
+              />
             </View>
           </View>
         </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Различни гуми:</Text>
-          <View style={styles.valueBlock}>
-            <Checkbox checked={data.tires.mixed_tires} label="Наличие на различни гуми (марка/шарка)" styles={styles} />
-          </View>
-        </View>
 
+        {/* ═══════════════════════════════════════════════════════════ */}
         {/* 3. СПИРАЧНА СИСТЕМА */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         <View wrap={false}>
-          <Text style={styles.sectionHeader}>3. СПИРАЧНА СИСТЕМА</Text>
-          <View style={styles.rowUnderline}>
-            <Text style={styles.label}>Предни накладки:</Text>
-            <View style={styles.valueBlock}>
-              <Radio checked={data.brakes.front_pads === "good"} label="Добри" styles={styles} />
-              <Radio checked={data.brakes.front_pads === "worn"} label="Износени" styles={styles} />
-              <Radio checked={data.brakes.front_pads === "replace"} label="За смяна" styles={styles} />
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>3. </Text>
+            Спирачна система
+          </Text>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Предни накладки</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={padLabel(data.brakes.front_pads)}
+                level={padLevel(data.brakes.front_pads)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Предни дискове</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={discLabel(data.brakes.front_discs)}
+                level={discLevel(data.brakes.front_discs)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Задни накладки</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={padLabel(data.brakes.rear_pads)}
+                level={padLevel(data.brakes.rear_pads)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Задни дискове</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={discLabel(data.brakes.rear_discs)}
+                level={discLevel(data.brakes.rear_discs)}
+                styles={styles}
+              />
             </View>
           </View>
         </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Предни дискове:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.brakes.front_discs === "good"} label="Добри" styles={styles} />
-            <Radio checked={data.brakes.front_discs === "lipped"} label="Имат ръб / Криви" styles={styles} />
-            <Radio checked={data.brakes.front_discs === "below_min"} label="Под минимум" styles={styles} />
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Задни накладки:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.brakes.rear_pads === "good"} label="Добри" styles={styles} />
-            <Radio checked={data.brakes.rear_pads === "worn"} label="Износени" styles={styles} />
-            <Radio checked={data.brakes.rear_pads === "replace"} label="За смяна" styles={styles} />
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Задни дискове:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.brakes.rear_discs === "good"} label="Добри" styles={styles} />
-            <Radio checked={data.brakes.rear_discs === "lipped"} label="Имат ръб / Криви" styles={styles} />
-            <Radio checked={data.brakes.rear_discs === "below_min"} label="Под минимум" styles={styles} />
-          </View>
-        </View>
 
+        {/* ═══════════════════════════════════════════════════════════ */}
         {/* 4. ОКАЧВАНЕ */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         <View wrap={false}>
-          <Text style={styles.sectionHeader}>4. ОКАЧВАНЕ И ХОДОВА ЧАСТ</Text>
-          <View style={styles.rowUnderline}>
-            <Text style={styles.label}>Предно окачване (Носачи / Тампони / Шарнири):</Text>
-            <View style={styles.valueBlock}>
-              <Radio checked={data.suspension.front_suspension === "good"} label="Здраво" styles={styles} />
-              <Radio checked={data.suspension.front_suspension === "play"} label="Има луфт / Напукани" styles={styles} />
-              <Radio checked={data.suspension.front_suspension === "repair"} label="За ремонт" styles={styles} />
-              <Text style={styles.noteLine}>{data.suspension.front_suspension_note}</Text>
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>4. </Text>
+            Окачване и ходова част
+          </Text>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>
+              Предно окачване{"\n"}(Носачи / Тампони / Шарнири)
+            </Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={suspLabel(data.suspension.front_suspension)}
+                level={suspLevel(data.suspension.front_suspension)}
+                styles={styles}
+              />
+              {data.suspension.front_suspension_note ? (
+                <Text style={styles.rowNote}>
+                  {data.suspension.front_suspension_note}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>
+              Задно окачване{"\n"}(Носачи / Тампони)
+            </Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={suspLabel(data.suspension.rear_suspension)}
+                level={suspLevel(data.suspension.rear_suspension)}
+                styles={styles}
+              />
+              {data.suspension.rear_suspension_note ? (
+                <Text style={styles.rowNote}>
+                  {data.suspension.rear_suspension_note}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Амортисьори и пружини</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={shocksLabel(data.suspension.shocks_springs)}
+                level={shocksLevel(data.suspension.shocks_springs)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Кормилна система</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={steeringLabel(data.suspension.steering)}
+                level={steeringLevel(data.suspension.steering)}
+                styles={styles}
+              />
+              {data.suspension.steering_note ? (
+                <Text style={styles.rowNote}>
+                  {data.suspension.steering_note}
+                </Text>
+              ) : null}
             </View>
           </View>
         </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Задно окачване (Носачи / Тампони):</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.suspension.rear_suspension === "good"} label="Здраво" styles={styles} />
-            <Radio checked={data.suspension.rear_suspension === "play"} label="Има луфт / Напукани" styles={styles} />
-            <Radio checked={data.suspension.rear_suspension === "repair"} label="За ремонт" styles={styles} />
-            <Text style={styles.noteLine}>{data.suspension.rear_suspension_note}</Text>
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Амортисьори и пружини:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.suspension.shocks_springs === "good"} label="Изправни" styles={styles} />
-            <Radio checked={data.suspension.shocks_springs === "leaking"} label="Омаслени" styles={styles} />
-            <Radio checked={data.suspension.shocks_springs === "broken"} label="Счупена пружина" styles={styles} />
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.label}>Кормилна система:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.suspension.steering === "good"} label="Изправна" styles={styles} />
-            <Radio checked={data.suspension.steering === "leak_play"} label="Теч / Луфт" styles={styles} />
-            <Text style={styles.noteLine}>{data.suspension.steering_note}</Text>
-          </View>
-        </View>
 
+        {/* ═══════════════════════════════════════════════════════════ */}
         {/* 5. КОРОЗИЯ */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         <View wrap={false}>
-          <Text style={styles.sectionHeader}>5. КОРОЗИЯ И КУПЕ (РЪЖДА)</Text>
-          <View style={styles.rowUnderline}>
-            <Text style={styles.labelSmall}>Шаси и под автомобила:</Text>
-            <View style={styles.valueBlock}>
-              <Radio checked={data.corrosion.chassis === "none"} label="Няма" styles={styles} />
-              <Radio checked={data.corrosion.chassis === "surface"} label="Повърхностна" styles={styles} />
-              <Radio checked={data.corrosion.chassis === "deep"} label="Дълбока / Изгнило" styles={styles} />
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>5. </Text>
+            Корозия и купе (ръжда)
+          </Text>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Шаси и под автомобила</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={chassisLabel(data.corrosion.chassis)}
+                level={chassisLevel(data.corrosion.chassis)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Прагове и вежди</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={sillsLabel(data.corrosion.sills)}
+                level={sillsLevel(data.corrosion.sills)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Изпускателна система (Гърнета)</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={exhaustLabel(data.corrosion.exhaust)}
+                level={exhaustLevel(data.corrosion.exhaust)}
+                styles={styles}
+              />
             </View>
           </View>
         </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.labelSmall}>Прагове и вежди:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.corrosion.sills === "good"} label="Здрави" styles={styles} />
-            <Radio checked={data.corrosion.sills === "starting"} label="Започваща ръжда" styles={styles} />
-            <Radio checked={data.corrosion.sills === "rusted"} label="Изгнили" styles={styles} />
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.labelSmall}>Изпускателна система (Гърнета):</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.corrosion.exhaust === "good"} label="Здрава" styles={styles} />
-            <Radio checked={data.corrosion.exhaust === "rusted"} label="Ръждясала" styles={styles} />
-            <Radio checked={data.corrosion.exhaust === "holes"} label="Пробита / Заварки" styles={styles} />
-          </View>
-        </View>
 
+        {/* ═══════════════════════════════════════════════════════════ */}
         {/* 6. ТЕЧНОСТИ */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         <View wrap={false}>
-          <Text style={styles.sectionHeader}>6. ТЕЧНОСТИ И ТЕЧОВЕ</Text>
-          <View style={styles.rowUnderline}>
-            <Text style={styles.labelSmall}>Моторно масло:</Text>
-            <View style={styles.valueBlock}>
-              <Radio checked={data.fluids.engine_oil === "ok"} label="В норма" styles={styles} />
-              <Radio checked={data.fluids.engine_oil === "low"} label="Ниско ниво" styles={styles} />
-              <Radio checked={data.fluids.engine_oil === "replace"} label="За смяна" styles={styles} />
+          <Text style={styles.sectionTitle}>
+            <Text style={styles.sectionNumber}>6. </Text>
+            Течности и течове
+          </Text>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Моторно масло</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={oilLabel(data.fluids.engine_oil)}
+                level={oilLevel(data.fluids.engine_oil)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Антифриз (Охладителна течност)</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={oilLabel(data.fluids.coolant)}
+                level={oilLevel(data.fluids.coolant)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={styles.tableRow}>
+            <Text style={styles.rowLabel}>Спирачна течност</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={brakeFluidLabel(data.fluids.brake_fluid)}
+                level={brakeFluidLevel(data.fluids.brake_fluid)}
+                styles={styles}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.tableRow, styles.tableRowAlt]}>
+            <Text style={styles.rowLabel}>Видими течове двигател / кутия</Text>
+            <View style={styles.rowValue}>
+              <Badge
+                text={leaksLabel(data.fluids.leaks)}
+                level={leaksLevel(data.fluids.leaks)}
+                styles={styles}
+              />
+              {data.fluids.leaks_note ? (
+                <Text style={styles.rowNote}>{data.fluids.leaks_note}</Text>
+              ) : null}
             </View>
           </View>
         </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.labelSmall}>Антифриз (Охладителна течност):</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.fluids.coolant === "ok"} label="В норма" styles={styles} />
-            <Radio checked={data.fluids.coolant === "low"} label="Ниско ниво" styles={styles} />
-            <Radio checked={data.fluids.coolant === "replace"} label="За смяна / Мътен" styles={styles} />
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.labelSmall}>Спирачна течност:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.fluids.brake_fluid === "ok"} label="В норма" styles={styles} />
-            <Radio checked={data.fluids.brake_fluid === "replace"} label="За смяна (>3% влага)" styles={styles} />
-          </View>
-        </View>
-        <View style={styles.rowUnderline} wrap={false}>
-          <Text style={styles.labelSmall}>Видими течове двигател / кутия:</Text>
-          <View style={styles.valueBlock}>
-            <Radio checked={data.fluids.leaks === "none"} label="Няма (Сух)" styles={styles} />
-            <Radio checked={data.fluids.leaks === "sweat"} label="Леко омасляване" styles={styles} />
-            <Radio checked={data.fluids.leaks === "active"} label="Активен теч" styles={styles} />
-            <Text style={styles.noteLine}>{data.fluids.leaks_note}</Text>
-          </View>
-        </View>
 
-        {/* Recommendations */}
+        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* ПРЕПОРЪКИ */}
+        {/* ═══════════════════════════════════════════════════════════ */}
         {summaryLines.length > 0 && (
           <View wrap={false}>
-            <Text style={styles.sectionHeader}>ПРЕПОРЪКИ ОТ МЕХАНИКА</Text>
+            <Text style={styles.recoTitle}>Препоръки от механика</Text>
             {summaryLines.map((line, i) => (
-              <View key={i} style={{ flexDirection: "row", marginBottom: 4 }}>
-                <Text style={{ fontSize: 9, fontWeight: 700, marginRight: 8 }}>{i + 1}.</Text>
-                <Text style={styles.recoLine}>{line}</Text>
+              <View key={i} style={styles.recoItem}>
+                <Text style={styles.recoNum}>{i + 1}.</Text>
+                <Text style={styles.recoText}>{line}</Text>
               </View>
             ))}
           </View>
         )}
 
-        {/* Signatures */}
-        <View style={styles.signatures}>
+        {/* ── Signatures ── */}
+        <View style={styles.signaturesContainer}>
           <View style={styles.signatureCol}>
             <Text style={styles.sigLabel}>Предал автомобила:</Text>
             <View style={styles.sigLine} />
@@ -576,6 +925,18 @@ export function CheckPDF({ data }: CheckPDFProps) {
           </View>
         </View>
 
+        {/* ── Page footer ── */}
+        <View style={styles.pageFooter} fixed>
+          <Text style={styles.footerText}>
+            MB Center — Протокол за Техническо Състояние
+          </Text>
+          <Text
+            style={styles.footerText}
+            render={({ pageNumber, totalPages }) =>
+              `${pageNumber} / ${totalPages}`
+            }
+          />
+        </View>
       </Page>
     </Document>
   );

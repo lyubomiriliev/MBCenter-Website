@@ -1223,13 +1223,15 @@
       "offers": "Offers",
       "createOffer": "Create Offer",
       "clients": "Clients",
-      "checks": "Checks",
-      "createCheck": "New Check",
+      "checks": "Reviews",
+      "createCheck": "New Review",
+      "earnings": "Earnings",
       "backToSite": "Back to Site",
       "logout": "Logout"
     },
     "roles": {
       "admin": "Admin",
+      "reception": "Reception",
       "mechanic": "Mechanic"
     },
     "offers": {
@@ -1292,9 +1294,9 @@
       }
     },
     "checks": {
-      "title": "Checks",
-      "subtitle": "Manage technical inspections",
-      "createCheck": "New Check",
+      "title": "Reviews",
+      "subtitle": "Manage technical reviews",
+      "createCheck": "New Review",
       "editCheck": "Edit Check",
       "createCheckSubtitle": "Create a new technical condition report",
       "noResults": "No checks found",
@@ -1346,6 +1348,7 @@
       "repairNamePlaceholder": "Enter repair name",
       "createdBy": "Created By",
       "selectCreator": "Select creator",
+      "noCreatorsAdded": "No creators added — go to Settings",
       "productName": "Product Name",
       "brand": "Brand",
       "partNumber": "Part Number",

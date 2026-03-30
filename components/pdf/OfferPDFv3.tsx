@@ -107,7 +107,6 @@ const createStyles = () => {
     table: {
       width: "100%",
       marginBottom: 10,
-      border: "1px solid #000",
     },
     tableHeader: {
       flexDirection: "row",
@@ -118,12 +117,20 @@ const createStyles = () => {
       fontWeight: 700,
       fontSize: 9,
       fontFamily: fontFamily,
+      borderTop: "1px solid #000",
+      borderLeft: "1px solid #000",
+      borderRight: "1px solid #000",
       borderBottom: "1px solid #000",
-      minHeight: 18,
+      alignItems: "center",
+      minHeight: 22,
     },
     tableRow: {
       flexDirection: "row",
+      borderTop: "1px solid #000",
+      borderLeft: "1px solid #000",
+      borderRight: "1px solid #000",
       borderBottom: "1px solid #000",
+      marginTop: -1,
       paddingVertical: 0,
       paddingHorizontal: 2,
       fontSize: 10,
@@ -131,7 +138,7 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     tableRowAlt: {
-      backgroundColor: "#f0f0f0",
+      backgroundColor: "#ffffff",
     },
     col1: {
       flex: 0.05,
@@ -139,6 +146,7 @@ const createStyles = () => {
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
+      alignItems: "center" as const,
     },
     col2: {
       flex: 0.33,
@@ -183,6 +191,7 @@ const createStyles = () => {
       paddingVertical: 4,
       borderRight: "1px solid #000",
       justifyContent: "center",
+      alignItems: "center" as const,
     },
     colSvc2: {
       flex: 0.36,
@@ -193,14 +202,14 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colSvc3: {
-      flex: 0.16,
+      flex: 0.19,
       paddingHorizontal: 2,
       paddingVertical: 4,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     colSvc4: {
-      flex: 0.22,
+      flex: 0.17,
       paddingRight: 4,
       paddingLeft: 2,
       paddingVertical: 4,
@@ -208,7 +217,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colSvc5: {
-      flex: 0.22,
+      flex: 0.20,
       paddingRight: 4,
       paddingLeft: 2,
       paddingVertical: 4,
@@ -218,15 +227,15 @@ const createStyles = () => {
     colTextCenter: {
       textAlign: "center",
       fontFamily: fontFamily,
-      fontSize: 9,
+      fontSize: 10,
     },
-    colTextLeft: { textAlign: "left", fontFamily: fontFamily, fontSize: 9 },
-    colTextRight: { textAlign: "center", fontFamily: fontFamily, fontSize: 9 },
+    colTextLeft: { textAlign: "left", fontFamily: fontFamily, fontSize: 10 },
+    colTextRight: { textAlign: "center", fontFamily: fontFamily, fontSize: 10 },
     summarySection: {
       marginTop: 25,
       padding: 15,
       border: "2px solid #000",
-      backgroundColor: "#f9f9f9",
+      backgroundColor: "#ffffff",
     },
     summaryTitle: {
       fontSize: 14,
@@ -260,7 +269,7 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     summaryCol1: {
-      flex: 0.35,
+      flex: 0.30,
       paddingLeft: 3,
       paddingRight: 2,
       paddingVertical: 5,
@@ -268,7 +277,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     summaryCol2: {
-      flex: 0.4,
+      flex: 0.35,
       paddingRight: 3,
       paddingLeft: 2,
       paddingVertical: 5,
@@ -319,12 +328,12 @@ const createStyles = () => {
       marginBottom: 4,
     },
     footerRowText: {
-      fontSize: 10.5,
+      fontSize: 10,
       color: "#000",
       fontFamily: fontFamily,
     },
     footerText: {
-      fontSize: 10.5,
+      fontSize: 10,
       color: "#000",
       marginTop: 2,
       fontFamily: fontFamily,
@@ -340,23 +349,26 @@ const createStyles = () => {
     stampRow: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      marginTop: 80,
+      marginTop: 50,
     },
     stampField: {
-      width: "45%",
-      borderTop: "1px solid #000",
-      paddingTop: 4,
+      width: "40%",
     },
     stampLabel: {
-      fontSize: 9,
-      color: "#555",
-      marginBottom: 4,
+      fontSize: 8.5,
+      fontWeight: 700,
+      color: "#000",
+      marginBottom: 18,
       fontFamily: fontFamily,
     },
-    stampDots: {
-      fontSize: 9,
-      color: "#aaa",
-      letterSpacing: 2,
+    stampLine: {
+      borderBottom: "1px solid #000",
+      width: "100%",
+      marginBottom: 4,
+    },
+    stampSub: {
+      fontSize: 7.5,
+      color: "#9ca3af",
       fontFamily: fontFamily,
     },
   });
@@ -495,7 +507,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
           <>
             <Text style={styles.sectionTitle}>Части</Text>
             <View style={styles.table}>
-              <View style={styles.tableHeader} wrap={false}>
+              <View style={styles.tableHeader} wrap={false} minPresenceAhead={60}>
                 <View style={styles.col1}>
                   <Text style={[styles.colTextCenter, { color: "#fff" }]}>
                     №
@@ -575,86 +587,90 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
 
         {/* Service Actions Table */}
         {offer.service_actions && offer.service_actions.length > 0 && (
-          <>
-            <View wrap={false} style={{ marginBottom: 0 }}>
-              <Text style={styles.sectionTitle}>Сервизни активности</Text>
-              <View style={[styles.table, { marginBottom: 0 }]}>
+          <View>
+            <View style={styles.table}>
+              <View wrap={false}>
+                <Text style={styles.sectionTitle}>Сервизни активности</Text>
                 <View style={styles.tableHeader}>
                   <View style={styles.colSvc1}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                      №
-                    </Text>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>№</Text>
                   </View>
                   <View style={styles.colSvc2}>
-                    <Text style={[styles.colTextLeft, { color: "#fff" }]}>
-                      Сервизна дейност
-                    </Text>
+                    <Text style={[styles.colTextLeft, { color: "#fff" }]}>Сервизна дейност</Text>
                   </View>
                   <View style={styles.colSvc3}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                      Време за ремонт
-                    </Text>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Време за ремонт</Text>
                   </View>
                   <View style={styles.colSvc4}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                      Цена на час (с ДДС)
-                    </Text>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Цена на час</Text>
                   </View>
                   <View style={styles.colSvc5}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                      Цена за ремонт (с ДДС)
-                    </Text>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Обща цена (с ДДС)</Text>
                   </View>
                 </View>
+                {offer.service_actions
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                  .slice(0, 1)
+                  .map((action) => {
+                    const hourlyRateGross = action.price_per_hour_eur_net;
+                    const totalGross = action.total_eur_net;
+                    return (
+                      <View key={action.id} style={styles.tableRow}>
+                        <View style={styles.colSvc1}>
+                          <Text style={styles.colTextCenter}>1</Text>
+                        </View>
+                        <View style={styles.colSvc2}>
+                          <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>
+                        </View>
+                        <View style={styles.colSvc3}>
+                          <Text style={styles.colTextCenter}>
+                            {action.is_fixed_price ? "—" : formatTimeDisplay(action.time_required_text)}
+                          </Text>
+                        </View>
+                        <View style={styles.colSvc4}>
+                          <Text style={styles.colTextCenter}>
+                            {action.is_fixed_price ? "—" : formatEur(hourlyRateGross)}
+                          </Text>
+                        </View>
+                        <View style={styles.colSvc5}>
+                          <Text style={styles.colTextCenter}>{formatEur(totalGross)}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
               </View>
-            </View>
-            <View style={[styles.table, { borderTop: 0 }]}>
               {offer.service_actions
                 .sort((a, b) => a.sort_order - b.sort_order)
+                .slice(1)
                 .map((action, index) => {
                   const hourlyRateGross = action.price_per_hour_eur_net;
                   const totalGross = action.total_eur_net;
                   return (
-                    <View
-                      key={action.id}
-                      wrap={false}
-                      style={[
-                        styles.tableRow,
-                        index % 2 === 1 ? styles.tableRowAlt : {},
-                      ]}
-                    >
+                    <View key={action.id} wrap={false} style={[styles.tableRow, (index + 1) % 2 === 1 ? styles.tableRowAlt : {}]}>
                       <View style={styles.colSvc1}>
-                        <Text style={styles.colTextCenter}>{index + 1}</Text>
+                        <Text style={styles.colTextCenter}>{index + 2}</Text>
                       </View>
                       <View style={styles.colSvc2}>
-                        <Text style={styles.colTextLeft}>
-                          {action.action_name || "-"}
-                        </Text>
+                        <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>
                       </View>
                       <View style={styles.colSvc3}>
                         <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price
-                            ? "—"
-                            : formatTimeDisplay(action.time_required_text)}
+                          {action.is_fixed_price ? "—" : formatTimeDisplay(action.time_required_text)}
                         </Text>
                       </View>
                       <View style={styles.colSvc4}>
                         <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price
-                            ? "—"
-                            : formatEur(hourlyRateGross)}
+                          {action.is_fixed_price ? "—" : formatEur(hourlyRateGross)}
                         </Text>
                       </View>
                       <View style={styles.colSvc5}>
-                        <Text style={styles.colTextCenter}>
-                          {formatEur(totalGross)}
-                        </Text>
+                        <Text style={styles.colTextCenter}>{formatEur(totalGross)}</Text>
                       </View>
                     </View>
                   );
                 })}
             </View>
-          </>
+          </View>
         )}
 
         {/* Summary */}
@@ -663,10 +679,10 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
           <View style={styles.summaryTable}>
             <View style={styles.summaryHeaderRow} wrap={false}>
               <View style={styles.summaryCol1}>
-                <Text style={styles.colTextLeft}>Вид на разходите</Text>
+                <Text style={[styles.colTextLeft, { fontSize: 9.5 }]}>Вид на разходите</Text>
               </View>
               <View style={styles.summaryCol2}>
-                <Text style={styles.colTextRight}>Обща стойност (без ДДС)</Text>
+                <Text style={styles.colTextRight}>Обща стойност</Text>
               </View>
               <View style={styles.summaryCol3}>
                 <Text style={styles.colTextCenter}>Ставка на ДДС</Text>
@@ -675,7 +691,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 <Text style={styles.colTextRight}>ДДС</Text>
               </View>
               <View style={styles.summaryCol5}>
-                <Text style={styles.colTextRight}>Обща стойност (с ДДС)</Text>
+                <Text style={[styles.colTextRight, { fontSize: 9.5 }]}>Обща стойност (с ДДС)</Text>
               </View>
             </View>
             {offer.items &&
@@ -875,7 +891,13 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
           <View style={styles.footerRow}>
             <Text style={styles.footerRowText}>гр. София</Text>
             <Text style={styles.footerRowText}>
-              {new Date(offer.created_at).toLocaleString("bg-BG", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              {new Date(offer.created_at).toLocaleString("bg-BG", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </Text>
           </View>
           {offer.created_by_name && (
@@ -883,7 +905,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
               Този документ е създаден от: {offer.created_by_name}
             </Text>
           )}
-          <Text style={styles.footerText}>и-мейл: contact@mbcenter.bg</Text>
+          <Text style={styles.footerText}>Имейл: contact@mbcenter.bg</Text>
           <Text style={styles.disclaimer}>
             Цените, посочени в тази оферта, са валидни в момента на нейното
             създаване. Възможни са промени поради непредвидени увеличения на
@@ -892,7 +914,8 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
           </Text>
           <View style={styles.stampRow}>
             <View style={styles.stampField}>
-              <Text style={styles.stampLabel}>Печат и подпис:</Text>
+              <View style={styles.stampLine} />
+              <Text style={styles.stampSub}>/Печат и подпис/</Text>
             </View>
           </View>
         </View>

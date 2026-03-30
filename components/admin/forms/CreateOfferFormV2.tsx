@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useForm, FormProvider, useFormState } from "react-hook-form";
+import { useForm, FormProvider, useFormState, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
@@ -38,6 +38,7 @@ import { supabase } from "@/lib/supabase/client";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
 import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
+import { useOfferCalculations } from "@/hooks/useOfferCalculations";
 import type {
   OfferWithRelations,
   Profile,
@@ -47,6 +48,7 @@ import type {
   Offer,
   UpdateOffer,
   Mechanic,
+  Receptionist,
 } from "@/types/database";
 
 interface CreateOfferFormV2Props {
@@ -84,6 +86,21 @@ export function CreateOfferFormV2({
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [mechanicsList, setMechanicsList] = useState<Mechanic[]>([]);
 
+  // Earnings panel state
+  const [receptionistsList, setReceptionistsList] = useState<Receptionist[]>([]);
+  const [mechanicEarningsWorker, setMechanicEarningsWorker] = useState("");
+  const [mechanicHourlyRate, setMechanicHourlyRate] = useState("");
+  const [mechanicRepairTime, setMechanicRepairTime] = useState("");
+  const [mechanicEarningsSaving, setMechanicEarningsSaving] = useState(false);
+  const [receptionistEarningsWorker, setReceptionistEarningsWorker] = useState("");
+  const [receptionistTurnoverPct, setReceptionistTurnoverPct] = useState("");
+  const [receptionistRepairTotal, setReceptionistRepairTotal] = useState("");
+  const [receptionistEarningsSaving, setReceptionistEarningsSaving] = useState(false);
+
+  // Global defaults
+  const [defaultMechRate, setDefaultMechRate] = useState("");
+  const [defaultRecPct, setDefaultRecPct] = useState("");
+
   const updateOfferMutation = useUpdateOffer();
 
   const { notifications, dismiss, showError, showSuccess } = useNotification();
@@ -107,6 +124,7 @@ export function CreateOfferFormV2({
   } = methods;
 
   const { isDirty } = useFormState({ control: methods.control });
+  const offerCalculations = useOfferCalculations(methods.control);
 
   const prepaymentsDirty = useMemo(() => {
     if (!isEditing) return false;
@@ -129,15 +147,40 @@ export function CreateOfferFormV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id, savedOffer?.performed_by]);
 
-  // Load mechanics list from Supabase
+  // Load mechanics list from Supabase (always — used for both mechanic view and earnings panel)
   useEffect(() => {
-    if (!isMechanicView) return;
     supabase
       .from("mechanics")
       .select("*")
       .order("sort_order", { ascending: true })
       .then(({ data }) => {
         if (data) setMechanicsList(data as Mechanic[]);
+      });
+
+    // Load global config for earnings rates
+    supabase
+      .from("app_settings")
+      .select("*")
+      .then(({ data }) => {
+        const resp = data as any[];
+        if (resp) {
+          const mech = resp.find((s) => s.key === "mechanic_rate")?.value;
+          const rec = resp.find((s) => s.key === "receptionist_pct")?.value;
+          if (mech !== undefined) setDefaultMechRate(String(mech));
+          if (rec !== undefined) setDefaultRecPct(String(rec));
+        }
+      });
+  }, []);
+
+  // Load receptionists for earnings panel
+  useEffect(() => {
+    if (isMechanicView) return;
+    supabase
+      .from("receptionists")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        if (data) setReceptionistsList(data as Receptionist[]);
       });
   }, [isMechanicView]);
 
@@ -334,7 +377,6 @@ export function CreateOfferFormV2({
     if (!offerId) return;
     setIsSaving(true);
     try {
-
       const data = getValues();
       let partsTotal = 0;
       data.parts.forEach((p) => {
@@ -440,8 +482,7 @@ export function CreateOfferFormV2({
         setNavModalOpen(false);
         router.push(navUrl);
       }
-    } catch (err) {
-      console.error("Save failed:", err);
+    } catch {
       showError(t("errors.saveFailed"));
     } finally {
       setIsSaving(false);
@@ -773,6 +814,80 @@ export function CreateOfferFormV2({
     }
   };
 
+  const saveMechanicEarnings = async () => {
+    if (!mechanicEarningsWorker) return;
+    setMechanicEarningsSaving(true);
+    try {
+      const worker = mechanicsList.find((m) => m.id === mechanicEarningsWorker);
+      const workerName = worker?.name || mechanicEarningsWorker;
+      const hourlyRate = parseFloat(mechanicHourlyRate) || 0;
+      const repairTime = parseFloat(mechanicRepairTime) || 0;
+      const total = hourlyRate * repairTime;
+      const formValues = methods.getValues();
+      const vehicle = formValues.carModel || "";
+      const repairName = formValues.repairName || "";
+      const now = new Date();
+      const { error } = await supabase.from("earnings_entries").insert({
+        worker_id: mechanicEarningsWorker,
+        worker_type: "mechanic",
+        worker_name: workerName,
+        vehicle: vehicle || null,
+        repair_name: repairName || null,
+        repair_time: repairTime,
+        hourly_rate: hourlyRate,
+        total,
+        entry_date: now.toISOString().slice(0, 10),
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        offer_id: savedOffer?.id || null,
+        offer_number: savedOffer?.offer_number || null,
+      } as never);
+      if (error) throw error;
+      showSuccess(locale === "bg" ? "Заработката е записана" : "Earnings saved");
+    } catch {
+      showError(locale === "bg" ? "Грешка при записване" : "Error saving earnings");
+    } finally {
+      setMechanicEarningsSaving(false);
+    }
+  };
+
+  const saveReceptionistEarnings = async () => {
+    if (!receptionistEarningsWorker) return;
+    setReceptionistEarningsSaving(true);
+    try {
+      const worker = receptionistsList.find((r) => r.id === receptionistEarningsWorker);
+      const workerName = worker?.name || receptionistEarningsWorker;
+      const pct = parseFloat(receptionistTurnoverPct) || 0;
+      const repairTotal = parseFloat(receptionistRepairTotal) || offerCalculations.grossTotal;
+      const earnings = repairTotal * (pct / 100);
+      const formValues = methods.getValues();
+      const vehicle = formValues.carModel || "";
+      const repairName = formValues.repairName || "";
+      const now = new Date();
+      const { error } = await supabase.from("earnings_entries").insert({
+        worker_id: receptionistEarningsWorker,
+        worker_type: "receptionist",
+        worker_name: workerName,
+        vehicle: vehicle || null,
+        repair_name: repairName || null,
+        repair_total: repairTotal,
+        turnover_pct: pct,
+        earnings,
+        entry_date: now.toISOString().slice(0, 10),
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        offer_id: savedOffer?.id || null,
+        offer_number: savedOffer?.offer_number || null,
+      } as never);
+      if (error) throw error;
+      showSuccess(locale === "bg" ? "Заработката е записана" : "Earnings saved");
+    } catch {
+      showError(locale === "bg" ? "Грешка при записване" : "Error saving earnings");
+    } finally {
+      setReceptionistEarningsSaving(false);
+    }
+  };
+
   const onSubmit = async (data: OfferFormData) => {
     console.log("=== FORM SUBMIT CALLED ===");
     console.log("Mode:", isEditing ? "UPDATE" : "CREATE");
@@ -782,7 +897,7 @@ export function CreateOfferFormV2({
     console.log("Service actions count:", data.serviceActions?.length || 0);
 
     setIsSaving(true);
-    
+
     try {
       // Calculate totals first (needed for both create and update)
       let partsTotal = 0;
@@ -1527,8 +1642,8 @@ export function CreateOfferFormV2({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Discounts */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Discounts — side by side, compact */}
+              <div className="flex flex-wrap gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="discountPartsPercent">
                     {t("discountParts")}
@@ -1571,32 +1686,122 @@ export function CreateOfferFormV2({
                 </div>
               </div>
 
-              {/* Three notes fields side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="notesInternal">{t("notesInternal")}</Label>
-                  <Textarea
-                    {...methods.register("notesInternal")}
-                    placeholder={t("notesInternalPlaceholder")}
-                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
-                  />
+              {/* Notes + Earnings in a responsive two-column layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Notes stacked vertically */}
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="notesInternal">{t("notesInternal")}</Label>
+                    <Textarea
+                      {...methods.register("notesInternal")}
+                      placeholder={t("notesInternalPlaceholder")}
+                      className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notesService">{t("notesService")}</Label>
+                    <Textarea
+                      {...methods.register("notesService")}
+                      placeholder={t("notesServicePlaceholder")}
+                      className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">{t("notes")}</Label>
+                    <Textarea
+                      {...methods.register("notes")}
+                      placeholder={t("notesPlaceholder")}
+                      className="bg-gray-100 text-gray-900 border-mb-border min-h-[80px] placeholder:text-gray-500"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notesService">{t("notesService")}</Label>
-                  <Textarea
-                    {...methods.register("notesService")}
-                    placeholder={t("notesServicePlaceholder")}
-                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">{t("notes")}</Label>
-                  <Textarea
-                    {...methods.register("notes")}
-                    placeholder={t("notesPlaceholder")}
-                    className="bg-gray-100 text-gray-900 border-mb-border min-h-[100px] placeholder:text-gray-500"
-                  />
-                </div>
+
+                {/* Earnings panel — admin view only */}
+                {!isMechanicView && (
+                  <div className="space-y-3 border border-mb-border rounded-lg p-4">
+                    <h3 className="font-semibold text-sm text-mb-silver uppercase tracking-wide flex items-center gap-2">
+                      <svg className="w-4 h-4 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {locale === "bg" ? "Заработки" : "Earnings"}
+                    </h3>
+
+                    {/* Mechanic */}
+                    <div className="space-y-2 pb-3 border-b border-mb-border/50">
+                      <p className="text-xs text-mb-silver font-medium">{locale === "bg" ? "Механик" : "Mechanic"}</p>
+                      <select
+                        value={mechanicEarningsWorker}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMechanicEarningsWorker(val);
+                          if (val) setMechanicHourlyRate(defaultMechRate);
+                          else setMechanicHourlyRate("");
+                        }}
+                        className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
+                      >
+                        <option value="">{locale === "bg" ? "— Избери —" : "— Select —"}</option>
+                        {mechanicsList.map((m) => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">{locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}</Label>
+                          <Input type="number" min="0" step="0.5" value={mechanicHourlyRate} onChange={(e) => setMechanicHourlyRate(e.target.value)} placeholder="0.00" className="bg-gray-100 text-gray-900 border-mb-border text-sm" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{locale === "bg" ? "Часове" : "Hours"}</Label>
+                          <Input type="number" min="0" step="0.25" value={mechanicRepairTime} onChange={(e) => setMechanicRepairTime(e.target.value)} placeholder="0.00" className="bg-gray-100 text-gray-900 border-mb-border text-sm" />
+                        </div>
+                      </div>
+                      {mechanicHourlyRate && mechanicRepairTime && (
+                        <p className="text-xs text-mb-silver">{locale === "bg" ? "Общо" : "Total"}: <span className="text-white font-semibold">€{(parseFloat(mechanicHourlyRate || "0") * parseFloat(mechanicRepairTime || "0")).toFixed(2)}</span></p>
+                      )}
+                      <Button type="button" size="sm" disabled={!mechanicEarningsWorker || mechanicEarningsSaving} onClick={saveMechanicEarnings} className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8">
+                        {mechanicEarningsSaving ? (locale === "bg" ? "Записване…" : "Saving…") : (locale === "bg" ? "Запиши" : "Save")}
+                      </Button>
+                    </div>
+
+                    {/* Receptionist */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-mb-silver font-medium">{locale === "bg" ? "Приемчик" : "Receptionist"}</p>
+                      <select
+                        value={receptionistEarningsWorker}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setReceptionistEarningsWorker(val);
+                          if (val) setReceptionistTurnoverPct(defaultRecPct);
+                          else setReceptionistTurnoverPct("");
+                        }}
+                        className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
+                      >
+                        <option value="">{locale === "bg" ? "— Избери —" : "— Select —"}</option>
+                        {receptionistsList.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">% {locale === "bg" ? "от оборота" : "of turnover"}</Label>
+                          <div className="relative">
+                            <Input type="number" min="0" max="100" step="0.5" value={receptionistTurnoverPct} onChange={(e) => setReceptionistTurnoverPct(e.target.value)} placeholder="0" className="bg-gray-100 text-gray-900 border-mb-border pr-6 text-sm" />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-xs">%</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{locale === "bg" ? "Сума ремонт (€)" : "Repair total (€)"}</Label>
+                          <Input type="number" min="0" step="0.01" value={receptionistRepairTotal || offerCalculations.grossTotal.toFixed(2)} onChange={(e) => setReceptionistRepairTotal(e.target.value)} className="bg-gray-100 text-gray-900 border-mb-border text-sm" />
+                        </div>
+                      </div>
+                      {receptionistTurnoverPct && (
+                        <p className="text-xs text-mb-silver">{locale === "bg" ? "Заработка" : "Earnings"}: <span className="text-white font-semibold">€{((parseFloat(receptionistRepairTotal || "0") || offerCalculations.grossTotal) * (parseFloat(receptionistTurnoverPct || "0") / 100)).toFixed(2)}</span></p>
+                      )}
+                      <Button type="button" size="sm" disabled={!receptionistEarningsWorker || receptionistEarningsSaving} onClick={saveReceptionistEarnings} className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8">
+                        {receptionistEarningsSaving ? (locale === "bg" ? "Записване…" : "Saving…") : (locale === "bg" ? "Запиши" : "Save")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1793,6 +1998,8 @@ export function CreateOfferFormV2({
                   </svg>
                   {t("addPrePayment")}
                 </Button>
+
+
 
                 {/* Clone Button (only for existing offers) */}
                 {isEditing && savedOffer && (

@@ -10,7 +10,7 @@
 create table if not exists inspections (
   id              uuid primary key default gen_random_uuid(),
 
-  -- Auto-generated report number (e.g. INS-20260319-0001)
+  -- Auto-generated report number (e.g. 00010105, 00010106, ...)
   check_number    text unique not null,
 
   -- Basic info
@@ -51,21 +51,19 @@ create table if not exists inspections (
 -- ============================================================
 -- AUTO-INCREMENT CHECK NUMBER
 -- Uses a Postgres sequence so numbers are gapless and ordered.
--- Format: INS-YYYYMMDD-NNNN (e.g. INS-20260319-0001)
+-- Format: 8-digit zero-padded number (e.g. 00010105, 00010106, ...)
 -- ============================================================
-create sequence if not exists inspections_seq start 1;
+create sequence if not exists inspections_seq start 10105;
 
 create or replace function generate_check_number()
 returns trigger as $$
 begin
-  new.check_number := 'INS-'
-    || to_char(now(), 'YYYYMMDD')
-    || '-'
-    || lpad(nextval('inspections_seq')::text, 4, '0');
+  new.check_number := lpad(nextval('inspections_seq')::text, 8, '0');
   return new;
 end;
 $$ language plpgsql;
 
+drop trigger if exists set_check_number on inspections;
 create trigger set_check_number
   before insert on inspections
   for each row
@@ -84,6 +82,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists inspections_updated_at on inspections;
 create trigger inspections_updated_at
   before update on inspections
   for each row
@@ -106,18 +105,22 @@ create index if not exists idx_inspections_check_number  on inspections (check_n
 -- ============================================================
 alter table inspections enable row level security;
 
+drop policy if exists "Authenticated users can view inspections" on inspections;
 create policy "Authenticated users can view inspections"
   on inspections for select
   using (auth.uid() is not null);
 
+drop policy if exists "Authenticated users can insert inspections" on inspections;
 create policy "Authenticated users can insert inspections"
   on inspections for insert
   with check (auth.uid() is not null);
 
+drop policy if exists "Authenticated users can update inspections" on inspections;
 create policy "Authenticated users can update inspections"
   on inspections for update
   using (auth.uid() is not null);
 
+drop policy if exists "Authenticated users can delete inspections" on inspections;
 create policy "Authenticated users can delete inspections"
   on inspections for delete
   using (auth.uid() is not null);

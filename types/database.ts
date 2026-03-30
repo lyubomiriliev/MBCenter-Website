@@ -374,6 +374,155 @@ export interface Database {
           created_at?: string;
         };
       };
+      receptionists: {
+        Row: {
+          id: string;
+          name: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+      };
+      earnings_entries: {
+        Row: {
+          id: string;
+          worker_id: string;
+          worker_type: 'mechanic' | 'receptionist';
+          worker_name: string;
+          vehicle: string | null;
+          repair_name: string | null;
+          repair_time: number | null;
+          hourly_rate: number | null;
+          total: number | null;
+          repair_total: number | null;
+          turnover_pct: number | null;
+          earnings: number | null;
+          entry_date: string;
+          month: number;
+          year: number;
+          offer_id: string | null;
+          offer_number: string | null;
+          created_at: string;
+          is_exported: boolean;
+        };
+        Insert: {
+          id?: string;
+          worker_id: string;
+          worker_type: 'mechanic' | 'receptionist';
+          worker_name: string;
+          vehicle?: string | null;
+          repair_name?: string | null;
+          repair_time?: number | null;
+          hourly_rate?: number | null;
+          total?: number | null;
+          repair_total?: number | null;
+          turnover_pct?: number | null;
+          earnings?: number | null;
+          entry_date?: string;
+          month: number;
+          year: number;
+          offer_id?: string | null;
+          offer_number?: string | null;
+          created_at?: string;
+          is_exported?: boolean;
+        };
+        Update: {
+          id?: string;
+          worker_id?: string;
+          worker_type?: 'mechanic' | 'receptionist';
+          worker_name?: string;
+          vehicle?: string | null;
+          repair_name?: string | null;
+          repair_time?: number | null;
+          hourly_rate?: number | null;
+          total?: number | null;
+          repair_total?: number | null;
+          turnover_pct?: number | null;
+          earnings?: number | null;
+          entry_date?: string;
+          month?: number;
+          year?: number;
+          offer_id?: string | null;
+          offer_number?: string | null;
+          created_at?: string;
+          is_exported?: boolean;
+        };
+      };
+      app_settings: {
+        Row: {
+          id: string;
+          key: string;
+          value: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          value?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          value?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      earnings_monthly_summary: {
+        Row: {
+          id: string;
+          worker_id: string;
+          worker_type: 'mechanic' | 'receptionist';
+          month: number;
+          year: number;
+          card_amount: number;
+          fines_amount: number;
+          fixed_salary: number;
+          cash_amount: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          worker_id: string;
+          worker_type: 'mechanic' | 'receptionist';
+          month: number;
+          year: number;
+          card_amount?: number;
+          fines_amount?: number;
+          fixed_salary?: number;
+          cash_amount?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          worker_id?: string;
+          worker_type?: 'mechanic' | 'receptionist';
+          month?: number;
+          year?: number;
+          card_amount?: number;
+          fines_amount?: number;
+          fixed_salary?: number;
+          cash_amount?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -405,6 +554,10 @@ export type FixedActivity =
 export type HourlyActivity =
   Database["public"]["Tables"]["hourly_activities"]["Row"];
 export type Mechanic = Database["public"]["Tables"]["mechanics"]["Row"];
+export type Receptionist = Database["public"]["Tables"]["receptionists"]["Row"];
+export type AppSettings = Database["public"]["Tables"]["app_settings"]["Row"];
+export type EarningsEntry = Database["public"]["Tables"]["earnings_entries"]["Row"];
+export type EarningsMonthlySummary = Database["public"]["Tables"]["earnings_monthly_summary"]["Row"];
 
 export type InsertProfile = Database["public"]["Tables"]["profiles"]["Insert"];
 export type InsertClient = Database["public"]["Tables"]["clients"]["Insert"];
@@ -420,6 +573,12 @@ export type InsertFixedActivity =
   Database["public"]["Tables"]["fixed_activities"]["Insert"];
 export type InsertHourlyActivity =
   Database["public"]["Tables"]["hourly_activities"]["Insert"];
+export type InsertAppSettings =
+  Database["public"]["Tables"]["app_settings"]["Insert"];
+export type InsertEarningsEntry =
+  Database["public"]["Tables"]["earnings_entries"]["Insert"];
+export type InsertEarningsMonthlySummary =
+  Database["public"]["Tables"]["earnings_monthly_summary"]["Insert"];
 
 export type UpdateProfile = Database["public"]["Tables"]["profiles"]["Update"];
 export type UpdateClient = Database["public"]["Tables"]["clients"]["Update"];

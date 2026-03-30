@@ -57,10 +57,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { OfferWithRelations, OfferStatus } from "@/types/database";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 
 const EUR_TO_BGN = 1.95583;
 
-const OFFER_COLUMNS_KEY = "mb_offer_columns_visibility";
+function getColumnsKey(role: string): string {
+  if (role === "reception") return "mb_offer_columns_visibility_reception";
+  if (role === "mechanic") return "mb_offer_columns_visibility_mechanic";
+  return "mb_offer_columns_visibility_admin";
+}
 
 const SETTINGS_TO_COLUMN_ID: Record<string, string> = {
   offerNumber: "offer_number",
@@ -73,9 +78,9 @@ const SETTINGS_TO_COLUMN_ID: Record<string, string> = {
   actions: "actions",
 };
 
-function loadColumnVisibility(): VisibilityState {
+function loadColumnVisibility(key: string): VisibilityState {
   try {
-    const stored = localStorage.getItem(OFFER_COLUMNS_KEY);
+    const stored = localStorage.getItem(key);
     if (!stored) return {};
     const settings = JSON.parse(stored) as Record<string, boolean>;
     const visibility: VisibilityState = {};
@@ -115,20 +120,22 @@ export function OffersTable({
     ? `/${locale}/mb-admin-mechanics`
     : `/${locale}/mb-admin`;
   const queryClient = useQueryClient();
+  const { profile } = useSupabaseAuthContext();
+  const columnsKey = getColumnsKey(profile?.role ?? "admin");
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [page, setPage] = useState(1);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   useEffect(() => {
-    setColumnVisibility(loadColumnVisibility());
+    setColumnVisibility(loadColumnVisibility(columnsKey));
     const onStorage = (e: StorageEvent) => {
-      if (e.key === OFFER_COLUMNS_KEY)
-        setColumnVisibility(loadColumnVisibility());
+      if (e.key === columnsKey)
+        setColumnVisibility(loadColumnVisibility(columnsKey));
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [columnsKey]);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<OfferWithRelations | null>(
     null,
@@ -140,10 +147,25 @@ export function OffersTable({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // 1920px is typical 1080p, > 1920px covers 2K (1440p / 2560px) and 4K
+      if (window.innerWidth > 1920) {
+        setPageSize(16);
+      } else {
+        setPageSize(10);
+      }
+    };
+    handleResize(); // initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const { data, isLoading, error } = useOffers({
     page,
-    pageSize: 20,
+    pageSize,
     status: filters?.status,
     search: filters?.search,
     dateFrom: filters?.dateFrom?.toISOString(),
@@ -598,34 +620,68 @@ export function OffersTable({
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-4">
-          <p className="text-sm text-mb-silver order-2 sm:order-1">
-            {t("offers.showing", {
-              from: (page - 1) * 20 + 1,
-              to: Math.min(page * 20, data.totalCount),
-              total: data.totalCount,
-            })}
-          </p>
-          <div className="flex gap-2 order-1 sm:order-2">
+        <div className="flex flex-col items-center gap-3 mt-6">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="border-mb-border"
+              className="border-mb-border text-black hover:text-black font-medium disabled:opacity-50"
             >
               {t("offers.previous")}
             </Button>
+            
+            <div className="flex items-center gap-1 mx-2 sm:mx-4">
+               {Array.from({ length: data.totalPages }).map((_, i) => {
+                 const pageNum = i + 1;
+                 if (
+                   pageNum === 1 || 
+                   pageNum === data.totalPages || 
+                   (pageNum >= page - 1 && pageNum <= page + 1)
+                 ) {
+                   return (
+                     <Button
+                       key={pageNum}
+                       variant={page === pageNum ? "default" : "outline"}
+                       size="sm"
+                       className={`w-8 h-8 sm:w-9 sm:h-9 p-0 ${
+                         page === pageNum 
+                           ? "bg-mb-blue font-bold text-white shadow-md shadow-mb-blue/20 hover:bg-mb-blue" 
+                           : "border-mb-border text-black hover:text-black hover:bg-gray-100 font-medium"
+                       }`}
+                       onClick={() => setPage(pageNum)}
+                     >
+                       {pageNum}
+                     </Button>
+                   );
+                 } else if (
+                   (pageNum === page - 2 && page > 3) ||
+                   (pageNum === page + 2 && page < data.totalPages - 2)
+                 ) {
+                   return <span key={pageNum} className="text-mb-silver px-1">...</span>;
+                 }
+                 return null;
+               })}
+            </div>
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
               disabled={page === data.totalPages}
-              className="border-mb-border"
+              className="border-mb-border text-black hover:text-black font-medium disabled:opacity-50"
             >
               {t("offers.next")}
             </Button>
           </div>
+          <p className="text-sm text-mb-silver opacity-80 mt-1">
+            {t("offers.showing", {
+              from: (page - 1) * pageSize + 1,
+              to: Math.min(page * pageSize, data.totalCount),
+              total: data.totalCount,
+            })}
+          </p>
         </div>
       )}
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase/client";
+import { authClient as supabase } from "@/lib/supabase/client";
 import type { Profile, UserRole, InsertProfile } from "@/types/database";
 
 interface AuthState {

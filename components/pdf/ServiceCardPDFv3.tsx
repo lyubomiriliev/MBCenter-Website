@@ -22,7 +22,7 @@ const createStyles = () => {
   const fontFamily = fontRegistered ? "NotoSans" : "Helvetica";
   return StyleSheet.create({
     page: {
-      paddingTop: 8,
+      paddingTop: 40,
       paddingBottom: 8,
       paddingLeft: 30,
       paddingRight: 30,
@@ -36,6 +36,7 @@ const createStyles = () => {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
+      marginTop: -32,
       marginBottom: 12,
       paddingBottom: 10,
       borderBottom: "2px solid #000",
@@ -107,7 +108,6 @@ const createStyles = () => {
     table: {
       width: "100%",
       marginBottom: 15,
-      border: "1px solid #000",
     },
     tableHeader: {
       flexDirection: "row",
@@ -117,13 +117,21 @@ const createStyles = () => {
       paddingHorizontal: 2,
       fontWeight: 700,
       fontSize: 9,
-      borderBottom: "1px solid #000",
       fontFamily: fontFamily,
-      minHeight: 18,
+      borderTop: "1px solid #000",
+      borderLeft: "1px solid #000",
+      borderRight: "1px solid #000",
+      borderBottom: "1px solid #000",
+      alignItems: "center",
+      minHeight: 22,
     },
     tableRow: {
       flexDirection: "row",
+      borderTop: "1px solid #000",
+      borderLeft: "1px solid #000",
+      borderRight: "1px solid #000",
       borderBottom: "1px solid #000",
+      marginTop: -1,
       paddingVertical: 0,
       paddingHorizontal: 2,
       fontSize: 10,
@@ -131,7 +139,7 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     tableRowAlt: {
-      backgroundColor: "#f0f0f0",
+      backgroundColor: "#ffffff",
     },
     col1: {
       flex: 0.04,
@@ -139,6 +147,7 @@ const createStyles = () => {
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
+      alignItems: "center",
     },
     col2: {
       flex: 0.27,
@@ -149,7 +158,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colPartNum: {
-      flex: 0.21,
+      flex: 0.25,
       paddingVertical: 4,
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
@@ -163,14 +172,14 @@ const createStyles = () => {
       justifyContent: "center",
     },
     col4: {
-      flex: 0.06,
+      flex: 0.05,
       paddingVertical: 4,
       paddingHorizontal: 2,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     col5: {
-      flex: 0.14,
+      flex: 0.12,
       paddingRight: 4,
       paddingVertical: 4,
       paddingLeft: 2,
@@ -190,6 +199,7 @@ const createStyles = () => {
       paddingVertical: 4,
       borderRight: "1px solid #000",
       justifyContent: "center",
+      alignItems: "center",
     },
     colSvc2: {
       flex: 0.36,
@@ -200,14 +210,14 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colSvc3: {
-      flex: 0.16,
+      flex: 0.19,
       paddingHorizontal: 2,
       paddingVertical: 4,
       borderRight: "1px solid #000",
       justifyContent: "center",
     },
     colSvc4: {
-      flex: 0.22,
+      flex: 0.17,
       paddingRight: 4,
       paddingLeft: 2,
       paddingVertical: 4,
@@ -215,7 +225,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     colSvc5: {
-      flex: 0.22,
+      flex: 0.2,
       paddingRight: 4,
       paddingLeft: 2,
       paddingVertical: 4,
@@ -225,15 +235,15 @@ const createStyles = () => {
     colTextCenter: {
       textAlign: "center",
       fontFamily: fontFamily,
-      fontSize: 9,
+      fontSize: 10,
     },
-    colTextLeft: { textAlign: "left", fontFamily: fontFamily, fontSize: 9 },
-    colTextRight: { textAlign: "center", fontFamily: fontFamily, fontSize: 9 },
+    colTextLeft: { textAlign: "left", fontFamily: fontFamily, fontSize: 10 },
+    colTextRight: { textAlign: "center", fontFamily: fontFamily, fontSize: 10 },
     summarySection: {
       marginTop: 20,
       padding: 12,
       border: "2px solid #000",
-      backgroundColor: "#f5f5f5",
+      backgroundColor: "#ffffff",
     },
     summaryTitle: {
       fontSize: 12,
@@ -267,7 +277,7 @@ const createStyles = () => {
       fontFamily: fontFamily,
     },
     summaryCol1: {
-      flex: 0.35,
+      flex: 0.3,
       paddingLeft: 3,
       paddingRight: 2,
       paddingVertical: 5,
@@ -275,7 +285,7 @@ const createStyles = () => {
       justifyContent: "center",
     },
     summaryCol2: {
-      flex: 0.4,
+      flex: 0.35,
       paddingRight: 3,
       paddingLeft: 2,
       paddingVertical: 5,
@@ -327,12 +337,12 @@ const createStyles = () => {
       marginBottom: 4,
     },
     footerRowText: {
-      fontSize: 10.5,
+      fontSize: 10,
       color: "#000",
       fontFamily: fontFamily,
     },
     footerText: {
-      fontSize: 10.5,
+      fontSize: 10,
       marginTop: 2,
       color: "#000",
       fontFamily: fontFamily,
@@ -347,17 +357,26 @@ const createStyles = () => {
     stampRow: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      marginTop: 80,
+      marginTop: 50,
     },
     stampField: {
-      width: "45%",
-      borderTop: "1px solid #000",
-      paddingTop: 4,
+      width: "40%",
     },
     stampLabel: {
-      fontSize: 9,
-      color: "#555",
+      fontSize: 8.5,
+      fontWeight: 700,
+      color: "#000",
+      marginBottom: 18,
+      fontFamily: fontFamily,
+    },
+    stampLine: {
+      borderBottom: "1px solid #000",
+      width: "100%",
       marginBottom: 4,
+    },
+    stampSub: {
+      fontSize: 7.5,
+      color: "#9ca3af",
       fontFamily: fontFamily,
     },
     stampDots: {
@@ -510,122 +529,69 @@ export function ServiceCardPDFv3({
           <>
             <Text style={styles.sectionTitle}>Части</Text>
             <View style={styles.table} wrap={true}>
-              <View style={styles.tableHeader} wrap={false}>
-                <View style={styles.col1}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    №
-                  </Text>
-                </View>
-                <View style={styles.col2}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    Продукт
-                  </Text>
-                </View>
-                <View style={styles.colPartNum}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    № Част
-                  </Text>
-                </View>
-                <View style={styles.col3}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    Производител
-                  </Text>
-                </View>
-                <View style={styles.col4}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    К-во
-                  </Text>
-                </View>
-                <View style={styles.col5}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    Цена на брой
-                  </Text>
-                </View>
-                <View style={styles.col6}>
-                  <Text
-                    style={[
-                      styles.colTextCenter,
-                      { color: "#fff", fontSize: 8 },
-                    ]}
-                  >
-                    Обща цена (с ДДС)
-                  </Text>
-                </View>
-              </View>
               {sortedParts.map((item, index) => {
-                // Input prices already include VAT
                 const unitPriceGross = item.unit_price;
                 const totalGross =
                   item.total ?? item.unit_price * (item.quantity ?? 0);
                 return (
-                  <View
-                    key={item.id}
-                    wrap={false}
-                    style={[
-                      styles.tableRow,
-                      index % 2 === 1 ? styles.tableRowAlt : {},
-                    ]}
-                  >
-                    <View style={styles.col1}>
-                      <Text style={styles.colTextCenter}>{index + 1}</Text>
-                    </View>
-                    <View style={styles.col2}>
-                      <Text style={styles.colTextLeft}>
-                        {item.description || "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.colPartNum}>
-                      <Text style={styles.colTextCenter}>
-                        {item.part_number || "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.col3}>
-                      <Text style={styles.colTextCenter}>
-                        {item.brand || "-"}
-                      </Text>
-                    </View>
-                    <View style={styles.col4}>
-                      <Text style={styles.colTextCenter}>{item.quantity}</Text>
-                    </View>
-                    <View style={styles.col5}>
-                      <Text style={styles.colTextCenter}>
-                        {formatEur(unitPriceGross)}
-                      </Text>
-                    </View>
-                    <View style={styles.col6}>
-                      <Text style={styles.colTextCenter}>
-                        {formatEur(totalGross)}
-                      </Text>
+                  <View key={item.id} wrap={false}>
+                    {index === 0 && (
+                      <View style={styles.tableHeader}>
+                        <View style={styles.col1}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>№</Text>
+                        </View>
+                        <View style={styles.col2}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>Продукт</Text>
+                        </View>
+                        <View style={styles.colPartNum}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>№ Част</Text>
+                        </View>
+                        <View style={styles.col3}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>Производител</Text>
+                        </View>
+                        <View style={styles.col4}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>К-во</Text>
+                        </View>
+                        <View style={styles.col5}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>Цена на брой</Text>
+                        </View>
+                        <View style={styles.col6}>
+                          <Text style={[styles.colTextCenter, { color: "#fff", fontSize: 8 }]}>Обща цена (с ДДС)</Text>
+                        </View>
+                      </View>
+                    )}
+                    <View style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}>
+                      <View style={styles.col1}>
+                        <Text style={styles.colTextCenter}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.col2}>
+                        <Text style={styles.colTextLeft}>
+                          {item.description || "-"}
+                        </Text>
+                      </View>
+                      <View style={styles.colPartNum}>
+                        <Text style={styles.colTextCenter}>
+                          {item.part_number || "-"}
+                        </Text>
+                      </View>
+                      <View style={styles.col3}>
+                        <Text style={styles.colTextCenter}>
+                          {item.brand || "-"}
+                        </Text>
+                      </View>
+                      <View style={styles.col4}>
+                        <Text style={styles.colTextCenter}>{item.quantity}</Text>
+                      </View>
+                      <View style={styles.col5}>
+                        <Text style={styles.colTextCenter}>
+                          {formatEur(unitPriceGross)}
+                        </Text>
+                      </View>
+                      <View style={styles.col6}>
+                        <Text style={styles.colTextCenter}>
+                          {formatEur(totalGross)}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 );
@@ -635,81 +601,53 @@ export function ServiceCardPDFv3({
         )}
 
         {offer.service_actions && offer.service_actions.length > 0 && (
-          <View break={sortedParts.length >= 20}>
-            <Text style={styles.sectionTitle}>Сервизни активности</Text>
+          <View break={sortedParts.length >= 15}>
             <View style={styles.table} wrap={true}>
-              <View style={styles.tableHeader} wrap={false}>
-                <View style={styles.colSvc1}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    №
-                  </Text>
-                </View>
-                <View style={styles.colSvc2}>
-                  <Text style={[styles.colTextLeft, { color: "#fff" }]}>
-                    Сервизна дейност
-                  </Text>
-                </View>
-                <View style={styles.colSvc3}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    Време за ремонт
-                  </Text>
-                </View>
-                <View style={styles.colSvc4}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    Цена на час (с ДДС)
-                  </Text>
-                </View>
-                <View style={styles.colSvc5}>
-                  <Text style={[styles.colTextCenter, { color: "#fff" }]}>
-                    Цена за ремонт (с ДДС)
-                  </Text>
+              <View wrap={false}>
+                <Text style={styles.sectionTitle}>Сервизни активности</Text>
+                <View style={styles.tableHeader}>
+                  <View style={styles.colSvc1}>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>№</Text>
+                  </View>
+                  <View style={styles.colSvc2}>
+                    <Text style={[styles.colTextLeft, { color: "#fff" }]}>Сервизна дейност</Text>
+                  </View>
+                  <View style={styles.colSvc3}>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Време за ремонт</Text>
+                  </View>
+                  <View style={styles.colSvc4}>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Цена на час</Text>
+                  </View>
+                  <View style={styles.colSvc5}>
+                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Обща цена (с ДДС)</Text>
+                  </View>
                 </View>
               </View>
               {offer.service_actions
                 .sort((a, b) => a.sort_order - b.sort_order)
-                .map((action, index) => {
-                  // Input prices already include VAT
-                  const hourlyRateGross = action.price_per_hour_eur_net; // Note: despite name, this is gross
-                  const totalGross = action.total_eur_net; // Note: despite name, this is gross
-                  return (
-                    <View
-                      key={action.id}
-                      wrap={false}
-                      style={[
-                        styles.tableRow,
-                        index % 2 === 1 ? styles.tableRowAlt : {},
-                      ]}
-                    >
-                      <View style={styles.colSvc1}>
-                        <Text style={styles.colTextCenter}>{index + 1}</Text>
-                      </View>
-                      <View style={styles.colSvc2}>
-                        <Text style={styles.colTextLeft}>
-                          {action.action_name || "-"}
-                        </Text>
-                      </View>
-                      <View style={styles.colSvc3}>
-                        <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price
-                            ? "—"
-                            : formatTimeDisplay(action.time_required_text)}
-                        </Text>
-                      </View>
-                      <View style={styles.colSvc4}>
-                        <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price
-                            ? "—"
-                            : formatEur(hourlyRateGross)}
-                        </Text>
-                      </View>
-                      <View style={styles.colSvc5}>
-                        <Text style={styles.colTextCenter}>
-                          {formatEur(totalGross)}
-                        </Text>
-                      </View>
+                .map((action, index) => (
+                  <View key={action.id} wrap={false} style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}>
+                    <View style={styles.colSvc1}>
+                      <Text style={styles.colTextCenter}>{index + 1}</Text>
                     </View>
-                  );
-                })}
+                    <View style={styles.colSvc2}>
+                      <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>
+                    </View>
+                    <View style={styles.colSvc3}>
+                      <Text style={styles.colTextCenter}>
+                        {action.is_fixed_price ? "—" : formatTimeDisplay(action.time_required_text)}
+                      </Text>
+                    </View>
+                    <View style={styles.colSvc4}>
+                      <Text style={styles.colTextCenter}>
+                        {action.is_fixed_price ? "—" : formatEur(action.price_per_hour_eur_net)}
+                      </Text>
+                    </View>
+                    <View style={styles.colSvc5}>
+                      <Text style={styles.colTextCenter}>{formatEur(action.total_eur_net)}</Text>
+                    </View>
+                  </View>
+                ))}
             </View>
           </View>
         )}
@@ -720,13 +658,15 @@ export function ServiceCardPDFv3({
           <View style={styles.summaryTable}>
             <View style={styles.summaryHeaderRow} wrap={false}>
               <View style={styles.summaryCol1}>
-                <Text style={[styles.colTextLeft, { color: "#fff" }]}>
+                <Text
+                  style={[styles.colTextLeft, { color: "#fff", fontSize: 9.5 }]}
+                >
                   Вид на разходите
                 </Text>
               </View>
               <View style={styles.summaryCol2}>
                 <Text style={[styles.colTextRight, { color: "#fff" }]}>
-                  Обща стойност (без ДДС)
+                  Обща стойност
                 </Text>
               </View>
               <View style={styles.summaryCol3}>
@@ -740,7 +680,12 @@ export function ServiceCardPDFv3({
                 </Text>
               </View>
               <View style={styles.summaryCol5}>
-                <Text style={[styles.colTextRight, { color: "#fff" }]}>
+                <Text
+                  style={[
+                    styles.colTextRight,
+                    { color: "#fff", fontSize: 9.5 },
+                  ]}
+                >
                   Обща стойност (с ДДС)
                 </Text>
               </View>
@@ -942,7 +887,13 @@ export function ServiceCardPDFv3({
           <View style={styles.footerRow}>
             <Text style={styles.footerRowText}>гр. София</Text>
             <Text style={styles.footerRowText}>
-              {new Date(offer.created_at).toLocaleString("bg-BG", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              {new Date(offer.created_at).toLocaleString("bg-BG", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </Text>
           </View>
           {offer.created_by_name && (
@@ -950,10 +901,11 @@ export function ServiceCardPDFv3({
               Този документ е създаден от: {offer.created_by_name}
             </Text>
           )}
-          <Text style={styles.footerText}>и-мейл: contact@mbcenter.bg</Text>
+          <Text style={styles.footerText}>Имейл: contact@mbcenter.bg</Text>
           <View style={styles.stampRow}>
             <View style={styles.stampField}>
-              <Text style={styles.stampLabel}>Печат и подпис:</Text>
+              <View style={styles.stampLine} />
+              <Text style={styles.stampSub}>/Печат и подпис/</Text>
             </View>
           </View>
         </View>

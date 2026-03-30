@@ -1223,13 +1223,15 @@
       "offers": "Оферти",
       "createOffer": "Нова оферта",
       "clients": "Клиенти",
-      "checks": "Проверки",
-      "createCheck": "Нова проверка",
+      "checks": "Прегледи",
+      "createCheck": "Нов преглед",
+      "earnings": "Заработки",
       "backToSite": "Към сайта",
       "logout": "Изход"
     },
     "roles": {
       "admin": "Администратор",
+      "reception": "Приемна",
       "mechanic": "Сервиз"
     },
     "offers": {
@@ -1292,9 +1294,9 @@
       }
     },
     "checks": {
-      "title": "Проверки",
-      "subtitle": "Управление на технически проверки",
-      "createCheck": "Нова проверка",
+      "title": "Прегледи",
+      "subtitle": "Управление на технически прегледи",
+      "createCheck": "Нов преглед",
       "editCheck": "Редактиране на проверка",
       "createCheckSubtitle": "Създаване на нов протокол за техническо състояние",
       "noResults": "Няма намерени проверки",
@@ -1346,6 +1348,7 @@
       "repairNamePlaceholder": "Въведете наименование на ремонта",
       "createdBy": "Създадена от",
       "selectCreator": "Избери създател",
+      "noCreatorsAdded": "Няма добавени създатели — отиди в Настройки",
       "productName": "Име на продукт",
       "brand": "Производител",
       "partNumber": "№ част",
