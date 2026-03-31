@@ -427,7 +427,7 @@ export function PartsFieldArray() {
 
   const handleModalConfirm = (part: PartItemFormData) => {
     if (editIndex !== null) {
-      setValue(`parts.${editIndex}`, part, { shouldValidate: true });
+      setValue(`parts.${editIndex}`, part, { shouldValidate: true, shouldDirty: true });
     } else {
       append(part);
     }

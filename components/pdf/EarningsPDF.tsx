@@ -298,7 +298,8 @@ export function ReceptionistEarningsPDF({
   const cardAmount = card || 0;
   const cashAmount = cash || 0;
   const finesAmount = fines || 0;
-  const totalSalary = cashAmount + cardAmount;
+  const totalSalary = totalEarnings + fixedAmount;
+  const remaining = totalSalary - cardAmount - finesAmount - cashAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -338,22 +339,22 @@ export function ReceptionistEarningsPDF({
 
         {/* Summary */}
         <View style={styles.summarySection}>
-          <View style={styles.summaryRowHighlight}>
-            <Text style={styles.summaryBold}>Общо заработено</Text>
-            <Text style={styles.summaryValueBold}>€{totalEarnings.toFixed(2)}</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Заработка общо</Text>
+            <Text style={styles.summaryValue}>€{totalEarnings.toFixed(2)}</Text>
           </View>
-          {fixedAmount > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Фиксирана заплата</Text>
-              <Text style={styles.summaryValue}>€{fixedAmount.toFixed(2)}</Text>
-            </View>
-          )}
-          {cardAmount > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Карта</Text>
-              <Text style={styles.summaryValue}>-€{cardAmount.toFixed(2)}</Text>
-            </View>
-          )}
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Твърдо</Text>
+            <Text style={styles.summaryValue}>€{fixedAmount.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRowHighlight}>
+            <Text style={styles.summaryBold}>Обща заплата</Text>
+            <Text style={styles.summaryValueBold}>€{totalSalary.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Карта</Text>
+            <Text style={styles.summaryValue}>-€{cardAmount.toFixed(2)}</Text>
+          </View>
           {finesAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Глоби</Text>
@@ -362,16 +363,14 @@ export function ReceptionistEarningsPDF({
           )}
           {cashAmount > 0 && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Кеш</Text>
-              <Text style={styles.summaryValue}>€{cashAmount.toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>В Брой</Text>
+              <Text style={styles.summaryValue}>-€{cashAmount.toFixed(2)}</Text>
             </View>
           )}
-          {totalSalary > 0 && (
-            <View style={styles.summaryRowHighlight}>
-              <Text style={styles.summaryBold}>Обща заплата</Text>
-              <Text style={styles.summaryValueBold}>€{totalSalary.toFixed(2)}</Text>
-            </View>
-          )}
+          <View style={styles.summaryRowHighlight}>
+            <Text style={styles.summaryBold}>Остатък</Text>
+            <Text style={styles.summaryValueBold}>€{remaining.toFixed(2)}</Text>
+          </View>
         </View>
 
         {/* Footer */}

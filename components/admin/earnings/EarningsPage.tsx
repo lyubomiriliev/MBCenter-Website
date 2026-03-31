@@ -434,7 +434,7 @@ export function EarningsPage() {
             fines={parseFloat(mechanicFines) || 0}
           />
         );
-        filename = `earnings-mechanic-${workerName}-${monthLabel}-${selectedYear}.pdf`;
+        filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${selectedYear}.pdf`;
       } else {
         const pdfEntries = entriesToUse.map((e) => ({
           vehicle: e.vehicle || "",
@@ -456,7 +456,7 @@ export function EarningsPage() {
             fines={parseFloat(receptionistFines) || 0}
           />
         );
-        filename = `earnings-receptionist-${workerName}-${monthLabel}-${selectedYear}.pdf`;
+        filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${selectedYear}.pdf`;
       }
 
       const blob = await pdf(component).toBlob();
@@ -527,7 +527,8 @@ export function EarningsPage() {
   const recCardVal = parseFloat(receptionistCard) || 0;
   const recCashVal = parseFloat(receptionistCash) || 0;
   const recFinesVal = parseFloat(receptionistFines) || 0;
-  const recTotalSalary = recCashVal + recCardVal;
+  const recTotalSalary = receptionistTotal + recFixedVal;
+  const recRemaining = recTotalSalary - recCardVal - recFinesVal - recCashVal;
 
   return (
     <div className="space-y-6 p-10">
@@ -1098,9 +1099,9 @@ export function EarningsPage() {
                       <div className="border-t border-mb-border pt-3 space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-mb-silver">
-                            {isBg ? "Общо заработено" : "Total Earnings"}
+                            {isBg ? "Заработка общо (%)" : "Total Earnings (%)"}
                           </span>
-                          <span className="text-green-400 font-semibold">
+                          <span className="text-mb-silver font-semibold">
                             €{receptionistTotal.toFixed(2)}
                           </span>
                         </div>
@@ -1211,16 +1212,22 @@ export function EarningsPage() {
                           </div>
                         </div>
 
-                        {recTotalSalary > 0 && (
-                          <div className="flex justify-between text-sm font-semibold pt-1">
-                            <span className="text-mb-silver">
-                              {isBg ? "Обща заплата" : "Total Salary"}
-                            </span>
-                            <span className="text-white">
-                              €{recTotalSalary.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex justify-between text-sm font-semibold pt-1">
+                          <span className="text-mb-silver">
+                            {isBg ? "Обща заплата" : "Total Salary"}
+                          </span>
+                          <span className="text-green-400">
+                            €{recTotalSalary.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm font-bold pt-1">
+                          <span className="text-white">
+                            {isBg ? "Остатък" : "Remaining"}
+                          </span>
+                          <span className="text-white">
+                            €{recRemaining.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="pt-4 mt-2 border-t border-mb-border">

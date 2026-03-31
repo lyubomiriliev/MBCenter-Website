@@ -35,6 +35,7 @@ import {
 } from "@/lib/schemas/offer";
 import { parseTimeToHours } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
 import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
@@ -100,6 +101,9 @@ export function CreateOfferFormV2({
   // Global defaults
   const [defaultMechRate, setDefaultMechRate] = useState("");
   const [defaultRecPct, setDefaultRecPct] = useState("");
+
+  const { profile } = useSupabaseAuthContext();
+  const isReceptionRole = profile?.role === "reception";
 
   const updateOfferMutation = useUpdateOffer();
 
@@ -1716,8 +1720,8 @@ export function CreateOfferFormV2({
                   </div>
                 </div>
 
-                {/* Earnings panel — admin view only */}
-                {!isMechanicView && (
+                {/* Earnings panel — admin view only, hidden from reception */}
+                {!isMechanicView && !isReceptionRole && (
                   <div className="space-y-3 border border-mb-border rounded-lg p-4">
                     <h3 className="font-semibold text-sm text-mb-silver uppercase tracking-wide flex items-center gap-2">
                       <svg className="w-4 h-4 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">

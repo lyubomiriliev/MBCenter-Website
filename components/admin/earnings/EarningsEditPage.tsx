@@ -88,6 +88,10 @@ export function EarningsEditPage({
 
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
+  // Inline edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
+
   // Load Worker Name
   useEffect(() => {
     const table = workerType === "mechanic" ? "mechanics" : "receptionists";
@@ -187,6 +191,69 @@ export function EarningsEditPage({
     loadData();
   };
 
+  const startEdit = (e: EarningsEntry) => {
+    setEditingId(e.id);
+    if (workerType === "mechanic") {
+      setEditFields({
+        vehicle: e.vehicle || "",
+        repair_name: e.repair_name || "",
+        repair_time: String(e.repair_time ?? ""),
+        hourly_rate: String(e.hourly_rate ?? ""),
+        entry_date: e.entry_date,
+      });
+    } else {
+      setEditFields({
+        vehicle: e.vehicle || "",
+        repair_name: e.repair_name || "",
+        repair_total: String(e.repair_total ?? ""),
+        turnover_pct: String(e.turnover_pct ?? ""),
+        entry_date: e.entry_date,
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditFields({});
+  };
+
+  const saveEdit = async (id: string) => {
+    if (workerType === "mechanic") {
+      const repairTime = parseFloat(editFields.repair_time) || 0;
+      const hourlyRate = parseFloat(editFields.hourly_rate) || 0;
+      const total = repairTime * hourlyRate;
+      await supabase
+        .from("earnings_entries")
+        .update({
+          vehicle: editFields.vehicle || null,
+          repair_name: editFields.repair_name || null,
+          repair_time: repairTime,
+          hourly_rate: hourlyRate,
+          total,
+          entry_date: editFields.entry_date,
+        } as never)
+        .eq("id", id);
+    } else {
+      const repairTotal = parseFloat(editFields.repair_total) || 0;
+      const turnoverPct = parseFloat(editFields.turnover_pct) || 0;
+      const earnings = repairTotal * (turnoverPct / 100);
+      await supabase
+        .from("earnings_entries")
+        .update({
+          vehicle: editFields.vehicle || null,
+          repair_name: editFields.repair_name || null,
+          repair_total: repairTotal,
+          turnover_pct: turnoverPct,
+          earnings,
+          entry_date: editFields.entry_date,
+        } as never)
+        .eq("id", id);
+    }
+    setEditingId(null);
+    setEditFields({});
+    loadData();
+  };
+
   // Computations
   const mechanicTotal = entries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;
@@ -199,7 +266,8 @@ export function EarningsEditPage({
   const recCardVal = parseFloat(receptionistCard) || 0;
   const recCashVal = parseFloat(receptionistCash) || 0;
   const recFinesVal = parseFloat(receptionistFines) || 0;
-  const recTotalSalary = recCashVal + recCardVal;
+  const recTotalSalary = receptionistTotal + recFixedVal;
+  const recRemaining = recTotalSalary - recCardVal - recFinesVal - recCashVal;
 
   const monthLabel = isBg
     ? MONTH_NAMES_BG[month - 1]
@@ -240,7 +308,7 @@ export function EarningsEditPage({
             fines={finesVal}
           />
         );
-        filename = `earnings-mechanic-${workerName}-${monthLabel}-${year}.pdf`;
+        filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${year}.pdf`;
       } else {
         const pdfEntries = entries.map((e) => ({
           vehicle: e.vehicle || "",
@@ -262,7 +330,7 @@ export function EarningsEditPage({
             fines={recFinesVal}
           />
         );
-        filename = `earnings-receptionist-${workerName}-${monthLabel}-${year}.pdf`;
+        filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${year}.pdf`;
       }
 
       const blob = await pdf(component).toBlob();
@@ -384,67 +452,146 @@ export function EarningsEditPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {entries.map((e) => (
-                      <tr
-                        key={e.id}
-                        className="border-b border-mb-border/40 group"
-                      >
-                        <td className="py-1.5 pr-2 text-white">
-                          {e.vehicle || "—"}
-                        </td>
-                        <td className="py-1.5 pr-2 text-mb-silver">
-                          {e.repair_name || "—"}
-                        </td>
-                        {workerType === "mechanic" ? (
-                          <>
-                            <td className="py-1.5 pr-2 text-right text-mb-silver">
-                              {e.repair_time}
-                            </td>
-                            <td className="py-1.5 pr-2 text-right text-mb-silver">
-                              €{e.hourly_rate}
-                            </td>
-                            <td className="py-1.5 pr-2 text-right text-white font-medium">
-                              €{(e.total || 0).toFixed(2)}
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="py-1.5 pr-2 text-right text-mb-silver">
-                              €{(e.repair_total || 0).toFixed(2)}
-                            </td>
-                            <td className="py-1.5 pr-2 text-right text-mb-silver">
-                              {e.turnover_pct}%
-                            </td>
-                            <td className="py-1.5 pr-2 text-right text-white font-medium">
-                              €{(e.earnings || 0).toFixed(2)}
-                            </td>
-                          </>
-                        )}
-                        <td className="py-1.5 pr-2 text-right text-mb-silver">
-                          {formatDate(e.entry_date)}
-                        </td>
-                        <td className="py-1.5">
-                          <button
-                            onClick={() => deleteEntry(e.id)}
-                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-all p-0.5"
-                          >
-                            <svg
-                              className="w-3.5 h-3.5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    {entries.map((e) => {
+                      const isEditing = editingId === e.id;
+                      if (isEditing) {
+                        return (
+                          <tr key={e.id} className="border-b border-mb-border/40 bg-mb-black/40">
+                            <td className="py-1 pr-1">
+                              <input
+                                value={editFields.vehicle}
+                                onChange={(ev) => setEditFields((f) => ({ ...f, vehicle: ev.target.value }))}
+                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white"
                               />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                            </td>
+                            <td className="py-1 pr-1">
+                              <input
+                                value={editFields.repair_name}
+                                onChange={(ev) => setEditFields((f) => ({ ...f, repair_name: ev.target.value }))}
+                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white"
+                              />
+                            </td>
+                            {workerType === "mechanic" ? (
+                              <>
+                                <td className="py-1 pr-1">
+                                  <input
+                                    type="number" min="0" step="0.25"
+                                    value={editFields.repair_time}
+                                    onChange={(ev) => setEditFields((f) => ({ ...f, repair_time: ev.target.value }))}
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                  />
+                                </td>
+                                <td className="py-1 pr-1">
+                                  <input
+                                    type="number" min="0" step="0.5"
+                                    value={editFields.hourly_rate}
+                                    onChange={(ev) => setEditFields((f) => ({ ...f, hourly_rate: ev.target.value }))}
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                  />
+                                </td>
+                                <td className="py-1 pr-1 text-right text-xs text-mb-silver">
+                                  €{((parseFloat(editFields.repair_time) || 0) * (parseFloat(editFields.hourly_rate) || 0)).toFixed(2)}
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="py-1 pr-1">
+                                  <input
+                                    type="number" min="0" step="0.01"
+                                    value={editFields.repair_total}
+                                    onChange={(ev) => setEditFields((f) => ({ ...f, repair_total: ev.target.value }))}
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                  />
+                                </td>
+                                <td className="py-1 pr-1">
+                                  <input
+                                    type="number" min="0" max="100" step="0.5"
+                                    value={editFields.turnover_pct}
+                                    onChange={(ev) => setEditFields((f) => ({ ...f, turnover_pct: ev.target.value }))}
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                  />
+                                </td>
+                                <td className="py-1 pr-1 text-right text-xs text-mb-silver">
+                                  €{((parseFloat(editFields.repair_total) || 0) * ((parseFloat(editFields.turnover_pct) || 0) / 100)).toFixed(2)}
+                                </td>
+                              </>
+                            )}
+                            <td className="py-1 pr-1">
+                              <input
+                                type="date"
+                                value={editFields.entry_date}
+                                onChange={(ev) => setEditFields((f) => ({ ...f, entry_date: ev.target.value }))}
+                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white"
+                              />
+                            </td>
+                            <td className="py-1">
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => saveEdit(e.id)}
+                                  className="text-green-400 hover:text-green-300 p-0.5"
+                                  title={isBg ? "Запази" : "Save"}
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={cancelEdit}
+                                  className="text-mb-silver hover:text-white p-0.5"
+                                  title={isBg ? "Откажи" : "Cancel"}
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr key={e.id} className="border-b border-mb-border/40 group">
+                          <td className="py-1.5 pr-2 text-white">{e.vehicle || "—"}</td>
+                          <td className="py-1.5 pr-2 text-mb-silver">{e.repair_name || "—"}</td>
+                          {workerType === "mechanic" ? (
+                            <>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">{e.repair_time}</td>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">€{e.hourly_rate}</td>
+                              <td className="py-1.5 pr-2 text-right text-white font-medium">€{(e.total || 0).toFixed(2)}</td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">€{(e.repair_total || 0).toFixed(2)}</td>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">{e.turnover_pct}%</td>
+                              <td className="py-1.5 pr-2 text-right text-white font-medium">€{(e.earnings || 0).toFixed(2)}</td>
+                            </>
+                          )}
+                          <td className="py-1.5 pr-2 text-right text-mb-silver">{formatDate(e.entry_date)}</td>
+                          <td className="py-1.5">
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                              <button
+                                onClick={() => startEdit(e)}
+                                className="text-mb-blue hover:text-blue-300 p-0.5"
+                                title={isBg ? "Редактирай" : "Edit"}
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => deleteEntry(e.id)}
+                                className="text-red-400 hover:text-red-300 p-0.5"
+                                title={isBg ? "Изтрий" : "Delete"}
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -531,9 +678,9 @@ export function EarningsEditPage({
                   <div className="border-t border-mb-border pt-3 space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-mb-silver">
-                        {isBg ? "Общо заработено" : "Total Earnings"}
+                        {isBg ? "Заработка общо (%)" : "Total Earnings (%)"}
                       </span>
-                      <span className="text-green-400 font-semibold">
+                      <span className="text-mb-silver">
                         €{receptionistTotal.toFixed(2)}
                       </span>
                     </div>
@@ -546,7 +693,7 @@ export function EarningsEditPage({
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          {isBg ? "Фиксирана заплата (€)" : "Fixed Salary (€)"}
+                          {isBg ? "Твърдо (€)" : "Fixed Salary (€)"}
                         </Label>
                         <Input
                           type="number"
@@ -584,7 +731,7 @@ export function EarningsEditPage({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          {isBg ? "Кеш (€)" : "Cash (€)"}
+                          {isBg ? "В Брой (€)" : "Cash (€)"}
                         </Label>
                         <Input
                           type="number"
@@ -622,16 +769,22 @@ export function EarningsEditPage({
                       </div>
                     </div>
 
-                    {recTotalSalary > 0 && (
-                      <div className="flex justify-between text-sm font-semibold pt-1">
-                        <span className="text-mb-silver">
-                          {isBg ? "Обща заплата" : "Total Salary"}
-                        </span>
-                        <span className="text-white">
-                          €{recTotalSalary.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex justify-between text-sm font-semibold pt-1">
+                      <span className="text-mb-silver">
+                        {isBg ? "Обща заплата" : "Total Salary"}
+                      </span>
+                      <span className="text-green-400">
+                        €{recTotalSalary.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm font-bold pt-1">
+                      <span className="text-white">
+                        {isBg ? "Остатък" : "Remaining"}
+                      </span>
+                      <span className="text-white">
+                        €{recRemaining.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </>
               )}

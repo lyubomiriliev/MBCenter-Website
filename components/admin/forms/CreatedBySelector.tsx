@@ -47,7 +47,7 @@ export function CreatedBySelector() {
       <Label htmlFor="createdByName">{t("createdBy")}</Label>
       <Select
         value={createdByName || undefined}
-        onValueChange={(value) => setValue("createdByName", value, { shouldValidate: true })}
+        onValueChange={(value) => setValue("createdByName", value, { shouldValidate: true, shouldDirty: true })}
       >
         <SelectTrigger className="bg-gray-100 text-gray-900 border-mb-border">
           <SelectValue placeholder={t("selectCreator")} />

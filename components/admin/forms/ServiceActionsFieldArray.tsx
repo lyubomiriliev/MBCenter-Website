@@ -970,7 +970,7 @@ export function ServiceActionsFieldArray() {
 
   const handleModalConfirm = (action: ServiceActionFormData) => {
     if (editIndex !== null) {
-      setValue(`serviceActions.${editIndex}`, action, { shouldValidate: true });
+      setValue(`serviceActions.${editIndex}`, action, { shouldValidate: true, shouldDirty: true });
     } else {
       append(action);
     }

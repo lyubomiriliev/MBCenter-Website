@@ -10,7 +10,6 @@ import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { authClient as supabase } from "@/lib/supabase/client";
 import type { Mechanic, Receptionist } from "@/types/database";
 
-const HOURLY_RATE_KEY = "mb_default_hourly_rate";
 const DOCUMENT_CREATORS_KEY = "mb_document_creators";
 
 function getColumnsKey(account: string) {
@@ -43,11 +42,6 @@ const COLUMN_LABELS: Record<ColumnKey, { bg: string; en: string }> = {
 
 type AccountKey = "admin" | "reception" | "mechanic";
 
-const ACCOUNT_EMAILS: Record<AccountKey, string | null> = {
-  admin: null,
-  reception: "reception@mbcenter.bg",
-  mechanic: "service@mbcenter.bg",
-};
 
 function PasswordField({
   label,
@@ -76,7 +70,7 @@ function PasswordField({
         />
         <button
           type="button"
-          onClick={() => setShow((v) => !v)}
+          onClick={(e) => { e.preventDefault(); setShow((v) => !v); }}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver/50 hover:text-white transition-colors"
           tabIndex={-1}
         >
@@ -321,9 +315,15 @@ export default function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>("account");
 
+  const ACCOUNT_EMAILS: Record<AccountKey, string | null> = {
+    admin: null,
+    reception: "reception@mbcenter.bg",
+    mechanic: "service@mbcenter.bg",
+  };
+
   // Account selector
   const [selectedAccount, setSelectedAccount] = useState<AccountKey>("admin");
-  const [resetAccountEmail, setResetAccountEmail] = useState("");
+  const [sendingReset, setSendingReset] = useState(false);
 
   // Admin account fields
   const [myEmail, setMyEmail] = useState("");
@@ -332,7 +332,6 @@ export default function SettingsPage() {
   const [myConfirmPassword, setMyConfirmPassword] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
-  const [sendingReset, setSendingReset] = useState(false);
 
   // Column visibility
   const [selectedAccountForColumns, setSelectedAccountForColumns] =
@@ -376,13 +375,6 @@ export default function SettingsPage() {
     if (user?.email) setMyEmail(user.email);
   }, [user]);
 
-  useEffect(() => {
-    if (selectedAccount === "admin") {
-      setResetAccountEmail(user?.email ?? "");
-    } else {
-      setResetAccountEmail(ACCOUNT_EMAILS[selectedAccount] ?? "");
-    }
-  }, [selectedAccount, user]);
 
   useEffect(() => {
     const key = getColumnsKey(selectedAccountForColumns);
@@ -580,23 +572,21 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSendReset = async () => {
-    if (!resetAccountEmail.trim()) return;
+
+  const handleSendReset = async (email: string) => {
+    if (!email.trim()) return;
     setSendingReset(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      resetAccountEmail.trim(),
-      {
-        redirectTo: `${window.location.origin}/${locale}/admin-login`,
-      },
-    );
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/${locale}/admin-login`,
+    });
     setSendingReset(false);
     if (error) {
       showError(isBg ? "Грешка при изпращане" : "Error sending reset email");
     } else {
       showSuccess(
         isBg
-          ? `Линк за нова парола е изпратен на ${resetAccountEmail}`
-          : `Password reset link sent to ${resetAccountEmail}`,
+          ? `Линк за нова парола е изпратен на ${email}`
+          : `Password reset link sent to ${email}`,
       );
     }
   };
@@ -882,43 +872,35 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* Password reset via email */}
-            <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
-              <SubSection
-                title={isBg ? "Нулиране чрез имейл" : "Reset via Email"}
-              >
-                <p className="text-sm text-mb-silver/60">
-                  {isBg
-                    ? "Изпратете линк за нова парола на избрания акаунт."
-                    : "Send a password reset link to the selected account."}
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={resetAccountEmail}
-                    onChange={(e) => setResetAccountEmail(e.target.value)}
-                    placeholder={
-                      isBg ? "Имейл на акаунта..." : "Account email..."
-                    }
-                    className="flex-1 bg-mb-black border border-mb-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-mb-silver/40 focus:outline-none focus:ring-1 focus:ring-mb-blue"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleSendReset}
-                    disabled={sendingReset || !resetAccountEmail.trim()}
-                    className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 shrink-0"
-                  >
-                    {sendingReset
-                      ? isBg
-                        ? "Изпращане..."
-                        : "Sending..."
-                      : isBg
-                        ? "Изпрати"
-                        : "Send"}
-                  </Button>
-                </div>
-              </SubSection>
-            </div>
+            {/* Password reset via email — only for non-admin accounts */}
+            {selectedAccount !== "admin" && (
+              <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+                <SubSection
+                  title={isBg ? "Нулиране чрез имейл" : "Reset via Email"}
+                >
+                  <p className="text-sm text-mb-silver/60">
+                    {isBg
+                      ? "Изпратете линк за нова парола на избрания акаунт."
+                      : "Send a password reset link to the selected account."}
+                  </p>
+                  <div className="flex gap-2 items-center">
+                    <span className="flex-1 bg-mb-black border border-mb-border rounded-lg px-3 py-2.5 text-sm text-mb-silver/70">
+                      {ACCOUNT_EMAILS[selectedAccount]}
+                    </span>
+                    <Button
+                      type="button"
+                      onClick={() => handleSendReset(ACCOUNT_EMAILS[selectedAccount] ?? "")}
+                      disabled={sendingReset}
+                      className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 shrink-0"
+                    >
+                      {sendingReset
+                        ? isBg ? "Изпращане..." : "Sending..."
+                        : isBg ? "Изпрати" : "Send"}
+                    </Button>
+                  </div>
+                </SubSection>
+              </div>
+            )}
           </div>
         )}
 
