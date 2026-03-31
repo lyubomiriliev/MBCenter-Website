@@ -42,7 +42,6 @@ import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
 import { useOfferCalculations } from "@/hooks/useOfferCalculations";
 import type {
   OfferWithRelations,
-  Profile,
   InsertOffer,
   InsertOfferItem,
   InsertServiceAction,
@@ -970,29 +969,7 @@ export function CreateOfferFormV2({
         ]);
       } else {
         // CREATE new offer
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
-
-        // Try to get profile from cache first
-        const cachedProfile = queryClient.getQueryData(["profile", user.id]) as
-          | Pick<Profile, "id">
-          | undefined;
-
-        let profile: Pick<Profile, "id"> | null;
-        if (cachedProfile?.id) {
-          profile = cachedProfile;
-        } else {
-          const profileRes = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("auth_id", user.id)
-            .single();
-
-          profile = profileRes.data as Pick<Profile, "id"> | null;
-          if (!profile) throw new Error("Profile not found");
-        }
+        if (!profile) throw new Error("Not authenticated");
 
         // Generate offer number
         console.log("Calling generate_offer_number RPC...");
@@ -1271,13 +1248,26 @@ export function CreateOfferFormV2({
     console.log("=== FORM VALIDATION FAILED ===");
     console.log("Validation errors:", errors);
 
-    // Map field names to user-friendly errors
+    const missingFields: string[] = [];
     if (errors.customerName) {
-      showError(t("errors.customerNameRequired"));
-    } else if (errors.createdByName) {
-      showError(t("errors.creatorRequired"));
-    } else if (errors.parts) {
-      showError(t("errors.partsRequired"));
+      missingFields.push(locale === "bg" ? "Име на клиента" : "Client Name");
+    }
+    if (errors.carModel) {
+      missingFields.push(locale === "bg" ? "Модел" : "Model");
+    }
+    if (errors.createdByName) {
+      missingFields.push(locale === "bg" ? "Създадена от" : "Created By");
+    }
+    if (errors.parts) {
+      missingFields.push(locale === "bg" ? "Части / Услуги" : "Parts / Services");
+    }
+
+    if (missingFields.length > 0) {
+      showError(
+        locale === "bg"
+          ? `Моля попълнете задължителните полета: ${missingFields.join(", ")}`
+          : `Please fill in the required fields: ${missingFields.join(", ")}`,
+      );
     } else {
       showError(t("errors.formInvalid"));
     }

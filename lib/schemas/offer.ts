@@ -37,12 +37,12 @@ export type OfferItemFormData = z.infer<typeof offerItemSchema>;
 
 export const offerFormSchema = z
   .object({
-    customerName: z.string().min(1, "Customer name is required"),
+    customerName: z.string().min(1, "Името на клиента е задължително"),
     customerPhone: z.string().optional(),
     clientEmail: z.string().email("Invalid email").optional().or(z.literal("")),
     clientId: z.string().optional(),
 
-    carModel: z.string().min(1, "Car model is required"),
+    carModel: z.string().min(1, "Моделът е задължителен"),
     carModelDetail: z.string().optional(),
     repairName: z.string().optional(),
     carYear: z
@@ -56,7 +56,7 @@ export const offerFormSchema = z
     carMileageUnit: z.enum(["km", "miles"]).default("km"),
     carId: z.string().optional(),
 
-    createdByName: z.string().min(1, "Creator name is required"),
+    createdByName: z.string().min(1, "Полето 'Създадена от' е задължително"),
 
     discountPercent: z
       .number()

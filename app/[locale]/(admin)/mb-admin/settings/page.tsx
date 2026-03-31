@@ -42,7 +42,6 @@ const COLUMN_LABELS: Record<ColumnKey, { bg: string; en: string }> = {
 
 type AccountKey = "admin" | "reception" | "mechanic";
 
-
 function PasswordField({
   label,
   value,
@@ -70,7 +69,10 @@ function PasswordField({
         />
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); setShow((v) => !v); }}
+          onClick={(e) => {
+            e.preventDefault();
+            setShow((v) => !v);
+          }}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver/50 hover:text-white transition-colors"
           tabIndex={-1}
         >
@@ -375,7 +377,6 @@ export default function SettingsPage() {
     if (user?.email) setMyEmail(user.email);
   }, [user]);
 
-
   useEffect(() => {
     const key = getColumnsKey(selectedAccountForColumns);
     const stored = localStorage.getItem(key);
@@ -572,7 +573,6 @@ export default function SettingsPage() {
     }
   };
 
-
   const handleSendReset = async (email: string) => {
     if (!email.trim()) return;
     setSendingReset(true);
@@ -624,24 +624,20 @@ export default function SettingsPage() {
 
   const handleSaveEarnings = async () => {
     setSavingEarnings(true);
-    const { error: err1 } = await supabase
-      .from("app_settings")
-      .upsert(
-        {
-          key: "mechanic_rate",
-          value: Number(mechanicEarningsRate) || 0,
-        } as any,
-        { onConflict: "key" },
-      );
-    const { error: err2 } = await supabase
-      .from("app_settings")
-      .upsert(
-        {
-          key: "receptionist_pct",
-          value: Number(receptionistEarningsPercent) || 0,
-        } as any,
-        { onConflict: "key" },
-      );
+    const { error: err1 } = await supabase.from("app_settings").upsert(
+      {
+        key: "mechanic_rate",
+        value: Number(mechanicEarningsRate) || 0,
+      } as any,
+      { onConflict: "key" },
+    );
+    const { error: err2 } = await supabase.from("app_settings").upsert(
+      {
+        key: "receptionist_pct",
+        value: Number(receptionistEarningsPercent) || 0,
+      } as any,
+      { onConflict: "key" },
+    );
     setSavingEarnings(false);
     if (err1 || err2) {
       showError(isBg ? "Грешка при запазване" : "Error saving settings");
@@ -876,7 +872,7 @@ export default function SettingsPage() {
             {selectedAccount !== "admin" && (
               <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
                 <SubSection
-                  title={isBg ? "Нулиране чрез имейл" : "Reset via Email"}
+                  title={isBg ? "Смяна на парола" : "Reset password by Email"}
                 >
                   <p className="text-sm text-mb-silver/60">
                     {isBg
@@ -889,13 +885,19 @@ export default function SettingsPage() {
                     </span>
                     <Button
                       type="button"
-                      onClick={() => handleSendReset(ACCOUNT_EMAILS[selectedAccount] ?? "")}
+                      onClick={() =>
+                        handleSendReset(ACCOUNT_EMAILS[selectedAccount] ?? "")
+                      }
                       disabled={sendingReset}
                       className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 shrink-0"
                     >
                       {sendingReset
-                        ? isBg ? "Изпращане..." : "Sending..."
-                        : isBg ? "Изпрати" : "Send"}
+                        ? isBg
+                          ? "Изпращане..."
+                          : "Sending..."
+                        : isBg
+                          ? "Изпрати"
+                          : "Send"}
                     </Button>
                   </div>
                 </SubSection>

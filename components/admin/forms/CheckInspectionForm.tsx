@@ -538,7 +538,7 @@ export function CheckInspectionForm({
                 type="date"
                 value={form.inspectionDate}
                 onChange={(e) => setField("inspectionDate", e.target.value)}
-                className="bg-mb-anthracite border-mb-border text-white [color-scheme:dark]"
+                className="h-10 bg-mb-anthracite border-mb-border text-white [color-scheme:dark]"
               />
             </div>
             <div>
@@ -548,7 +548,7 @@ export function CheckInspectionForm({
               <Input
                 value={form.clientName}
                 onChange={(e) => setField("clientName", e.target.value)}
-                className="bg-mb-anthracite border-mb-border text-white"
+                className="h-10 bg-mb-anthracite border-mb-border text-white"
               />
             </div>
             <div>
@@ -588,7 +588,7 @@ export function CheckInspectionForm({
               <Input
                 value={form.licensePlate}
                 onChange={(e) => setField("licensePlate", e.target.value)}
-                className="bg-mb-anthracite border-mb-border text-white"
+                className="h-10 bg-mb-anthracite border-mb-border text-white"
               />
             </div>
             <div>
@@ -598,7 +598,7 @@ export function CheckInspectionForm({
               <Input
                 value={form.vin}
                 onChange={(e) => setField("vin", e.target.value)}
-                className="bg-mb-anthracite border-mb-border text-white uppercase"
+                className="h-10 bg-mb-anthracite border-mb-border text-white uppercase"
               />
             </div>
           </div>

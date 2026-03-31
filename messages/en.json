@@ -1427,9 +1427,11 @@
       "serviceActionNameRequired": "Service action name is required",
       "errors": {
         "customerNameRequired": "Customer name is required",
+        "carModelRequired": "Model is required",
         "creatorRequired": "Please select who created this offer",
         "partsRequired": "Add at least one part or service action",
         "formInvalid": "Please fill all required fields",
+        "missingRequiredFields": "Please fill in the required fields: {fields}",
         "saveFailed": "Failed to save offer",
         "updateFailed": "Failed to update offer",
         "pdfFailed": "Failed to generate PDF",

@@ -1428,9 +1428,11 @@
       "serviceActionNameRequired": "Име на сервизна дейност е задължително",
       "errors": {
         "customerNameRequired": "Име на клиента е задължително",
+        "carModelRequired": "Модел е задължителен",
         "creatorRequired": "Моля изберете създател на офертата",
         "partsRequired": "Добавете поне една част или услуга",
         "formInvalid": "Моля попълнете всички задължителни полета",
+        "missingRequiredFields": "Моля попълнете задължителните полета: {fields}",
         "saveFailed": "Грешка при запазване на офертата",
         "updateFailed": "Грешка при обновяване на офертата",
         "pdfFailed": "Грешка при генериране на PDF",

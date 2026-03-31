@@ -53,7 +53,7 @@ export function CarSelector() {
   }, [filteredModels]);
 
   const handleSelectModel = (modelName: string) => {
-    setValue("carModel", modelName, { shouldDirty: true });
+    setValue("carModel", modelName, { shouldDirty: true, shouldValidate: true });
     setOpen(false);
     setSearch("");
   };

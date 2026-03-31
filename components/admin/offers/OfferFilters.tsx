@@ -150,9 +150,9 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
 
   return (
     <div className="bg-mb-anthracite border border-mb-border rounded-lg p-4">
-      <div className="flex flex-wrap gap-4 items-end">
-        {/* Search — capped at ~2/3 of container */}
-        <div className="w-full max-w-[55%] min-w-[200px]">
+      <div className="flex flex-nowrap gap-3 items-end">
+        {/* Search */}
+        <div className="flex-1 min-w-0 max-w-[30%]">
           <label className="text-xs text-mb-silver mb-1.5 block">
             {t("filters.search")}
           </label>
@@ -180,7 +180,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
         </div>
 
         {/* Status */}
-        <div className="w-[160px]">
+        <div className="w-[170px] shrink-0">
           <label className="text-xs text-mb-silver mb-1.5 block">
             {t("filters.status")}
           </label>
@@ -202,7 +202,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
         </div>
 
         {/* Date From */}
-        <div className="w-[160px]">
+        <div className="w-[170px] shrink-0">
           <label className="text-xs text-mb-silver mb-1.5 block">
             {t("filters.dateFrom")}
           </label>
@@ -248,7 +248,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
         </div>
 
         {/* Date To */}
-        <div className="w-[160px]">
+        <div className="w-[170px] shrink-0">
           <label className="text-xs text-mb-silver mb-1.5 block">
             {t("filters.dateTo")}
           </label>
