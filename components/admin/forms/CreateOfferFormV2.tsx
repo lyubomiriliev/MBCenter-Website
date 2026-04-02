@@ -1304,7 +1304,7 @@ export function CreateOfferFormV2({
         return Object.values(obj).flatMap((v) => extractMessages(v, depth + 1));
       };
       const errorMessages = extractMessages(errors);
-      const uniqueMessages = [...new Set(errorMessages)];
+      const uniqueMessages = Array.from(new Set(errorMessages));
       showError(
         uniqueMessages.length > 0
           ? `${t("errors.formInvalid")}: ${uniqueMessages.join(", ")}`

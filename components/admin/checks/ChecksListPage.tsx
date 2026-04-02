@@ -382,6 +382,7 @@ export function ChecksListPage({
         mechanic: inspection.mechanic ?? "",
         clientName: inspection.client_name ?? "",
         carModel: inspection.car_model ?? "",
+        carModelDetail: inspection.car_model_detail ?? "",
         licensePlate: inspection.license_plate ?? "",
         vin: inspection.vin ?? "",
         tires: inspection.tires,
