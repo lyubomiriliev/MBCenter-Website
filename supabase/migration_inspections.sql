@@ -1,5 +1,5 @@
 -- ============================================================
--- MB Center — Technical Inspection Reports (Протоколи)
+-- MB Center - Technical Inspection Reports (Протоколи)
 -- Paste this into Supabase SQL Editor and run it.
 -- ============================================================
 
@@ -26,16 +26,16 @@ create table if not exists inspections (
   -- Each tire: { brand, dot, tread, condition, note }
   tires           jsonb not null default '{}'::jsonb,
 
-  -- Array of { label, value, note } — 3 corrosion checks
+  -- Array of { label, value, note } - 3 corrosion checks
   corrosion       jsonb not null default '[]'::jsonb,
 
-  -- Array of { label, value, note } — 4 fluid checks
+  -- Array of { label, value, note } - 4 fluid checks
   fluids          jsonb not null default '[]'::jsonb,
 
   -- Object: { odometer, assessment, note }
   mileage         jsonb not null default '{}'::jsonb,
 
-  -- Array of { label, value, note } — 3 glass checks
+  -- Array of { label, value, note } - 3 glass checks
   glass           jsonb not null default '[]'::jsonb,
 
   -- Free-text summary / mechanic recommendations
@@ -101,7 +101,7 @@ create index if not exists idx_inspections_check_number  on inspections (check_n
 
 -- ============================================================
 -- ROW LEVEL SECURITY
--- Same pattern as offers — all authenticated users can manage.
+-- Same pattern as offers - all authenticated users can manage.
 -- ============================================================
 alter table inspections enable row level security;
 

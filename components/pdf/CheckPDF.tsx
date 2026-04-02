@@ -17,6 +17,7 @@ export interface CheckFormData {
   mechanic: string;
   clientName: string;
   carModel: string;
+  carModelDetail: string;
   licensePlate: string;
   vin: string;
 
@@ -24,6 +25,7 @@ export interface CheckFormData {
     odometer: string;
     assessment: string; // "match" | "manipulated"
     note: string;
+    mileageUnit?: "km" | "miles";
   };
 
   tires: {
@@ -197,7 +199,7 @@ function label(v: string): string {
   if (v === "replace") return "За смяна";
   if (v === "good") return "Добро";
   if (v === "ok") return "В норма";
-  return v || "—";
+  return v || "-";
 }
 
 function padLabel(v: string): string {
@@ -540,13 +542,14 @@ function CheckItem({
 
 interface CheckPDFProps {
   data: CheckFormData;
+  checkNumber?: string;
 }
 
-export function CheckPDF({ data }: CheckPDFProps) {
+export function CheckPDF({ data, checkNumber }: CheckPDFProps) {
   const styles = createStyles();
 
   const formatDate = (d: string) => {
-    if (!d) return "—";
+    if (!d) return "-";
     const [y, m, day] = d.split("-");
     return `${day}.${m}.${y}`;
   };
@@ -558,17 +561,19 @@ export function CheckPDF({ data }: CheckPDFProps) {
       <Page size="A4" style={styles.page}>
         {/* ── Header ── */}
         <View style={styles.headerContainer}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image
             src="/assets/logos/mbcenter-specialist2.png"
             style={styles.logo}
           />
           <Text style={styles.headerTitle}>
-            ПОДРОБЕН ПРОТОКОЛ ЗА ТЕХНИЧЕСКО СЪСТОЯНИЕ
+            ПРОТОКОЛ ЗА ТЕХНИЧЕСКО СЪСТОЯНИЕ
+            {checkNumber ? ` - №${checkNumber}` : ""}
           </Text>
         </View>
         <View style={styles.headerDivider} />
 
-        {/* ── Info grid row 1: Date | Mechanic | Client ── */}
+        {/* ── Info grid row 1: Date | Client | Model ── */}
         <View style={styles.infoGrid}>
           <View style={styles.infoCell}>
             <Text style={styles.infoCellLabel}>ДАТА НА ПРЕГЛЕД</Text>
@@ -577,31 +582,43 @@ export function CheckPDF({ data }: CheckPDFProps) {
             </Text>
           </View>
           <View style={styles.infoCell}>
-            <Text style={styles.infoCellLabel}>МЕХАНИК / ПРЕГЛЕЖДАЩ</Text>
-            <Text style={styles.infoCellValue}>{data.mechanic}</Text>
-          </View>
-          <View style={styles.infoCellLast}>
             <Text style={styles.infoCellLabel}>ИМЕ НА КЛИЕНТ</Text>
             <Text style={styles.infoCellValue}>{data.clientName}</Text>
           </View>
+          <View style={styles.infoCellLast}>
+            <Text style={styles.infoCellLabel}>МАРКА И МОДЕЛ</Text>
+            <Text style={styles.infoCellValue}>{data.carModel || "-"}</Text>
+          </View>
         </View>
 
-        {/* ── Info grid row 2: Car | Plate | VIN ── */}
+        {/* ── Info grid row 2: Exact model | Plate | VIN | Mechanic ── */}
         <View style={[styles.infoGrid, { marginTop: 10 }]}>
           <View style={styles.infoCell}>
-            <Text style={styles.infoCellLabel}>МАРКА И МОДЕЛ</Text>
-            <Text style={styles.infoCellValue}>{data.carModel}</Text>
+            <Text style={styles.infoCellLabel}>ТОЧЕН МОДЕЛ</Text>
+            <Text style={styles.infoCellValue}>
+              {data.carModelDetail || "-"}
+            </Text>
           </View>
           <View style={styles.infoCell}>
             <Text style={styles.infoCellLabel}>РЕГ. НОМЕР</Text>
-            <Text style={styles.infoCellValue}>{data.licensePlate}</Text>
+            <Text style={styles.infoCellValue}>{data.licensePlate || "-"}</Text>
           </View>
           <View style={styles.infoCellLast}>
             <Text style={styles.infoCellLabel}>VIN (РАМА)</Text>
             <Text style={styles.infoCellValue}>
-              {data.vin ? data.vin.toUpperCase() : "—"}
+              {data.vin ? data.vin.toUpperCase() : "-"}
             </Text>
           </View>
+        </View>
+
+        {/* ── Info grid row 3: Mechanic ── */}
+        <View style={[styles.infoGrid, { marginTop: 10 }]}>
+          <View style={styles.infoCell}>
+            <Text style={styles.infoCellLabel}>МЕХАНИК / ПРЕГЛЕЖДАЩ</Text>
+            <Text style={styles.infoCellValue}>{data.mechanic || "-"}</Text>
+          </View>
+          <View style={styles.infoCell} />
+          <View style={styles.infoCellLast} />
         </View>
 
         {/* ═══════════════════════════════════════════════════════════ */}
@@ -617,7 +634,7 @@ export function CheckPDF({ data }: CheckPDFProps) {
             <Text style={styles.rowLabel}>Показание на километраж</Text>
             <View style={styles.rowValue}>
               <Text style={{ fontSize: 10, fontWeight: 700, color: "#111" }}>
-                {data.mileage.odometer ? `${data.mileage.odometer} КМ` : "—"}
+                {data.mileage.odometer ? `${data.mileage.odometer} ${data.mileage.mileageUnit === "miles" ? "МИ" : "КМ"}` : "-"}
               </Text>
             </View>
           </View>
@@ -928,7 +945,7 @@ export function CheckPDF({ data }: CheckPDFProps) {
         {/* ── Page footer ── */}
         <View style={styles.pageFooter} fixed>
           <Text style={styles.footerText}>
-            MB Center — Протокол за Техническо Състояние
+            MB Center - Протокол за Техническо Състояние
           </Text>
           <Text
             style={styles.footerText}

@@ -16,7 +16,8 @@ export function useHourlyActivities() {
       if (error) throw error;
       return (data ?? []) as HourlyActivity[];
     },
-    staleTime: 5_000,
+    staleTime: 0,
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
 }

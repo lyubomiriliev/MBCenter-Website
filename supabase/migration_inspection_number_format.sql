@@ -1,5 +1,5 @@
 -- ============================================================
--- MB Center — Update inspection check_number format
+-- MB Center - Update inspection check_number format
 -- Changes from: INS-YYYYMMDD-NNNN
 -- Changes to:   8-digit zero-padded sequential number (e.g. 00010105)
 --

@@ -190,7 +190,7 @@ function ItemRow({ index, onRemove, register, errors, setValue, watch }: ItemRow
 
       {/* Total (calculated) */}
       <div className="w-28 flex items-center justify-end">
-        <span className="text-white font-medium">€{total.toFixed(2)}</span>
+        <span className="text-white font-medium">{total.toFixed(2)} €</span>
       </div>
 
       {/* Remove button */}

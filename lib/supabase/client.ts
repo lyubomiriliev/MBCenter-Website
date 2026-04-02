@@ -55,7 +55,7 @@ async function customLock<R>(
 //   network call to refresh the token. If that call is slow, ALL DB calls queue
 //   behind the lock and appear frozen.
 //
-// Fix: read the token directly from localStorage for DB calls — instant, no lock.
+// Fix: read the token directly from localStorage for DB calls - instant, no lock.
 //   The auth client always writes the fresh token to localStorage after every
 //   refresh, so this value is always current.
 async function getAccessTokenForDB(): Promise<string | null> {
@@ -72,10 +72,10 @@ async function getAccessTokenForDB(): Promise<string | null> {
 
 // ─── Two clients ─────────────────────────────────────────────────────────────
 //
-// authClient  — used for auth operations only (signIn, signOut, getSession,
+// authClient  - used for auth operations only (signIn, signOut, getSession,
 //               onAuthStateChange). Handles token refresh with the lock.
 //
-// supabase    — used for all DB calls (supabase.from(...)). Uses accessToken
+// supabase    - used for all DB calls (supabase.from(...)). Uses accessToken
 //               which reads from localStorage directly, bypassing getSession()
 //               and the auth lock entirely. DB calls are never blocked by an
 //               ongoing token refresh.

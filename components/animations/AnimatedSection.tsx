@@ -13,9 +13,9 @@ type AnimatedSectionProps = {
   from?: 'bottom' | 'top' | 'left' | 'right' | 'fade';
 };
 
-export function AnimatedSection({ 
-  children, 
-  className = '', 
+export function AnimatedSection({
+  children,
+  className = '',
   delay = 0,
   from = 'bottom'
 }: AnimatedSectionProps) {

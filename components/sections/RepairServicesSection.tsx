@@ -34,7 +34,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
     },
     {
       key: "engine",
-      image: "/assets/images/engine.png",
+      image: "/assets/images/engine.webp",
       icon: (
         <svg
           className="w-8 h-8"
@@ -102,7 +102,7 @@ export function RepairServicesSection({ locale }: RepairServicesSectionProps) {
     },
     {
       key: "brakes",
-      image: "/assets/images/brakes-service.png",
+      image: "/assets/images/brakes-service.webp",
       icon: (
         <svg
           className="w-8 h-8"

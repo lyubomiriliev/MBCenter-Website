@@ -1,4 +1,4 @@
-# SEO Migration Audit — WordPress → Next.js (mbcenter.bg)
+# SEO Migration Audit - WordPress → Next.js (mbcenter.bg)
 
 **Old site:** https://mbcenter.bg/ (WordPress)  
 **New site:** Next.js SSG static export, baseUrl: https://mbcenter.bg  
@@ -6,7 +6,7 @@
 
 ---
 
-## Step 1 — Old Site (WordPress) Snapshot
+## Step 1 - Old Site (WordPress) Snapshot
 
 *Full crawl must be done with Screaming Frog, Sitebulb, or similar. Below is a sample from the live homepage.*
 
@@ -29,7 +29,7 @@
 
 ---
 
-## Step 2 — New Next.js Project SEO Signals
+## Step 2 - New Next.js Project SEO Signals
 
 ### Routes (public, indexable)
 
@@ -44,14 +44,14 @@
 | `/booking` | bg, en | ✅ | ✅ |
 | `/terms` | bg, en | ✅ | ✅ |
 
-**Admin/mechanics (noindex or behind auth):** `/admin-login`, `/mb-admin/*`, `/mb-admin-mechanics/*` — exclude from sitemap and keep out of crawl or noindex.
+**Admin/mechanics (noindex or behind auth):** `/admin-login`, `/mb-admin/*`, `/mb-admin-mechanics/*` - exclude from sitemap and keep out of crawl or noindex.
 
 ### Current implementation
 
 - **Canonical / alternates:** `generateAlternateLinks(locale, path)` in layout and pages; canonical and hreflang are set.
 - **OG/Twitter:** Layout has OG and Twitter; pages extend with title/description/url.
 - **Robots:** Layout sets `index: true, follow: true` and googleBot options.
-- **JSON-LD:** `generateLocalBusinessSchema(locale)` — type `AutoRepair`; injected in `[locale]/layout.tsx`.
+- **JSON-LD:** `generateLocalBusinessSchema(locale)` - type `AutoRepair`; injected in `[locale]/layout.tsx`.
 
 ### Gaps to fix
 
@@ -60,11 +60,11 @@
 3. **Terms in sitemap:** `/terms` has SEO copy but is not in sitemap. **Decision:** Add if you want it indexed; otherwise keep noindex or omit from sitemap.
 4. **BreadcrumbList:** Not implemented. Add JSON-LD BreadcrumbList on inner pages.
 5. **Service/FAQ schema:** Not implemented. Add per-service or FAQ JSON-LD if you have clear Q&A or service list.
-6. **OG image:** Layout references `/og-image.jpg` — ensure file exists and is 1200×630.
+6. **OG image:** Layout references `/og-image.jpg` - ensure file exists and is 1200×630.
 
 ---
 
-## Step 3 — URL Comparison & 301 Redirect Map
+## Step 3 - URL Comparison & 301 Redirect Map
 
 **Assumed mapping (confirm with full WordPress crawl):**
 
@@ -90,7 +90,7 @@ See `docs/REDIRECT_MAP.md` for the exact list to paste into your host.
 
 ---
 
-## Step 4 — SEO Preservation Rules Checklist
+## Step 4 - SEO Preservation Rules Checklist
 
 | Rule | Status |
 |------|--------|
@@ -107,18 +107,18 @@ See `docs/REDIRECT_MAP.md` for the exact list to paste into your host.
 
 ---
 
-## Step 5 — Structured Data (JSON-LD)
+## Step 5 - Structured Data (JSON-LD)
 
 ### Already present
 
-- **LocalBusiness / AutoRepair** in `lib/seo.ts` — name, url, telephone, address, openingHours, sameAs.
+- **LocalBusiness / AutoRepair** in `lib/seo.ts` - name, url, telephone, address, openingHours, sameAs.
 
 ### Recommended additions
 
 1. **BreadcrumbList** (per page)
    - Home → About / Services / Contacts / etc.
-2. **WebPage** (optional) — same as canonical URL, name from title.
-3. **Service** (optional) — for /services if you list discrete services with names and descriptions.
+2. **WebPage** (optional) - same as canonical URL, name from title.
+3. **Service** (optional) - for /services if you list discrete services with names and descriptions.
 
 **BreadcrumbList example (BG About):**
 
@@ -139,7 +139,7 @@ See `docs/REDIRECT_MAP.md` for the exact list to paste into your host.
 
 ---
 
-## Step 6 — Performance (Next.js)
+## Step 6 - Performance (Next.js)
 
 | Check | Status |
 |-------|--------|
@@ -151,7 +151,7 @@ See `docs/REDIRECT_MAP.md` for the exact list to paste into your host.
 
 ---
 
-## Step 7 — Priority Fix List
+## Step 7 - Priority Fix List
 
 ### Critical
 
@@ -175,10 +175,10 @@ See `docs/REDIRECT_MAP.md` for the exact list to paste into your host.
 
 ## Files to Create/Update
 
-- `docs/REDIRECT_MAP.md` — 301 map for host config.
-- `public/sitemap.xml` — no trailing slash; x-default → bg.
-- `lib/seo.ts` — optional BreadcrumbList helper and AutomotiveBusiness.
-- Page components — inject BreadcrumbList where needed (or via layout).
+- `docs/REDIRECT_MAP.md` - 301 map for host config.
+- `public/sitemap.xml` - no trailing slash; x-default → bg.
+- `lib/seo.ts` - optional BreadcrumbList helper and AutomotiveBusiness.
+- Page components - inject BreadcrumbList where needed (or via layout).
 
 ---
 

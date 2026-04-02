@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useState } from "react";
-import { useFormContext } from "react-hook-form";
+import { useController, useFormContext } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,28 +12,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { OfferFormData } from "@/lib/schemas/offer";
-
-const DOCUMENT_CREATORS_KEY = "mb_document_creators";
+import { authClient as supabase } from "@/lib/supabase/client";
 
 export function CreatedBySelector() {
   const t = useTranslations("admin.form");
-  const { setValue, watch } = useFormContext<OfferFormData>();
-  const createdByName = watch("createdByName");
+  const { control } = useFormContext<OfferFormData>();
+  const { field } = useController({ name: "createdByName", control });
+  const createdByName = field.value;
   const [storedCreators, setStoredCreators] = useState<string[]>([]);
 
   useEffect(() => {
-    const load = () => {
-      try {
-        const stored = localStorage.getItem(DOCUMENT_CREATORS_KEY);
-        if (stored) setStoredCreators(JSON.parse(stored));
-      } catch {}
+    const load = async () => {
+      const { data } = await (supabase.from("app_settings").select("value_text").eq("key", "document_creators").single() as any);
+      if (data?.value_text) {
+        try {
+          setStoredCreators(JSON.parse(data.value_text));
+        } catch {}
+      }
     };
     load();
-    const handler = (e: StorageEvent) => {
-      if (e.key === DOCUMENT_CREATORS_KEY) load();
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
   }, []);
 
   const options = useMemo(() => {
@@ -46,8 +43,9 @@ export function CreatedBySelector() {
     <div className="space-y-2">
       <Label htmlFor="createdByName">{t("createdBy")}</Label>
       <Select
+        key={options.join(",")}
         value={createdByName || undefined}
-        onValueChange={(value) => setValue("createdByName", value, { shouldValidate: true, shouldDirty: true })}
+        onValueChange={(value) => field.onChange(value)}
       >
         <SelectTrigger className="bg-gray-100 text-gray-900 border-mb-border">
           <SelectValue placeholder={t("selectCreator")} />

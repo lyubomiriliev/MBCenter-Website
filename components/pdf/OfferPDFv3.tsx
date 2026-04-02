@@ -388,10 +388,9 @@ function formatTimeDisplay(timeText: string | null): string {
   if (hours <= 0) return "-";
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
-  if (h > 0 && m > 0) return `${h}ч ${m}мин`;
-  if (h > 0) return `${h}ч`;
-  if (m > 0) return `0ч ${m}мин`;
-  return "-";
+  const hh = h.toString().padStart(2, "0");
+  const mm = m.toString().padStart(2, "0");
+  return `${hh}ч ${mm} мин`;
 }
 
 export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
@@ -624,12 +623,12 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                         </View>
                         <View style={styles.colSvc3}>
                           <Text style={styles.colTextCenter}>
-                            {action.is_fixed_price ? "—" : formatTimeDisplay(action.time_required_text)}
+                            {action.is_fixed_price ? "-" : formatTimeDisplay(action.time_required_text)}
                           </Text>
                         </View>
                         <View style={styles.colSvc4}>
                           <Text style={styles.colTextCenter}>
-                            {action.is_fixed_price ? "—" : formatEur(hourlyRateGross)}
+                            {action.is_fixed_price ? "-" : formatEur(hourlyRateGross)}
                           </Text>
                         </View>
                         <View style={styles.colSvc5}>
@@ -655,12 +654,12 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                       </View>
                       <View style={styles.colSvc3}>
                         <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price ? "—" : formatTimeDisplay(action.time_required_text)}
+                          {action.is_fixed_price ? "-" : formatTimeDisplay(action.time_required_text)}
                         </Text>
                       </View>
                       <View style={styles.colSvc4}>
                         <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price ? "—" : formatEur(hourlyRateGross)}
+                          {action.is_fixed_price ? "-" : formatEur(hourlyRateGross)}
                         </Text>
                       </View>
                       <View style={styles.colSvc5}>

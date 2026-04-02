@@ -1,4 +1,4 @@
-# 301 Redirect Map — WordPress → Next.js (mbcenter.bg)
+# 301 Redirect Map - WordPress → Next.js (mbcenter.bg)
 
 Redirects are **implemented in the app** via `next.config.js` → `redirects()`, so they work on **any host** (including jump.bg) when the Next.js server runs.  
 Below are equivalent configs for Vercel, Netlify, or Apache/cPanel if you ever need them.  
@@ -41,7 +41,7 @@ https://mbcenter.bg/?page_id=3122 → https://mbcenter.bg/bg/contacts
 }
 ```
 
-## jump.bg (Blogger Pro / cPanel — upload to public_html)
+## jump.bg (Blogger Pro / cPanel - upload to public_html)
 
 If you **upload the built folder** to **public_html** (static export), the Next.js server is not running, so **redirects in `next.config.js` do not run**. Use Apache instead.
 

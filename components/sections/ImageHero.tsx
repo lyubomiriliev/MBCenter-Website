@@ -34,26 +34,18 @@ export function ImageHero({
         duration: 1.2,
         ease: "power4.out",
       })
-        .from(
-          subtitleRef.current,
-          {
-            y: 60,
-            opacity: 0,
-            duration: 1,
-            ease: "power3.out",
-          },
-          "-=0.6",
-        )
-        .from(
-          ctaRef.current,
-          {
-            y: 40,
-            opacity: 0,
-            duration: 0.8,
-            ease: "power2.out",
-          },
-          "-=0.4",
-        );
+        .from(subtitleRef.current, {
+          y: 60,
+          opacity: 0,
+          duration: 1,
+          ease: "power3.out",
+        }, "-=0.6")
+        .from(ctaRef.current, {
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        }, "-=0.4");
     });
 
     return () => ctx.revert();

@@ -43,16 +43,12 @@ export function VideoHero({
           },
           "-=0.6",
         )
-        .from(
-          ctaRef.current,
-          {
-            y: 40,
-            opacity: 0,
-            duration: 0.8,
-            ease: "power2.out",
-          },
-          "-=0.4",
-        );
+        .from(ctaRef.current, {
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        }, "-=0.4");
     });
 
     return () => ctx.revert();
@@ -68,6 +64,7 @@ export function VideoHero({
           muted
           playsInline
           preload="none"
+          poster="/assets/images/glc-video-poster.jpg"
           className="w-full h-full object-cover"
           onError={(e) => {
             // Silently handle video loading errors

@@ -1153,7 +1153,7 @@
         },
         "art36": {
           "title": "Art. 36. Liability and limitations",
-          "p1": "(1) The Service Center is not liable for changes in initial conclusions after additional checks—this is a natural part of the work process.",
+          "p1": "(1) The Service Center is not liable for changes in initial conclusions after additional checks-this is a natural part of the work process.",
           "p2": "(2) The Client accepts that a change in diagnosis does not constitute an \"error\" but a normal development of the diagnostic process.",
           "p3": "(3) All costs for additional checks and corrections are borne by the Client unless gross negligence by the Service Center is proven.",
           "p4": "(4) The Service Center is not liable for indirect damages or lost profits arising from a change in diagnosis."
@@ -1348,7 +1348,7 @@
       "repairNamePlaceholder": "Enter repair name",
       "createdBy": "Created By",
       "selectCreator": "Select creator",
-      "noCreatorsAdded": "No creators added — go to Settings",
+      "noCreatorsAdded": "No creators added - go to Settings",
       "productName": "Product Name",
       "brand": "Brand",
       "partNumber": "Part Number",

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
+import { parseTimeToHours, formatHours } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,7 +198,12 @@ export function EarningsEditPage({
       setEditFields({
         vehicle: e.vehicle || "",
         repair_name: e.repair_name || "",
-        repair_time: String(e.repair_time ?? ""),
+        repair_time: (() => {
+          const h = e.repair_time ?? 0;
+          const hours = Math.floor(h);
+          const mins = Math.round((h - hours) * 60);
+          return `${hours}:${String(mins).padStart(2, "0")}`;
+        })(),
         hourly_rate: String(e.hourly_rate ?? ""),
         entry_date: e.entry_date,
       });
@@ -219,7 +225,7 @@ export function EarningsEditPage({
 
   const saveEdit = async (id: string) => {
     if (workerType === "mechanic") {
-      const repairTime = parseFloat(editFields.repair_time) || 0;
+      const repairTime = parseTimeToHours(editFields.repair_time);
       const hourlyRate = parseFloat(editFields.hourly_rate) || 0;
       const total = repairTime * hourlyRate;
       await supabase
@@ -255,6 +261,10 @@ export function EarningsEditPage({
   };
 
   // Computations
+  const mechanicTotalHours = entries.reduce(
+    (s, e) => s + (e.repair_time || 0),
+    0,
+  );
   const mechanicTotal = entries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;
   const cardVal = parseFloat(mechanicCard) || 0;
@@ -353,7 +363,7 @@ export function EarningsEditPage({
   };
 
   return (
-    <div className="space-y-6 p-10">
+    <div className="space-y-6 p-10 max-w-5xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -389,7 +399,7 @@ export function EarningsEditPage({
             <span>
               {workerName}{" "}
               <span className="text-mb-silver font-normal">
-                —{" "}
+                -{" "}
                 {workerType === "mechanic"
                   ? isBg
                     ? "Механик"
@@ -416,10 +426,10 @@ export function EarningsEditPage({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-mb-border text-mb-silver text-xs uppercase">
-                      <th className="text-left py-2 pr-2">
+                      <th className="text-left py-3 pr-2">
                         {isBg ? "Автомобил" : "Vehicle"}
                       </th>
-                      <th className="text-left py-2 pr-2">
+                      <th className="text-left py-3 pr-2">
                         {isBg ? "Ремонт" : "Repair"}
                       </th>
                       {workerType === "mechanic" ? (
@@ -456,63 +466,115 @@ export function EarningsEditPage({
                       const isEditing = editingId === e.id;
                       if (isEditing) {
                         return (
-                          <tr key={e.id} className="border-b border-mb-border/40 bg-mb-black/40">
+                          <tr
+                            key={e.id}
+                            className="border-b border-mb-border/40 bg-mb-black/40"
+                          >
                             <td className="py-1 pr-1">
                               <input
                                 value={editFields.vehicle}
-                                onChange={(ev) => setEditFields((f) => ({ ...f, vehicle: ev.target.value }))}
-                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white"
+                                onChange={(ev) =>
+                                  setEditFields((f) => ({
+                                    ...f,
+                                    vehicle: ev.target.value,
+                                  }))
+                                }
+                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white"
                               />
                             </td>
                             <td className="py-1 pr-1">
                               <input
                                 value={editFields.repair_name}
-                                onChange={(ev) => setEditFields((f) => ({ ...f, repair_name: ev.target.value }))}
-                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white"
+                                onChange={(ev) =>
+                                  setEditFields((f) => ({
+                                    ...f,
+                                    repair_name: ev.target.value,
+                                  }))
+                                }
+                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white"
                               />
                             </td>
                             {workerType === "mechanic" ? (
                               <>
                                 <td className="py-1 pr-1">
                                   <input
-                                    type="number" min="0" step="0.25"
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder="1:30 or 1.5"
                                     value={editFields.repair_time}
-                                    onChange={(ev) => setEditFields((f) => ({ ...f, repair_time: ev.target.value }))}
-                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                    onChange={(ev) =>
+                                      setEditFields((f) => ({
+                                        ...f,
+                                        repair_time: ev.target.value,
+                                      }))
+                                    }
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white text-right"
                                   />
                                 </td>
                                 <td className="py-1 pr-1">
                                   <input
-                                    type="number" min="0" step="0.5"
+                                    type="number"
+                                    min="0"
+                                    step="0.5"
                                     value={editFields.hourly_rate}
-                                    onChange={(ev) => setEditFields((f) => ({ ...f, hourly_rate: ev.target.value }))}
-                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                    onChange={(ev) =>
+                                      setEditFields((f) => ({
+                                        ...f,
+                                        hourly_rate: ev.target.value,
+                                      }))
+                                    }
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white text-right"
                                   />
                                 </td>
-                                <td className="py-1 pr-1 text-right text-xs text-mb-silver">
-                                  €{((parseFloat(editFields.repair_time) || 0) * (parseFloat(editFields.hourly_rate) || 0)).toFixed(2)}
+                                <td className="py-1 px-3 text-right text-sm whitespace-nowrap text-mb-silver">
+                                  {(
+                                    parseTimeToHours(editFields.repair_time) *
+                                    (parseFloat(editFields.hourly_rate) || 0)
+                                  ).toFixed(2)}{" "}
+                                  €
                                 </td>
                               </>
                             ) : (
                               <>
                                 <td className="py-1 pr-1">
                                   <input
-                                    type="number" min="0" step="0.01"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
                                     value={editFields.repair_total}
-                                    onChange={(ev) => setEditFields((f) => ({ ...f, repair_total: ev.target.value }))}
-                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                    onChange={(ev) =>
+                                      setEditFields((f) => ({
+                                        ...f,
+                                        repair_total: ev.target.value,
+                                      }))
+                                    }
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white text-right"
                                   />
                                 </td>
                                 <td className="py-1 pr-1">
                                   <input
-                                    type="number" min="0" max="100" step="0.5"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.5"
                                     value={editFields.turnover_pct}
-                                    onChange={(ev) => setEditFields((f) => ({ ...f, turnover_pct: ev.target.value }))}
-                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white text-right"
+                                    onChange={(ev) =>
+                                      setEditFields((f) => ({
+                                        ...f,
+                                        turnover_pct: ev.target.value,
+                                      }))
+                                    }
+                                    className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white text-right"
                                   />
                                 </td>
-                                <td className="py-1 pr-1 text-right text-xs text-mb-silver">
-                                  €{((parseFloat(editFields.repair_total) || 0) * ((parseFloat(editFields.turnover_pct) || 0) / 100)).toFixed(2)}
+                                <td className="py-1 pr-1 text-right text-sm whitespace-nowrap text-mb-silver">
+                                  {(
+                                    (parseFloat(editFields.repair_total) || 0) *
+                                    ((parseFloat(editFields.turnover_pct) ||
+                                      0) /
+                                      100)
+                                  ).toFixed(2)}{" "}
+                                  €
                                 </td>
                               </>
                             )}
@@ -520,8 +582,13 @@ export function EarningsEditPage({
                               <input
                                 type="date"
                                 value={editFields.entry_date}
-                                onChange={(ev) => setEditFields((f) => ({ ...f, entry_date: ev.target.value }))}
-                                className="w-full bg-mb-black border border-mb-border rounded px-2 py-1 text-xs text-white"
+                                onChange={(ev) =>
+                                  setEditFields((f) => ({
+                                    ...f,
+                                    entry_date: ev.target.value,
+                                  }))
+                                }
+                                className="bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:hue-rotate-[190deg] [&::-webkit-calendar-picker-indicator]:saturate-[10]"
                               />
                             </td>
                             <td className="py-1">
@@ -531,8 +598,18 @@ export function EarningsEditPage({
                                   className="text-green-400 hover:text-green-300 p-0.5"
                                   title={isBg ? "Запази" : "Save"}
                                 >
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  <svg
+                                    className="w-3.5 h-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M5 13l4 4L19 7"
+                                    />
                                   </svg>
                                 </button>
                                 <button
@@ -540,8 +617,18 @@ export function EarningsEditPage({
                                   className="text-mb-silver hover:text-white p-0.5"
                                   title={isBg ? "Откажи" : "Cancel"}
                                 >
-                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  <svg
+                                    className="w-3.5 h-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
                                   </svg>
                                 </button>
                               </div>
@@ -550,23 +637,44 @@ export function EarningsEditPage({
                         );
                       }
                       return (
-                        <tr key={e.id} className="border-b border-mb-border/40 group">
-                          <td className="py-1.5 pr-2 text-white">{e.vehicle || "—"}</td>
-                          <td className="py-1.5 pr-2 text-mb-silver">{e.repair_name || "—"}</td>
+                        <tr
+                          key={e.id}
+                          className="border-b border-mb-border/40 group"
+                        >
+                          <td className="py-1.5 pr-2 text-white">
+                            {e.vehicle || "-"}
+                          </td>
+                          <td className="py-1.5 pr-2 text-mb-silver">
+                            {e.repair_name || "-"}
+                          </td>
                           {workerType === "mechanic" ? (
                             <>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">{e.repair_time}</td>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">€{e.hourly_rate}</td>
-                              <td className="py-1.5 pr-2 text-right text-white font-medium">€{(e.total || 0).toFixed(2)}</td>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                                {formatHours(e.repair_time || 0)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                                {e.hourly_rate} €
+                              </td>
+                              <td className="py-1.5 pr-2 text-right text-white font-medium">
+                                {(e.total || 0).toFixed(2)} €
+                              </td>
                             </>
                           ) : (
                             <>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">€{(e.repair_total || 0).toFixed(2)}</td>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">{e.turnover_pct}%</td>
-                              <td className="py-1.5 pr-2 text-right text-white font-medium">€{(e.earnings || 0).toFixed(2)}</td>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                                {(e.repair_total || 0).toFixed(2)} €
+                              </td>
+                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                                {e.turnover_pct}%
+                              </td>
+                              <td className="py-1.5 pr-2 text-right text-white font-medium">
+                                {(e.earnings || 0).toFixed(2)} €
+                              </td>
                             </>
                           )}
-                          <td className="py-1.5 pr-2 text-right text-mb-silver">{formatDate(e.entry_date)}</td>
+                          <td className="py-1.5 pr-2 text-right text-mb-silver">
+                            {formatDate(e.entry_date)}
+                          </td>
                           <td className="py-1.5">
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                               <button
@@ -574,8 +682,18 @@ export function EarningsEditPage({
                                 className="text-mb-blue hover:text-blue-300 p-0.5"
                                 title={isBg ? "Редактирай" : "Edit"}
                               >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
                                 </svg>
                               </button>
                               <button
@@ -583,8 +701,18 @@ export function EarningsEditPage({
                                 className="text-red-400 hover:text-red-300 p-0.5"
                                 title={isBg ? "Изтрий" : "Delete"}
                               >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                               </button>
                             </div>
@@ -599,22 +727,32 @@ export function EarningsEditPage({
               {/* Deductions & Summary */}
               {workerType === "mechanic" ? (
                 <>
-                  <div className="border-t border-mb-border pt-3 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-mb-silver">
-                        {isBg ? "Общо заработено" : "Total Earnings"}
-                      </span>
-                      <span className="text-white font-semibold">
-                        €{mechanicTotal.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-mb-silver">
-                        {isBg ? "Нето 50%" : "Net 50%"}
-                      </span>
-                      <span className="text-green-400 font-semibold">
-                        €{mechanicNet.toFixed(2)}
-                      </span>
+                  <div className="border-t border-mb-border pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl">
+                      <div className="rounded-lg border border-mb-border bg-mb-black/40 px-4 py-3 flex flex-col items-center gap-1">
+                        <span className="text-mb-silver text-xs uppercase tracking-wide">
+                          {isBg ? "Общо часове" : "Total Hours"}
+                        </span>
+                        <span className="text-mb-blue text-lg font-bold">
+                          {formatHours(mechanicTotalHours)}
+                        </span>
+                      </div>
+                      <div className="rounded-lg border border-mb-border bg-mb-black/40 px-4 py-3 flex flex-col items-center gap-1">
+                        <span className="text-mb-silver text-xs uppercase tracking-wide">
+                          {isBg ? "Общо заработено" : "Total Earnings"}
+                        </span>
+                        <span className="text-white text-lg font-bold">
+                          {mechanicTotal.toFixed(2)} €
+                        </span>
+                      </div>
+                      <div className="rounded-lg border border-green-500/40 bg-green-500/5 px-4 py-3 flex flex-col items-center gap-1">
+                        <span className="text-mb-silver text-xs uppercase tracking-wide">
+                          {isBg ? "Нето 50%" : "Net 50%"}
+                        </span>
+                        <span className="text-green-400 text-xl font-bold">
+                          {mechanicNet.toFixed(2)} €
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -663,12 +801,12 @@ export function EarningsEditPage({
                       </div>
                     </div>
 
-                    <div className="flex justify-between text-sm pt-1 max-w-xl">
-                      <span className="text-mb-silver">
+                    <div className="flex justify-between items-center pt-2 max-w-xl">
+                      <span className="text-mb-silver text-sm">
                         {isBg ? "В БРОЙ" : "Cash"}
                       </span>
-                      <span className="text-white font-bold">
-                        €{mechanicCash.toFixed(2)}
+                      <span className="text-white text-xl font-bold">
+                        {mechanicCash.toFixed(2)} €
                       </span>
                     </div>
                   </div>
@@ -681,7 +819,7 @@ export function EarningsEditPage({
                         {isBg ? "Заработка общо (%)" : "Total Earnings (%)"}
                       </span>
                       <span className="text-mb-silver">
-                        €{receptionistTotal.toFixed(2)}
+                        {receptionistTotal.toFixed(2)} €
                       </span>
                     </div>
                   </div>
@@ -769,20 +907,20 @@ export function EarningsEditPage({
                       </div>
                     </div>
 
-                    <div className="flex justify-between text-sm font-semibold pt-1">
-                      <span className="text-mb-silver">
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-mb-silver text-sm">
                         {isBg ? "Обща заплата" : "Total Salary"}
                       </span>
-                      <span className="text-green-400">
-                        €{recTotalSalary.toFixed(2)}
+                      <span className="text-green-400 text-lg font-bold">
+                        {recTotalSalary.toFixed(2)} €
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm font-bold pt-1">
-                      <span className="text-white">
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-white text-sm font-semibold">
                         {isBg ? "Остатък" : "Remaining"}
                       </span>
-                      <span className="text-white">
-                        €{recRemaining.toFixed(2)}
+                      <span className="text-white text-xl font-bold">
+                        {recRemaining.toFixed(2)} €
                       </span>
                     </div>
                   </div>
@@ -813,7 +951,7 @@ export function EarningsEditPage({
                   </svg>
                   {pdfGenerating
                     ? isBg
-                      ? "Генериране…"
+                      ? "Създаване"
                       : "Generating…"
                     : isBg
                       ? "Изтегли PDF"

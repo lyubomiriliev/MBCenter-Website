@@ -116,13 +116,13 @@ export function useSupabaseAuth() {
       } catch (error) {
         if (mounted) {
           // AbortError from navigator.locks should never happen with our
-          // custom lock, but if it does, don't wipe an existing session —
+          // custom lock, but if it does, don't wipe an existing session -
           // onAuthStateChange will resolve the state correctly.
           const isAbort =
             error instanceof DOMException && error.name === "AbortError";
 
           if (isAbort) {
-            console.warn("[auth] getSession aborted — waiting for onAuthStateChange");
+            console.warn("[auth] getSession aborted - waiting for onAuthStateChange");
             return;
           }
 

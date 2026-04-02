@@ -309,6 +309,7 @@ export function OffersTable({
       ),
       columnHelper.accessor((row) => row.vin_text || row.car?.vin, {
         id: "vin",
+        meta: { className: "hidden lg:table-cell" },
         header: () => t("offers.columns.vin"),
         cell: (info) => {
           const v = info.getValue();
@@ -319,6 +320,7 @@ export function OffersTable({
         (row) => row.license_plate || row.car?.license_plate,
         {
           id: "licensePlate",
+          meta: { className: "hidden md:table-cell" },
           header: () => t("offers.columns.licensePlate"),
           cell: (info) => info.getValue() || "-",
         },
@@ -327,6 +329,7 @@ export function OffersTable({
         (row) => (row as { repair_name?: string | null }).repair_name ?? "",
         {
           id: "repairName",
+          meta: { className: "hidden xl:table-cell" },
           header: () => t("form.repairName"),
           cell: (info) => {
             const v = info.getValue();
@@ -344,21 +347,25 @@ export function OffersTable({
       ),
       columnHelper.accessor("status", {
         header: () => t("offers.columns.status"),
-        cell: (info) => (
-          <button
-            onClick={() => {
-              setEditingOffer(info.row.original);
-              setSelectedStatus(info.row.original.status);
-              setStatusDialogOpen(true);
-            }}
-            className="hover:opacity-80 transition-opacity"
-          >
+        cell: (info) =>
+          isMechanicView ? (
             <OfferStatusBadge status={info.getValue()} />
-          </button>
-        ),
+          ) : (
+            <button
+              onClick={() => {
+                setEditingOffer(info.row.original);
+                setSelectedStatus(info.row.original.status);
+                setStatusDialogOpen(true);
+              }}
+              className="hover:opacity-80 transition-opacity"
+            >
+              <OfferStatusBadge status={info.getValue()} />
+            </button>
+          ),
       }),
       !isMechanicView &&
         columnHelper.accessor("total_gross", {
+          meta: { className: "hidden sm:table-cell" },
           header: () => (
             <div className="text-center">{t("offers.columns.total")}</div>
           ),
@@ -367,7 +374,7 @@ export function OffersTable({
             const bgn = eur * EUR_TO_BGN;
             return (
               <div className="text-center">
-                <div className="font-medium">€{eur.toFixed(2)}</div>
+                <div className="font-medium">{eur.toFixed(2)} €</div>
                 <div className="text-xs text-mb-silver">
                   {bgn.toFixed(2)} лв.
                 </div>
@@ -379,6 +386,7 @@ export function OffersTable({
         (row) => row.service_card_generated_at || row.created_at,
         {
           id: "created_at",
+          meta: { className: "hidden sm:table-cell" },
           header: () => t("offers.columns.date"),
           cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
         },
@@ -566,7 +574,7 @@ export function OffersTable({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-mb-silver whitespace-nowrap"
+                    className={`text-mb-silver whitespace-nowrap ${(header.column.columnDef.meta as any)?.className ?? ""}`}
                   >
                     {header.isPlaceholder
                       ? null
@@ -590,11 +598,12 @@ export function OffersTable({
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={
+                      className={[
                         cell.column.id === "repairName"
                           ? "whitespace-nowrap 2xl:whitespace-normal"
-                          : "whitespace-nowrap"
-                      }
+                          : "whitespace-nowrap",
+                        (cell.column.columnDef.meta as any)?.className ?? "",
+                      ].join(" ")}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,

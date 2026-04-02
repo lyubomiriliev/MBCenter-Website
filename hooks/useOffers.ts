@@ -175,6 +175,7 @@ export function useOffer(id: string | undefined) {
           vin_text,
           license_plate,
           mileage,
+          mileage_unit,
           car_id,
           created_by_name,
           discount_percent,
@@ -398,12 +399,13 @@ export function useCloneOffer() {
         .from("offers")
         .select(
           `
-          offer_number, client_id, car_id, customer_name, customer_phone,
+          client_id, car_id, customer_name, customer_phone,
           customer_email, car_model_text, car_model_detail, repair_name,
-          car_year, vin_text, license_plate, mileage, created_by_name,
+          car_year, vin_text, license_plate, mileage, mileage_unit,
+          created_by_name, created_by,
           discount_percent, discount_parts_percent, discount_services_percent,
-          notes, notes_internal, notes_service, status, total_net, total_vat,
-          total_gross, currency
+          notes, notes_internal, notes_service, total_net, total_vat,
+          total_gross, currency, prepayments_eur
         `
         )
         .eq("id", sourceId)

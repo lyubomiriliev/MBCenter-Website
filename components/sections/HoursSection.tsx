@@ -15,7 +15,7 @@ export function HoursSection({ title, description }: HoursSectionProps) {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <Image
-          src="/assets/images/oem-diagnostics.png"
+          src="/assets/images/oem-diagnostics.webp"
           alt="Service Hours"
           fill
           className="object-cover"

@@ -3,9 +3,6 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 type PatternBackgroundProps = {
   children: React.ReactNode;

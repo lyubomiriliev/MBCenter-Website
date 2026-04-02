@@ -47,7 +47,7 @@ interface CalculationResult {
 }
 
 function formatEUR(value: number): string {
-  return `€${value.toFixed(2)}`;
+  return `${value.toFixed(2)} €`;
 }
 
 function formatBGN(value: number): string {

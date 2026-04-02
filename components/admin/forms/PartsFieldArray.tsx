@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, memo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, memo } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import {
@@ -32,6 +32,95 @@ import {
 } from "@/components/ui/dialog";
 import type { OfferFormData, PartItemFormData } from "@/lib/schemas/offer";
 
+/**
+ * Inline quantity popover - appears when clicking directly on a qty number.
+ * showConfirm=true  → shows +/- plus a checkmark save button (direct-click mode)
+ * showConfirm=false → shows only +/- (inside Edit Part modal, not used here)
+ */
+function QuantityPopover({
+  value,
+  onChange,
+  showConfirm = true,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  showConfirm?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) setDraft(value);
+  }, [open, value]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const commit = () => {
+    onChange(Math.max(1, draft));
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative inline-flex items-center justify-end">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="min-w-[28px] text-right text-white text-sm tabular-nums px-1 py-0.5 rounded hover:bg-mb-anthracite transition-colors cursor-pointer"
+      >
+        {value}
+      </button>
+      {open && (
+        <div className="absolute bottom-full right-0 mb-1 z-50 flex items-center gap-1 bg-mb-anthracite border border-mb-border rounded-lg shadow-xl px-2 py-1.5">
+          <button
+            type="button"
+            onClick={() => setDraft((d) => Math.max(1, d - 1))}
+            className="w-7 h-7 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            min={1}
+            value={draft}
+            onChange={(e) => setDraft(Math.max(1, Number(e.target.value) || 1))}
+            onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setOpen(false); }}
+            className="w-12 text-center bg-white text-gray-900 border border-mb-border rounded text-sm py-0.5 tabular-nums"
+          />
+          <button
+            type="button"
+            onClick={() => setDraft((d) => d + 1)}
+            className="w-7 h-7 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors"
+          >
+            +
+          </button>
+          {showConfirm && (
+            <button
+              type="button"
+              onClick={commit}
+              className="w-7 h-7 flex items-center justify-center rounded bg-green-600 hover:bg-green-700 text-white border border-green-700 transition-colors"
+              aria-label="Confirm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AddEditPartModal({
   open,
   onOpenChange,
@@ -47,7 +136,7 @@ function AddEditPartModal({
 }) {
   const t = useTranslations("admin.form");
   const [description, setDescription] = useState("");
-  const [brand, setBrand] = useState("");
+  const [brand, setBrand] = useState("MERCEDES");
   const [partNumber, setPartNumber] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
@@ -64,7 +153,7 @@ function AddEditPartModal({
       setPriceInput((vals.unitPrice ?? 0).toString());
     } else {
       setDescription("");
-      setBrand("");
+      setBrand("MERCEDES");
       setPartNumber("");
       setQuantity(1);
       setUnitPrice(0);
@@ -109,7 +198,7 @@ function AddEditPartModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md">
+      <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md px-6">
         <DialogHeader>
           <DialogTitle className="text-white">
             {editIndex !== null ? t("editPart") : t("addPart")}
@@ -163,17 +252,32 @@ function AddEditPartModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="modal-qty" className="text-gray-200">
+              <Label className="text-gray-200">
                 {t("qty")} *
               </Label>
-              <Input
-                id="modal-qty"
-                type="number"
-                min={1}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value) || 1)}
-                className="bg-gray-100 text-gray-900 border-mb-border"
-              />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="w-8 h-9 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors shrink-0"
+                >
+                  −
+                </button>
+                <Input
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                  className="bg-gray-100 text-gray-900 border-mb-border text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  className="w-8 h-9 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors shrink-0"
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="modal-price" className="text-gray-200">
@@ -209,21 +313,21 @@ function AddEditPartModal({
           </div>
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            onClick={handleOk}
+            className="bg-blue-500 hover:bg-blue-600 w-full sm:w-auto"
+          >
+            {t("ok")}
+          </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="bg-red-500 hover:bg-red-600 text-white border-red-500"
+            className="bg-red-600 hover:bg-red-700 text-white border-red-600 w-full sm:w-auto"
           >
             {t("cancel")}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleOk}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            {t("ok")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -239,7 +343,7 @@ interface PartRowProps {
 
 const PartRow = memo(function PartRow({ index, remove, openEdit }: PartRowProps) {
   const t = useTranslations("admin.form");
-  const { control } = useFormContext<OfferFormData>();
+  const { control, setValue } = useFormContext<OfferFormData>();
 
   const quantity = useWatch({ control, name: `parts.${index}.quantity` }) ?? 1;
   const unitPrice = useWatch({ control, name: `parts.${index}.unitPrice` }) ?? 0;
@@ -297,28 +401,37 @@ const PartRow = memo(function PartRow({ index, remove, openEdit }: PartRowProps)
         className="text-white text-sm truncate text-left min-w-0"
         title={description}
       >
-        {description || "—"}
+        {description || "-"}
       </div>
       <div
         className="min-w-0 text-mb-silver text-sm truncate flex items-center justify-center"
         title={brand}
       >
-        {brand || "—"}
+        {brand || "-"}
       </div>
       <div
         className="min-w-0 text-mb-silver text-sm truncate font-mono flex items-center justify-center"
         title={partNumber}
       >
-        {partNumber || "—"}
+        {partNumber || "-"}
+      </div>
+      <div className="flex items-center justify-end">
+        <QuantityPopover
+          value={quantity}
+          onChange={(next) =>
+            setValue(`parts.${index}.quantity`, next, {
+              shouldValidate: true,
+              shouldDirty: true,
+            })
+          }
+          showConfirm={true}
+        />
       </div>
       <div className="text-white text-sm tabular-nums flex items-center justify-end">
-        {quantity}
-      </div>
-      <div className="text-white text-sm tabular-nums flex items-center justify-end">
-        €{Number(unitPrice).toFixed(2)}
+        {Number(unitPrice).toFixed(2)} €
       </div>
       <div className="text-mb-blue text-sm font-medium tabular-nums flex items-center justify-end shrink-0">
-        €{total.toFixed(2)}
+        {total.toFixed(2)} €
       </div>
       <div className="flex items-center gap-1 justify-end shrink-0">
         <Button

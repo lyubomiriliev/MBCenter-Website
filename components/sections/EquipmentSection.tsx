@@ -10,7 +10,7 @@ export function EquipmentSection() {
   const equipment = [
     {
       key: "oem",
-      image: "/assets/images/oem-diagnostics.png",
+      image: "/assets/images/oem-diagnostics.webp",
       icon: (
         <svg
           className="w-8 h-8 text-white"
@@ -27,7 +27,7 @@ export function EquipmentSection() {
     },
     {
       key: "certified",
-      image: "/assets/images/skilled-technicians.png",
+      image: "/assets/images/skilled-technicians.webp",
       icon: (
         <svg
           className="w-8 h-8 text-white"
@@ -44,7 +44,7 @@ export function EquipmentSection() {
     },
     {
       key: "tools",
-      image: "/assets/images/modern-equipment.png",
+      image: "/assets/images/modern-equipment.webp",
       icon: (
         <svg
           className="w-8 h-8 text-white"

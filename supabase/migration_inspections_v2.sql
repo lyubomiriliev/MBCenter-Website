@@ -1,5 +1,5 @@
 -- ============================================================
--- MB Center — Technical Inspection Reports (Протоколи) V2 Schema Update
+-- MB Center - Technical Inspection Reports (Протоколи) V2 Schema Update
 -- Paste this into Supabase SQL Editor and run it.
 -- Adds new columns for the redesigned CheckPDF format.
 -- ============================================================

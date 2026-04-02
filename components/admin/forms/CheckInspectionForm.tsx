@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { pdf } from "@react-pdf/renderer";
@@ -23,7 +23,21 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CheckPDF, type CheckFormData } from "@/components/pdf/CheckPDF";
+import { MERCEDES_MODELS, searchModels } from "@/lib/data/mercedes-models";
 import { supabase } from "@/lib/supabase/client";
 
 const STORAGE_KEY = "mbcenter_check_draft_v2";
@@ -34,6 +48,7 @@ interface InspectionRow {
   mechanic: string | null;
   client_name: string | null;
   car_model: string | null;
+  car_model_detail: string | null;
   license_plate: string | null;
   vin: string | null;
   tires: CheckFormData["tires"] | null;
@@ -57,10 +72,16 @@ const defaultFormData = (): CheckFormData => ({
   inspectionDate: new Date().toISOString().slice(0, 10),
   mechanic: "",
   clientName: "",
-  carModel: "Mercedes-Benz",
+  carModel: "",
+  carModelDetail: "",
   licensePlate: "",
   vin: "",
-  mileage: { odometer: "", assessment: "", note: "" },
+  mileage: {
+    odometer: "",
+    assessment: "",
+    note: "",
+    mileageUnit: "km" as const,
+  },
   tires: { tread_condition: "", mixed_tires: false },
   brakes: { front_pads: "", front_discs: "", rear_pads: "", rear_discs: "" },
   suspension: {
@@ -122,6 +143,24 @@ export function CheckInspectionForm({
     { id: string; name: string }[]
   >([]);
 
+  // Model selector state
+  const [carModelOpen, setCarModelOpen] = useState(false);
+  const [carModelSearch, setCarModelSearch] = useState("");
+
+  const filteredMercedesModels = useMemo(() => {
+    if (!carModelSearch) return MERCEDES_MODELS.slice(0, 50);
+    return searchModels(carModelSearch);
+  }, [carModelSearch]);
+
+  const groupedMercedesModels = useMemo(() => {
+    const groups: Record<string, typeof MERCEDES_MODELS> = {};
+    filteredMercedesModels.forEach((model) => {
+      if (!groups[model.class]) groups[model.class] = [];
+      groups[model.class].push(model);
+    });
+    return groups;
+  }, [filteredMercedesModels]);
+
   // Navigation guard state
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
@@ -158,6 +197,7 @@ export function CheckInspectionForm({
             mechanic: row.mechanic || "",
             clientName: row.client_name || "",
             carModel: row.car_model || "",
+            carModelDetail: row.car_model_detail || "",
             licensePlate: row.license_plate || "",
             vin: row.vin || "",
             tires: row.tires || defaultFormData().tires,
@@ -273,6 +313,7 @@ export function CheckInspectionForm({
           mechanic: form.mechanic || null,
           client_name: form.clientName || null,
           car_model: form.carModel || null,
+          car_model_detail: form.carModelDetail || null,
           license_plate: form.licensePlate || null,
           vin: form.vin || null,
           tires: form.tires,
@@ -333,6 +374,7 @@ export function CheckInspectionForm({
           mechanic: form.mechanic || null,
           client_name: form.clientName || null,
           car_model: form.carModel || null,
+          car_model_detail: form.carModelDetail || null,
           license_plate: form.licensePlate || null,
           vin: form.vin || null,
           tires: form.tires,
@@ -362,6 +404,39 @@ export function CheckInspectionForm({
     }
   };
 
+  /* Create new inspection (no PDF download) */
+  const handleCreate = async () => {
+    setGenerating(true);
+    try {
+      const { error: insertError } = await (
+        supabase.from("inspections") as any
+      ).insert({
+        check_number: "",
+        inspection_date: form.inspectionDate,
+        mechanic: form.mechanic || null,
+        client_name: form.clientName || null,
+        car_model: form.carModel || null,
+        car_model_detail: form.carModelDetail || null,
+        license_plate: form.licensePlate || null,
+        vin: form.vin || null,
+        tires: form.tires,
+        brakes: form.brakes,
+        suspension: form.suspension,
+        corrosion: form.corrosion,
+        fluids: form.fluids,
+        mileage: form.mileage,
+        summary: form.summary.length > 0 ? form.summary.join("\n") : null,
+      });
+      if (insertError) throw insertError;
+      localStorage.removeItem(STORAGE_KEY);
+      router.push(checksPath);
+    } catch (err) {
+      console.error("Create inspection failed:", err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   /* PDF generation */
   const handleGeneratePDF = async () => {
     setGenerating(true);
@@ -377,6 +452,7 @@ export function CheckInspectionForm({
             mechanic: form.mechanic || null,
             client_name: form.clientName || null,
             car_model: form.carModel || null,
+            car_model_detail: form.carModelDetail || null,
             license_plate: form.licensePlate || null,
             vin: form.vin || null,
             tires: form.tires,
@@ -401,14 +477,16 @@ export function CheckInspectionForm({
       const fontsReady = await registerPDFFonts();
       setFontRegistered(fontsReady);
 
-      const blob = await pdf(<CheckPDF data={form} />).toBlob();
+      const blob = await pdf(
+        <CheckPDF data={form} checkNumber={filenameBase || undefined} />,
+      ).toBlob();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = filenameBase
-        ? `${filenameBase}.pdf`
-        : `Проверка_${form.clientName || "без_име"}_${form.inspectionDate}.pdf`;
+        ? `protocol-${filenameBase}.pdf`
+        : `protocol-${form.inspectionDate}.pdf`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
@@ -508,6 +586,140 @@ export function CheckInspectionForm({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label className="text-mb-silver text-xs mb-1.5 block">
+                ДАТА:
+              </Label>
+              <Input
+                type="date"
+                value={form.inspectionDate}
+                onChange={(e) => setField("inspectionDate", e.target.value)}
+                className="h-10 bg-mb-anthracite border-mb-border text-white [color-scheme:dark]"
+              />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
+                ИМЕ НА КЛИЕНТ:
+              </Label>
+              <Input
+                value={form.clientName}
+                onChange={(e) => setField("clientName", e.target.value)}
+                className="h-10 bg-mb-anthracite border-mb-border text-white"
+              />
+            </div>
+            {/* Модел — Mercedes popover */}
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
+                МОДЕЛ:
+              </Label>
+              <Popover open={carModelOpen} onOpenChange={setCarModelOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="w-full h-10 rounded-md border border-mb-border bg-mb-anthracite px-3 py-2 text-sm text-left flex items-center justify-between text-white focus:outline-none focus:ring-1 focus:ring-mb-blue"
+                  >
+                    <span
+                      className={
+                        form.carModel ? "text-white" : "text-mb-silver/50"
+                      }
+                    >
+                      {form.carModel || "Изберете модел Mercedes..."}
+                    </span>
+                    <svg
+                      className="h-4 w-4 shrink-0 opacity-50"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+                      />
+                    </svg>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[360px] p-0 bg-mb-anthracite border-mb-border"
+                  align="start"
+                >
+                  <Command className="bg-mb-anthracite text-white [&_[cmdk-input-wrapper]]:border-mb-border">
+                    <CommandInput
+                      placeholder="Търсене на модели..."
+                      value={carModelSearch}
+                      onValueChange={setCarModelSearch}
+                      className="border-mb-border bg-mb-black text-white placeholder:text-mb-silver/50"
+                    />
+                    <CommandList className="max-h-[280px]">
+                      <CommandEmpty className="text-mb-silver">
+                        Няма намерени модели
+                      </CommandEmpty>
+                      {Object.entries(groupedMercedesModels).map(
+                        ([className, models]) => (
+                          <CommandGroup
+                            key={className}
+                            heading={className}
+                            className="[&_[cmdk-group-heading]]:text-mb-silver"
+                          >
+                            {models.map((model) => (
+                              <CommandItem
+                                key={model.id}
+                                value={model.name}
+                                onSelect={() => {
+                                  setField("carModel", model.name);
+                                  setCarModelOpen(false);
+                                  setCarModelSearch("");
+                                }}
+                                className="cursor-pointer text-white data-[selected=true]:bg-mb-black data-[selected=true]:text-white"
+                              >
+                                <span>{model.name}</span>
+                                <span className="ml-auto text-xs text-mb-silver">
+                                  {model.years[0]}-
+                                  {model.years[model.years.length - 1]}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ),
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            {/* Точен модел — free text */}
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
+                ТОЧЕН МОДЕЛ:
+              </Label>
+              <Input
+                value={form.carModelDetail}
+                onChange={(e) => setField("carModelDetail", e.target.value)}
+                placeholder="напр. CLA 220d 4MATIC"
+                className="h-10 bg-mb-anthracite border-mb-border text-white placeholder:text-mb-silver/50"
+              />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
+                РЕГИСТРАЦИОНЕН НОМЕР:
+              </Label>
+              <Input
+                value={form.licensePlate}
+                onChange={(e) => setField("licensePlate", e.target.value)}
+                className="h-10 bg-mb-anthracite border-mb-border text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
+                VIN (РАМА):
+              </Label>
+              <Input
+                value={form.vin}
+                onChange={(e) => setField("vin", e.target.value)}
+                className="h-10 bg-mb-anthracite border-mb-border text-white uppercase"
+              />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
                 МЕХАНИК:
               </Label>
               <Select
@@ -530,77 +742,6 @@ export function CheckInspectionForm({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-mb-silver text-xs mb-1.5 block">
-                ДАТА:
-              </Label>
-              <Input
-                type="date"
-                value={form.inspectionDate}
-                onChange={(e) => setField("inspectionDate", e.target.value)}
-                className="h-10 bg-mb-anthracite border-mb-border text-white [color-scheme:dark]"
-              />
-            </div>
-            <div>
-              <Label className="text-mb-silver text-xs mb-1.5 block">
-                ИМЕ НА КЛИЕНТ:
-              </Label>
-              <Input
-                value={form.clientName}
-                onChange={(e) => setField("clientName", e.target.value)}
-                className="h-10 bg-mb-anthracite border-mb-border text-white"
-              />
-            </div>
-            <div>
-              <Label className="text-mb-silver text-xs mb-1.5 block">
-                МАРКА И МОДЕЛ:
-              </Label>
-              <input
-                list="car-make-list"
-                value={form.carModel}
-                onChange={(e) => setField("carModel", e.target.value)}
-                placeholder="Mercedes-Benz"
-                className="w-full h-10 rounded-md border border-mb-border bg-mb-anthracite px-3 py-2 text-sm text-white placeholder:text-mb-silver/50 focus:outline-none focus:ring-1 focus:ring-mb-blue"
-              />
-              <datalist id="car-make-list">
-                <option value="Mercedes-Benz" />
-                <option value="BMW" />
-                <option value="Audi" />
-                <option value="Volkswagen" />
-                <option value="Toyota" />
-                <option value="Ford" />
-                <option value="Opel" />
-                <option value="Renault" />
-                <option value="Peugeot" />
-                <option value="Skoda" />
-                <option value="Seat" />
-                <option value="Hyundai" />
-                <option value="Kia" />
-                <option value="Volvo" />
-                <option value="Porsche" />
-                <option value="Land Rover" />
-              </datalist>
-            </div>
-            <div>
-              <Label className="text-mb-silver text-xs mb-1.5 block">
-                РЕГИСТРАЦИОНЕН НОМЕР:
-              </Label>
-              <Input
-                value={form.licensePlate}
-                onChange={(e) => setField("licensePlate", e.target.value)}
-                className="h-10 bg-mb-anthracite border-mb-border text-white"
-              />
-            </div>
-            <div>
-              <Label className="text-mb-silver text-xs mb-1.5 block">
-                VIN (РАМА):
-              </Label>
-              <Input
-                value={form.vin}
-                onChange={(e) => setField("vin", e.target.value)}
-                className="h-10 bg-mb-anthracite border-mb-border text-white uppercase"
-              />
-            </div>
           </div>
         </div>
 
@@ -609,15 +750,35 @@ export function CheckInspectionForm({
           <h3 className={sectionHeader}>1. ПРОБЕГ НА АВТОМОБИЛА</h3>
           <div className={rowClass}>
             <div className={labelClass}>Показание на километраж:</div>
-            <Input
-              type="number"
-              placeholder="напр. 150000"
-              className="w-48 bg-mb-anthracite border-mb-border text-white"
-              value={form.mileage.odometer}
-              onChange={(e) =>
-                updateSubField("mileage", "odometer", e.target.value)
-              }
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="напр. 150000"
+                className="w-48 bg-mb-anthracite border-mb-border text-white"
+                value={form.mileage.odometer}
+                onChange={(e) =>
+                  updateSubField("mileage", "odometer", e.target.value)
+                }
+              />
+              <div className="flex rounded-md overflow-hidden border border-mb-border text-sm">
+                <button
+                  type="button"
+                  onClick={() => updateSubField("mileage", "mileageUnit", "km")}
+                  className={`px-3 py-1.5 font-medium transition-colors ${(form.mileage.mileageUnit ?? "km") === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                >
+                  км
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateSubField("mileage", "mileageUnit", "miles")
+                  }
+                  className={`px-3 py-1.5 font-medium transition-colors ${form.mileage.mileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                >
+                  мили
+                </button>
+              </div>
+            </div>
           </div>
           <div className={rowClass}>
             <div className={labelClass}>Оценка на реален пробег:</div>
@@ -1090,7 +1251,7 @@ export function CheckInspectionForm({
           </div>
 
           {recommendations.length === 0 ? (
-            <div className="text-mb-silver text-sm italic py-4 border border-dashed border-mb-border rounded-lg text-center">
+            <div className="text-mb-silver text-sm italic px-4 py-4 border border-dashed border-mb-border rounded-lg text-center">
               Няма добавени препоръки (Тази секция ще бъде скрита в PDF-а)
             </div>
           ) : (
@@ -1135,15 +1296,15 @@ export function CheckInspectionForm({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <Button
-            onClick={handleGeneratePDF}
+            onClick={isEditMode ? handleGeneratePDF : handleCreate}
             disabled={generating}
             className="flex-1 bg-mb-blue hover:bg-mb-blue/90 h-12 text-base font-bold text-white shadow-xl shadow-mb-blue/20"
           >
             {generating
-              ? "Генериране..."
+              ? "Създаване..."
               : isEditMode
                 ? "Изтегли PDF и Запази"
-                : "Създай Проверка и Изтегли PDF"}
+                : "Създай Проверка"}
           </Button>
           {!isEditMode && (
             <Button

@@ -38,7 +38,7 @@ export default function BookingPage({ params: { locale } }: Props) {
       <ImageHero
         title={t("hero.title")}
         subtitle={t("hero.subtitle")}
-        imageSrc="/assets/images/skilled-technicians.png"
+        imageSrc="/assets/images/skilled-technicians.webp"
       />
 
       <BookingInfoSection locale={locale} />

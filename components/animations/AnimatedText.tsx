@@ -13,9 +13,9 @@ type AnimatedTextProps = {
   stagger?: number;
 };
 
-export function AnimatedText({ 
-  children, 
-  className = '', 
+export function AnimatedText({
+  children,
+  className = '',
   delay = 0,
   stagger = 0.03
 }: AnimatedTextProps) {

@@ -21,7 +21,7 @@ export function Toast({ type, message, onClose, duration = 5000 }: ToastProps) {
   return (
     <div
       className={cn(
-        'fixed bottom-4 right-4 z-50 max-w-md p-4 rounded-lg shadow-xl border animate-in slide-in-from-bottom-2',
+        'fixed bottom-4 right-4 z-[60] max-w-md p-4 rounded-lg shadow-xl border animate-in slide-in-from-bottom-2',
         type === 'error' && 'bg-red-500/95 border-red-600 text-white',
         type === 'success' && 'bg-green-500/95 border-green-600 text-white',
         type === 'info' && 'bg-blue-500/95 border-blue-600 text-white'

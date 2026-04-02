@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
+import { parseTimeToHours, formatHours } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -215,8 +216,8 @@ export function EarningsPage() {
         }
         return;
       }
-      
-      // Wait for user to have run the SQL to avoid crashes. 
+
+      // Wait for user to have run the SQL to avoid crashes.
       // Loading only unexported earnings from the DB into the table here.
       const { data } = await supabase
         .from("earnings_entries")
@@ -292,7 +293,7 @@ export function EarningsPage() {
   const addMechanicEntry = async () => {
     if (!selectedMechanic) return;
     const mechanic = mechanics.find((m) => m.id === selectedMechanic);
-    const time = parseFloat(mechManualTime) || 0;
+    const time = parseTimeToHours(mechManualTime);
     const rate = parseFloat(mechManualRate) || 0;
     const total = time * rate;
     const entryDate = mechManualDate || new Date().toISOString().slice(0, 10);
@@ -513,6 +514,10 @@ export function EarningsPage() {
     : MONTH_NAMES_EN[selectedMonth - 1];
 
   // Computations
+  const mechanicTotalHours = mechanicEntries.reduce(
+    (s, e) => s + (e.repair_time || 0),
+    0,
+  );
   const mechanicTotal = mechanicEntries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;
   const mechCardVal = parseFloat(mechanicCard) || 0;
@@ -583,7 +588,7 @@ export function EarningsPage() {
         </div>
       </div>
 
-      {/* Earnings Log — All Workers Summary */}
+      {/* Earnings Log - All Workers Summary */}
       {earningsLog.length > 0 && (
         <Card className="bg-gradient-to-r from-mb-anthracite to-mb-black border-mb-border">
           <CardHeader className="pb-2">
@@ -603,7 +608,7 @@ export function EarningsPage() {
               </svg>
               {isBg ? "Обобщение на заработките" : "Earnings Summary"}
               <span className="text-mb-silver font-normal text-xs">
-                — {monthLabel} {selectedYear}
+                - {monthLabel} {selectedYear}
               </span>
             </CardTitle>
           </CardHeader>
@@ -637,7 +642,7 @@ export function EarningsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-green-400">
-                      €{w.totalEarned.toFixed(2)}
+                      {w.totalEarned.toFixed(2)} €
                     </span>
                     <svg
                       className="w-4 h-4 text-mb-silver/40 group-hover:text-mb-blue transition-colors"
@@ -685,7 +690,7 @@ export function EarningsPage() {
               className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm mt-2"
             >
               <option value="">
-                {isBg ? "— Избери механик —" : "— Select Mechanic —"}
+                {isBg ? "- Избери механик -" : "- Select Mechanic -"}
               </option>
               {mechanics
                 .filter(
@@ -720,8 +725,11 @@ export function EarningsPage() {
                       className="bg-mb-black text-white border-mb-border text-sm"
                     />
                     <Input
-                      type="number"
-                      placeholder={isBg ? "Часове" : "Hours"}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder={
+                        isBg ? "Часове (1:30 или 1.5)" : "Hours (1:30 or 1.5)"
+                      }
                       value={mechManualTime}
                       onChange={(e) => setMechManualTime(e.target.value)}
                       className="bg-mb-black text-white border-mb-border text-sm"
@@ -776,22 +784,22 @@ export function EarningsPage() {
                           >
                             <td className="py-2 px-3">
                               <div className="text-white">
-                                {e.vehicle || "—"}
+                                {e.vehicle || "-"}
                               </div>
                               <div className="text-mb-silver text-xs">
-                                {e.repair_name || "—"}
+                                {e.repair_name || "-"}
                               </div>
                             </td>
                             <td className="py-2 pr-2 text-right">
                               <div className="text-mb-silver">
-                                {e.repair_time} {isBg ? "часа" : "h"}
+                                {formatHours(e.repair_time || 0)}
                               </div>
                               <div className="text-mb-silver text-xs">
-                                €{e.hourly_rate}
+                                {e.hourly_rate} €
                               </div>
                             </td>
                             <td className="py-2 pr-2 text-right text-white font-medium">
-                              €{(e.total || 0).toFixed(2)}
+                              {(e.total || 0).toFixed(2)} €
                             </td>
                             <td className="py-2">
                               <button
@@ -824,10 +832,18 @@ export function EarningsPage() {
                       <div className="border-t border-mb-border pt-3 space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-mb-silver">
+                            {isBg ? "Общо часове" : "Total Earned Hours"}
+                          </span>
+                          <span className="text-mb-blue font-semibold">
+                            {formatHours(mechanicTotalHours)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-mb-silver">
                             {isBg ? "Общо заработено" : "Total Earnings"}
                           </span>
                           <span className="text-white font-semibold">
-                            €{mechanicTotal.toFixed(2)}
+                            {mechanicTotal.toFixed(2)} €
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -835,7 +851,7 @@ export function EarningsPage() {
                             {isBg ? "Нето 50%" : "Net 50%"}
                           </span>
                           <span className="text-green-400 font-semibold">
-                            €{mechanicNet.toFixed(2)}
+                            {mechanicNet.toFixed(2)} €
                           </span>
                         </div>
                       </div>
@@ -859,7 +875,10 @@ export function EarningsPage() {
                                 saveMonthlySummary(
                                   selectedMechanic,
                                   "mechanic",
-                                  { card_amount: parseFloat(e.target.value) || 0 }
+                                  {
+                                    card_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
                                 );
                               }}
                               className="bg-gray-100 text-gray-900 border-mb-border text-sm"
@@ -880,7 +899,10 @@ export function EarningsPage() {
                                 saveMonthlySummary(
                                   selectedMechanic,
                                   "mechanic",
-                                  { fines_amount: parseFloat(e.target.value) || 0 }
+                                  {
+                                    fines_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
                                 );
                               }}
                               className="bg-gray-100 text-gray-900 border-mb-border text-sm"
@@ -894,7 +916,7 @@ export function EarningsPage() {
                             {isBg ? "В БРОЙ" : "Cash"}
                           </span>
                           <span className="text-white font-bold">
-                            €{mechanicCash.toFixed(2)}
+                            {mechanicCash.toFixed(2)} €
                           </span>
                         </div>
                       </div>
@@ -922,11 +944,11 @@ export function EarningsPage() {
                           </svg>
                           {pdfGenerating
                             ? isBg
-                              ? "Генериране…"
+                              ? "Създаване"
                               : "Generating…"
                             : isBg
-                            ? "Изтегли PDF"
-                            : "Download PDF"}
+                              ? "Изтегли PDF"
+                              : "Download PDF"}
                         </Button>
                       </div>
                     </div>
@@ -960,7 +982,7 @@ export function EarningsPage() {
               className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm mt-2"
             >
               <option value="">
-                {isBg ? "— Избери приемчик —" : "— Select Receptionist —"}
+                {isBg ? "- Избери приемчик -" : "- Select Receptionist -"}
               </option>
               {receptionists.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -1049,22 +1071,22 @@ export function EarningsPage() {
                           >
                             <td className="py-2 px-3">
                               <div className="text-white">
-                                {e.vehicle || "—"}
+                                {e.vehicle || "-"}
                               </div>
                               <div className="text-mb-silver text-xs">
-                                {e.repair_name || "—"}
+                                {e.repair_name || "-"}
                               </div>
                             </td>
                             <td className="py-2 pr-2 text-right">
                               <div className="text-mb-silver">
-                                €{(e.repair_total || 0).toFixed(2)}
+                                {(e.repair_total || 0).toFixed(2)} €
                               </div>
                               <div className="text-mb-silver text-xs">
                                 {e.turnover_pct}%
                               </div>
                             </td>
                             <td className="py-2 pr-2 text-right text-white font-medium">
-                              €{(e.earnings || 0).toFixed(2)}
+                              {(e.earnings || 0).toFixed(2)} €
                             </td>
                             <td className="py-2">
                               <button
@@ -1102,7 +1124,7 @@ export function EarningsPage() {
                             {isBg ? "Заработка общо (%)" : "Total Earnings (%)"}
                           </span>
                           <span className="text-mb-silver font-semibold">
-                            €{receptionistTotal.toFixed(2)}
+                            {receptionistTotal.toFixed(2)} €
                           </span>
                         </div>
                       </div>
@@ -1217,7 +1239,7 @@ export function EarningsPage() {
                             {isBg ? "Обща заплата" : "Total Salary"}
                           </span>
                           <span className="text-green-400">
-                            €{recTotalSalary.toFixed(2)}
+                            {recTotalSalary.toFixed(2)} €
                           </span>
                         </div>
                         <div className="flex justify-between text-sm font-bold pt-1">
@@ -1225,7 +1247,7 @@ export function EarningsPage() {
                             {isBg ? "Остатък" : "Remaining"}
                           </span>
                           <span className="text-white">
-                            €{recRemaining.toFixed(2)}
+                            {recRemaining.toFixed(2)} €
                           </span>
                         </div>
                       </div>
@@ -1253,7 +1275,7 @@ export function EarningsPage() {
                           </svg>
                           {pdfGenerating
                             ? isBg
-                              ? "Генериране…"
+                              ? "Създаване"
                               : "Generating…"
                             : isBg
                               ? "Изтегли PDF"

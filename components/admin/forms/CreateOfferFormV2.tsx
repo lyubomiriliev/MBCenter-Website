@@ -81,21 +81,30 @@ export function CreateOfferFormV2({
   const [performedBySaving, setPerformedBySaving] = useState(false);
   const [notesFromServiceInput, setNotesFromServiceInput] = useState("");
   const [notesFromServiceSaving, setNotesFromServiceSaving] = useState(false);
+  const [licensePlateInput, setLicensePlateInput] = useState("");
+  const [licensePlateSaving, setLicensePlateSaving] = useState(false);
+  const [mileageInput, setMileageInput] = useState("");
+  const [mileageSaving, setMileageSaving] = useState(false);
+  const [mileageUnitInput, setMileageUnitInput] = useState<"km" | "miles">("km");
   const [baselinePrepayments, setBaselinePrepayments] = useState<number[]>([]);
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [mechanicsList, setMechanicsList] = useState<Mechanic[]>([]);
 
   // Earnings panel state
-  const [receptionistsList, setReceptionistsList] = useState<Receptionist[]>([]);
+  const [receptionistsList, setReceptionistsList] = useState<Receptionist[]>(
+    [],
+  );
   const [mechanicEarningsWorker, setMechanicEarningsWorker] = useState("");
   const [mechanicHourlyRate, setMechanicHourlyRate] = useState("");
   const [mechanicRepairTime, setMechanicRepairTime] = useState("");
   const [mechanicEarningsSaving, setMechanicEarningsSaving] = useState(false);
-  const [receptionistEarningsWorker, setReceptionistEarningsWorker] = useState("");
+  const [receptionistEarningsWorker, setReceptionistEarningsWorker] =
+    useState("");
   const [receptionistTurnoverPct, setReceptionistTurnoverPct] = useState("");
   const [receptionistRepairTotal, setReceptionistRepairTotal] = useState("");
-  const [receptionistEarningsSaving, setReceptionistEarningsSaving] = useState(false);
+  const [receptionistEarningsSaving, setReceptionistEarningsSaving] =
+    useState(false);
 
   // Global defaults
   const [defaultMechRate, setDefaultMechRate] = useState("");
@@ -150,7 +159,7 @@ export function CreateOfferFormV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id, savedOffer?.performed_by]);
 
-  // Load mechanics list from Supabase (always — used for both mechanic view and earnings panel)
+  // Load mechanics list from Supabase (always - used for both mechanic view and earnings panel)
   useEffect(() => {
     supabase
       .from("mechanics")
@@ -192,11 +201,30 @@ export function CreateOfferFormV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id, savedOffer?.notes]);
 
+  useEffect(() => {
+    if (savedOffer) setLicensePlateInput(savedOffer.license_plate ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOffer?.id, savedOffer?.license_plate]);
+
+  useEffect(() => {
+    if (savedOffer)
+      setMileageInput(
+        savedOffer.mileage != null ? String(savedOffer.mileage) : "",
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOffer?.id, savedOffer?.mileage]);
+
+  useEffect(() => {
+    if (savedOffer)
+      setMileageUnitInput((savedOffer.mileage_unit as "km" | "miles") ?? "km");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOffer?.id, savedOffer?.mileage_unit]);
+
   // Load existing offer data into form when editing
   useEffect(() => {
     if (!existingOffer || !isEditing) return;
     setSavedOffer(existingOffer);
-    // Only reset the form on initial load — never on subsequent refetches
+    // Only reset the form on initial load - never on subsequent refetches
     // (refetches happen after autosave; resetting would wipe in-progress typing)
     if (formLoadedRef.current) return;
     const savedPrepayments = (
@@ -311,7 +339,7 @@ export function CreateOfferFormV2({
     }
   }, [isEditing, methods]);
 
-  // beforeunload — warn if there are unsaved changes when closing/refreshing tab
+  // beforeunload - warn if there are unsaved changes when closing/refreshing tab
   useEffect(() => {
     if (!isEditing) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -347,7 +375,7 @@ export function CreateOfferFormV2({
   }, [isEditing, hasUnsavedChanges]);
 
   // Subscription-based localStorage autosave for new (unsaved) offers.
-  // No individual watch() calls needed — no re-renders per keystroke.
+  // No individual watch() calls needed - no re-renders per keystroke.
   useEffect(() => {
     if (isEditing) return;
     const subscription = methods.watch(() => {
@@ -824,7 +852,7 @@ export function CreateOfferFormV2({
       const worker = mechanicsList.find((m) => m.id === mechanicEarningsWorker);
       const workerName = worker?.name || mechanicEarningsWorker;
       const hourlyRate = parseFloat(mechanicHourlyRate) || 0;
-      const repairTime = parseFloat(mechanicRepairTime) || 0;
+      const repairTime = parseTimeToHours(mechanicRepairTime);
       const total = hourlyRate * repairTime;
       const formValues = methods.getValues();
       const vehicle = formValues.carModel || "";
@@ -846,9 +874,13 @@ export function CreateOfferFormV2({
         offer_number: savedOffer?.offer_number || null,
       } as never);
       if (error) throw error;
-      showSuccess(locale === "bg" ? "Заработката е записана" : "Earnings saved");
+      showSuccess(
+        locale === "bg" ? "Заработката е записана" : "Earnings saved",
+      );
     } catch {
-      showError(locale === "bg" ? "Грешка при записване" : "Error saving earnings");
+      showError(
+        locale === "bg" ? "Грешка при записване" : "Error saving earnings",
+      );
     } finally {
       setMechanicEarningsSaving(false);
     }
@@ -858,10 +890,13 @@ export function CreateOfferFormV2({
     if (!receptionistEarningsWorker) return;
     setReceptionistEarningsSaving(true);
     try {
-      const worker = receptionistsList.find((r) => r.id === receptionistEarningsWorker);
+      const worker = receptionistsList.find(
+        (r) => r.id === receptionistEarningsWorker,
+      );
       const workerName = worker?.name || receptionistEarningsWorker;
       const pct = parseFloat(receptionistTurnoverPct) || 0;
-      const repairTotal = parseFloat(receptionistRepairTotal) || offerCalculations.grossTotal;
+      const repairTotal =
+        parseFloat(receptionistRepairTotal) || offerCalculations.grossTotal;
       const earnings = repairTotal * (pct / 100);
       const formValues = methods.getValues();
       const vehicle = formValues.carModel || "";
@@ -883,9 +918,13 @@ export function CreateOfferFormV2({
         offer_number: savedOffer?.offer_number || null,
       } as never);
       if (error) throw error;
-      showSuccess(locale === "bg" ? "Заработката е записана" : "Earnings saved");
+      showSuccess(
+        locale === "bg" ? "Заработката е записана" : "Earnings saved",
+      );
     } catch {
-      showError(locale === "bg" ? "Грешка при записване" : "Error saving earnings");
+      showError(
+        locale === "bg" ? "Грешка при записване" : "Error saving earnings",
+      );
     } finally {
       setReceptionistEarningsSaving(false);
     }
@@ -1034,7 +1073,7 @@ export function CreateOfferFormV2({
           car_year: data.carYear ?? null,
           created_by_name: data.createdByName,
           created_by: profile.id,
-          status: "sent",
+          status: "draft",
           total_net: netTotal,
           total_vat: vat,
           total_gross: grossTotal,
@@ -1164,22 +1203,8 @@ export function CreateOfferFormV2({
 
       if (completeOffer) {
         setSavedOffer(completeOffer as OfferWithRelations);
-
-        // Generate and download PDF (don't block navigation on PDF errors)
-        console.log("Generating PDF...");
-        try {
-          await generateOfferPDF(completeOffer as OfferWithRelations);
-          console.log("PDF generated and downloaded successfully");
-        } catch (pdfError) {
-          console.error(
-            "PDF generation failed, but offer was saved:",
-            pdfError,
-          );
-          // Don't throw - offer is saved, just PDF failed
-          showError(t("errors.pdfFailedButSaved"));
-        }
       } else {
-        console.warn("Complete offer data not available for PDF generation");
+        console.warn("Complete offer data not available");
       }
 
       // Clear localStorage draft on successful creation
@@ -1259,7 +1284,9 @@ export function CreateOfferFormV2({
       missingFields.push(locale === "bg" ? "Създадена от" : "Created By");
     }
     if (errors.parts) {
-      missingFields.push(locale === "bg" ? "Части / Услуги" : "Parts / Services");
+      missingFields.push(
+        locale === "bg" ? "Части / Услуги" : "Parts / Services",
+      );
     }
 
     if (missingFields.length > 0) {
@@ -1269,7 +1296,20 @@ export function CreateOfferFormV2({
           : `Please fill in the required fields: ${missingFields.join(", ")}`,
       );
     } else {
-      showError(t("errors.formInvalid"));
+      // Extract error messages from the errors object for unknown fields
+      const extractMessages = (obj: any, depth = 0): string[] => {
+        if (depth > 3) return [];
+        if (!obj || typeof obj !== "object") return [];
+        if (obj.message && typeof obj.message === "string") return [obj.message];
+        return Object.values(obj).flatMap((v) => extractMessages(v, depth + 1));
+      };
+      const errorMessages = extractMessages(errors);
+      const uniqueMessages = [...new Set(errorMessages)];
+      showError(
+        uniqueMessages.length > 0
+          ? `${t("errors.formInvalid")}: ${uniqueMessages.join(", ")}`
+          : t("errors.formInvalid"),
+      );
     }
 
     setIsSaving(false);
@@ -1382,7 +1422,46 @@ export function CreateOfferFormV2({
                 <span className="text-mb-silver text-sm">
                   {t("carLicensePlate")}
                 </span>
-                <p className="text-white">{savedOffer.license_plate || "-"}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    value={licensePlateInput}
+                    onChange={(e) => setLicensePlateInput(e.target.value)}
+                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-1.5 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-3 shrink-0"
+                    disabled={licensePlateSaving}
+                    onClick={async () => {
+                      if (!savedOffer?.id) return;
+                      setLicensePlateSaving(true);
+                      try {
+                        await updateOfferMutation.mutateAsync({
+                          id: savedOffer.id,
+                          offer: {
+                            license_plate: licensePlateInput.trim() || null,
+                          },
+                        });
+                        queryClient.invalidateQueries({
+                          queryKey: ["offer", savedOffer.id],
+                        });
+                        showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                      } catch {
+                        showError(
+                          locale === "bg"
+                            ? "Грешка при запазване."
+                            : "Error saving.",
+                        );
+                      } finally {
+                        setLicensePlateSaving(false);
+                      }
+                    }}
+                  >
+                    {licensePlateSaving ? "…" : t("performedBySave")}
+                  </Button>
+                </div>
               </div>
               <div>
                 <span className="text-mb-silver text-sm">{t("carVin")}</span>
@@ -1396,11 +1475,64 @@ export function CreateOfferFormV2({
                 <span className="text-mb-silver text-sm">
                   {t("carMileage")}
                 </span>
-                <p className="text-white">
-                  {savedOffer.mileage != null
-                    ? `${savedOffer.mileage} ${savedOffer.mileage_unit === "km" ? (locale === "bg" ? "км" : "km") : savedOffer.mileage_unit}`
-                    : "-"}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="number"
+                    value={mileageInput}
+                    onChange={(e) => setMileageInput(e.target.value)}
+                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-1.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    placeholder="0"
+                  />
+                  <div className="flex rounded-md overflow-hidden border border-mb-border text-sm shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setMileageUnitInput("km")}
+                      className={`px-3 py-1.5 font-medium transition-colors ${mileageUnitInput === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                    >
+                      км
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMileageUnitInput("miles")}
+                      className={`px-3 py-1.5 font-medium transition-colors ${mileageUnitInput === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                    >
+                      мили
+                    </button>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-3 shrink-0"
+                    disabled={mileageSaving}
+                    onClick={async () => {
+                      if (!savedOffer?.id) return;
+                      setMileageSaving(true);
+                      try {
+                        const val = mileageInput.trim()
+                          ? Number(mileageInput)
+                          : null;
+                        await updateOfferMutation.mutateAsync({
+                          id: savedOffer.id,
+                          offer: { mileage: val, mileage_unit: mileageUnitInput } as any,
+                        });
+                        queryClient.invalidateQueries({
+                          queryKey: ["offer", savedOffer.id],
+                        });
+                        showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                      } catch {
+                        showError(
+                          locale === "bg"
+                            ? "Грешка при запазване."
+                            : "Error saving.",
+                        );
+                      } finally {
+                        setMileageSaving(false);
+                      }
+                    }}
+                  >
+                    {mileageSaving ? "…" : t("performedBySave")}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1438,7 +1570,11 @@ export function CreateOfferFormV2({
                       {t("performedByChoose")}
                     </option>
                     {mechanicsList.map((m) => (
-                      <option key={m.id} value={m.name} className="bg-mb-anthracite">
+                      <option
+                        key={m.id}
+                        value={m.name}
+                        className="bg-mb-anthracite"
+                      >
                         {m.name}
                       </option>
                     ))}
@@ -1480,88 +1616,90 @@ export function CreateOfferFormV2({
           </CardContent>
         </Card>
 
-        {/* Notes + Parts – side by side on 2K/4K screens */}
-        <div className="grid grid-cols-1 2xl:grid-cols-2 2xl:gap-6">
-        {/* Забележки от сервиза - editable by mechanic */}
-        <Card className="bg-mb-anthracite border-mb-border">
-          <CardContent className="pt-6">
-            <CardTitle className="text-lg mb-3">{t("notes")}</CardTitle>
-            <textarea
-              value={notesFromServiceInput}
-              onChange={(e) => setNotesFromServiceInput(e.target.value)}
-              placeholder="Опишете какво е открито по автомобила..."
-              rows={4}
-              className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-            />
-            <Button
-              type="button"
-              className="mt-3 bg-mb-blue hover:bg-mb-blue/90 text-white px-5 py-2"
-              disabled={notesFromServiceSaving}
-              onClick={async () => {
-                if (!savedOffer?.id) return;
-                setNotesFromServiceSaving(true);
-                try {
-                  await updateOfferMutation.mutateAsync({
-                    id: savedOffer.id,
-                    offer: {
-                      notes: notesFromServiceInput.trim() || null,
-                    } as any,
-                  });
-                  queryClient.invalidateQueries({
-                    queryKey: ["offer", savedOffer.id],
-                  });
-                  showSuccess(locale === "bg" ? "Запазено." : "Saved.");
-                } catch {
-                  showError(
-                    locale === "bg" ? "Грешка при запазване." : "Error saving.",
-                  );
-                } finally {
-                  setNotesFromServiceSaving(false);
-                }
-              }}
-            >
-              {notesFromServiceSaving ? "…" : t("performedBySave")}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Parts - no prices, only names, numbers, quantities */}
-        {offerParts.length > 0 && (
-          <Card className="bg-mb-anthracite border-mb-border">
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {t("parts")} ({offerParts.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="grid grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_80px] gap-3 text-sm text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
-                  <div>#</div>
-                  <div>{t("productName")}</div>
-                  <div>{t("partNumber")}</div>
-                  <div className="text-right">{t("qty")}</div>
+        {/* Parts + Notes – side by side on 2K/4K screens */}
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+          {/* Parts - no prices, only names, numbers, quantities */}
+          {offerParts.length > 0 && (
+            <Card className="bg-mb-anthracite border-mb-border">
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {t("parts")} ({offerParts.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_80px] gap-3 text-sm text-mb-silver uppercase font-medium border-b border-mb-border pb-2">
+                    <div>#</div>
+                    <div>{t("productName")}</div>
+                    <div>{t("partNumber")}</div>
+                    <div className="text-right">{t("qty")}</div>
+                  </div>
+                  {offerParts
+                    .sort((a, b) => a.sort_order - b.sort_order)
+                    .map((part, i) => (
+                      <div
+                        key={part.id}
+                        className="grid grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_80px] gap-3 text-base py-1.5 border-b border-mb-border/50"
+                      >
+                        <div className="text-mb-silver">{i + 1}</div>
+                        <div className="text-white">{part.description}</div>
+                        <div className="text-mb-silver font-mono truncate">
+                          {part.part_number || "-"}
+                        </div>
+                        <div className="text-white text-right">
+                          {part.quantity}
+                        </div>
+                      </div>
+                    ))}
                 </div>
-                {offerParts
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((part, i) => (
-                    <div
-                      key={part.id}
-                      className="grid grid-cols-[40px_minmax(0,2fr)_minmax(0,1fr)_80px] gap-3 text-base py-1.5 border-b border-mb-border/50"
-                    >
-                      <div className="text-mb-silver">{i + 1}</div>
-                      <div className="text-white">{part.description}</div>
-                      <div className="text-mb-silver font-mono truncate">
-                        {part.part_number || "-"}
-                      </div>
-                      <div className="text-white text-right">
-                        {part.quantity}
-                      </div>
-                    </div>
-                  ))}
-              </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Забележки от сервиза - editable by mechanic */}
+          <Card className="bg-mb-anthracite border-mb-border">
+            <CardContent className="pt-6">
+              <CardTitle className="text-lg mb-3">{t("notes")}</CardTitle>
+              <textarea
+                value={notesFromServiceInput}
+                onChange={(e) => setNotesFromServiceInput(e.target.value)}
+                placeholder="Опишете какво е открито по автомобила..."
+                rows={4}
+                className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+              />
+              <Button
+                type="button"
+                className="mt-3 bg-mb-blue hover:bg-mb-blue/90 text-white px-5 py-2"
+                disabled={notesFromServiceSaving}
+                onClick={async () => {
+                  if (!savedOffer?.id) return;
+                  setNotesFromServiceSaving(true);
+                  try {
+                    await updateOfferMutation.mutateAsync({
+                      id: savedOffer.id,
+                      offer: {
+                        notes: notesFromServiceInput.trim() || null,
+                      } as any,
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: ["offer", savedOffer.id],
+                    });
+                    showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                  } catch {
+                    showError(
+                      locale === "bg"
+                        ? "Грешка при запазване."
+                        : "Error saving.",
+                    );
+                  } finally {
+                    setNotesFromServiceSaving(false);
+                  }
+                }}
+              >
+                {notesFromServiceSaving ? "…" : t("performedBySave")}
+              </Button>
             </CardContent>
           </Card>
-        )}
         </div>
       </div>
     );
@@ -1636,7 +1774,7 @@ export function CreateOfferFormV2({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Discounts — side by side, compact */}
+              {/* Discounts - side by side, compact */}
               <div className="flex flex-wrap gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="discountPartsPercent">
@@ -1710,19 +1848,32 @@ export function CreateOfferFormV2({
                   </div>
                 </div>
 
-                {/* Earnings panel — admin view only, hidden from reception */}
+                {/* Earnings panel - admin view only, hidden from reception */}
                 {!isMechanicView && !isReceptionRole && (
-                  <div className="space-y-3 border border-mb-border rounded-lg p-4">
+                  <div className="space-y-3 border border-mb-border rounded-lg p-4 mt-7">
                     <h3 className="font-semibold text-sm text-mb-silver uppercase tracking-wide flex items-center gap-2">
-                      <svg className="w-4 h-4 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4 text-mb-blue"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       {locale === "bg" ? "Заработки" : "Earnings"}
                     </h3>
 
-                    {/* Mechanic */}
-                    <div className="space-y-2 pb-3 border-b border-mb-border/50">
-                      <p className="text-xs text-mb-silver font-medium">{locale === "bg" ? "Механик" : "Mechanic"}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Mechanic */}
+                      <div className="space-y-2 pb-3 sm:pb-0 sm:border-b-0 border-b border-mb-border/50 sm:pr-4 sm:border-r">
+                        <p className="text-xs text-mb-silver font-medium">
+                        {locale === "bg" ? "Механик" : "Mechanic"}
+                      </p>
                       <select
                         value={mechanicEarningsWorker}
                         onChange={(e) => {
@@ -1733,32 +1884,86 @@ export function CreateOfferFormV2({
                         }}
                         className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
                       >
-                        <option value="">{locale === "bg" ? "— Избери —" : "— Select —"}</option>
+                        <option value="">
+                          {locale === "bg" ? "- Избери -" : "- Select -"}
+                        </option>
                         {mechanicsList.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
                         ))}
                       </select>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">{locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}</Label>
-                          <Input type="number" min="0" step="0.5" value={mechanicHourlyRate} onChange={(e) => setMechanicHourlyRate(e.target.value)} placeholder="0.00" className="bg-gray-100 text-gray-900 border-mb-border text-sm" />
+                          <Label className="text-xs">
+                            {locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}
+                          </Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={mechanicHourlyRate}
+                            onChange={(e) =>
+                              setMechanicHourlyRate(e.target.value)
+                            }
+                            placeholder="0.00"
+                            className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                          />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">{locale === "bg" ? "Часове" : "Hours"}</Label>
-                          <Input type="number" min="0" step="0.25" value={mechanicRepairTime} onChange={(e) => setMechanicRepairTime(e.target.value)} placeholder="0.00" className="bg-gray-100 text-gray-900 border-mb-border text-sm" />
+                          <Label className="text-xs">
+                            {locale === "bg"
+                              ? "Часове (1:30 или 1.5)"
+                              : "Hours (1:30 or 1.5)"}
+                          </Label>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            value={mechanicRepairTime}
+                            onChange={(e) =>
+                              setMechanicRepairTime(e.target.value)
+                            }
+                            placeholder="1:30"
+                            className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                          />
                         </div>
                       </div>
                       {mechanicHourlyRate && mechanicRepairTime && (
-                        <p className="text-xs text-mb-silver">{locale === "bg" ? "Общо" : "Total"}: <span className="text-white font-semibold">€{(parseFloat(mechanicHourlyRate || "0") * parseFloat(mechanicRepairTime || "0")).toFixed(2)}</span></p>
+                        <p className="text-xs text-mb-silver">
+                          {locale === "bg" ? "Общо" : "Total"}:{" "}
+                          <span className="text-white font-semibold">
+                            {(
+                              parseFloat(mechanicHourlyRate || "0") *
+                              parseTimeToHours(mechanicRepairTime)
+                            ).toFixed(2)}{" "}
+                            €
+                          </span>
+                        </p>
                       )}
-                      <Button type="button" size="sm" disabled={!mechanicEarningsWorker || mechanicEarningsSaving} onClick={saveMechanicEarnings} className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8">
-                        {mechanicEarningsSaving ? (locale === "bg" ? "Записване…" : "Saving…") : (locale === "bg" ? "Запиши" : "Save")}
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          !mechanicEarningsWorker || mechanicEarningsSaving
+                        }
+                        onClick={saveMechanicEarnings}
+                        className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
+                      >
+                        {mechanicEarningsSaving
+                          ? locale === "bg"
+                            ? "Записване…"
+                            : "Saving…"
+                          : locale === "bg"
+                            ? "Запиши"
+                            : "Save"}
                       </Button>
                     </div>
 
                     {/* Receptionist */}
                     <div className="space-y-2">
-                      <p className="text-xs text-mb-silver font-medium">{locale === "bg" ? "Приемчик" : "Receptionist"}</p>
+                      <p className="text-xs text-mb-silver font-medium">
+                        {locale === "bg" ? "Приемчик" : "Receptionist"}
+                      </p>
                       <select
                         value={receptionistEarningsWorker}
                         onChange={(e) => {
@@ -1769,30 +1974,91 @@ export function CreateOfferFormV2({
                         }}
                         className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
                       >
-                        <option value="">{locale === "bg" ? "— Избери —" : "— Select —"}</option>
+                        <option value="">
+                          {locale === "bg" ? "- Избери -" : "- Select -"}
+                        </option>
                         {receptionistsList.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
                         ))}
                       </select>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-xs">% {locale === "bg" ? "от оборота" : "of turnover"}</Label>
+                          <Label className="text-xs">
+                            % {locale === "bg" ? "от оборота" : "of turnover"}
+                          </Label>
                           <div className="relative">
-                            <Input type="number" min="0" max="100" step="0.5" value={receptionistTurnoverPct} onChange={(e) => setReceptionistTurnoverPct(e.target.value)} placeholder="0" className="bg-gray-100 text-gray-900 border-mb-border pr-6 text-sm" />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-xs">%</span>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.5"
+                              value={receptionistTurnoverPct}
+                              onChange={(e) =>
+                                setReceptionistTurnoverPct(e.target.value)
+                              }
+                              placeholder="0"
+                              className="bg-gray-100 text-gray-900 border-mb-border pr-6 text-sm"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-xs">
+                              %
+                            </span>
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">{locale === "bg" ? "Сума ремонт (€)" : "Repair total (€)"}</Label>
-                          <Input type="number" min="0" step="0.01" value={receptionistRepairTotal || offerCalculations.grossTotal.toFixed(2)} onChange={(e) => setReceptionistRepairTotal(e.target.value)} className="bg-gray-100 text-gray-900 border-mb-border text-sm" />
+                          <Label className="text-xs">
+                            {locale === "bg"
+                              ? "Сума ремонт (€)"
+                              : "Repair total (€)"}
+                          </Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={
+                              receptionistRepairTotal ||
+                              offerCalculations.grossTotal.toFixed(2)
+                            }
+                            onChange={(e) =>
+                              setReceptionistRepairTotal(e.target.value)
+                            }
+                            className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                          />
                         </div>
                       </div>
                       {receptionistTurnoverPct && (
-                        <p className="text-xs text-mb-silver">{locale === "bg" ? "Заработка" : "Earnings"}: <span className="text-white font-semibold">€{((parseFloat(receptionistRepairTotal || "0") || offerCalculations.grossTotal) * (parseFloat(receptionistTurnoverPct || "0") / 100)).toFixed(2)}</span></p>
+                        <p className="text-xs text-mb-silver">
+                          {locale === "bg" ? "Заработка" : "Earnings"}:{" "}
+                          <span className="text-white font-semibold">
+                            {(
+                              (parseFloat(receptionistRepairTotal || "0") ||
+                                offerCalculations.grossTotal) *
+                              (parseFloat(receptionistTurnoverPct || "0") / 100)
+                            ).toFixed(2)}{" "}
+                            €
+                          </span>
+                        </p>
                       )}
-                      <Button type="button" size="sm" disabled={!receptionistEarningsWorker || receptionistEarningsSaving} onClick={saveReceptionistEarnings} className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8">
-                        {receptionistEarningsSaving ? (locale === "bg" ? "Записване…" : "Saving…") : (locale === "bg" ? "Запиши" : "Save")}
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          !receptionistEarningsWorker ||
+                          receptionistEarningsSaving
+                        }
+                        onClick={saveReceptionistEarnings}
+                        className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
+                      >
+                        {receptionistEarningsSaving
+                          ? locale === "bg"
+                            ? "Записване…"
+                            : "Saving…"
+                          : locale === "bg"
+                            ? "Запиши"
+                            : "Save"}
                       </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1992,8 +2258,6 @@ export function CreateOfferFormV2({
                   </svg>
                   {t("addPrePayment")}
                 </Button>
-
-
 
                 {/* Clone Button (only for existing offers) */}
                 {isEditing && savedOffer && (

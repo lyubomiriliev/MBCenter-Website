@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, memo } from "react";
+import { useState, useCallback, useEffect, useMemo, memo, useRef } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import {
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/popover";
 import type { OfferFormData, ServiceActionFormData } from "@/lib/schemas/offer";
 import { EUR_TO_BGN } from "@/lib/schemas/offer";
-import { parseTimeToHours } from "@/lib/utils";
+import { parseTimeToHours, formatHours } from "@/lib/utils";
 import {
   useFixedActivities,
   useAddFixedActivity,
@@ -143,8 +143,10 @@ function AddEditServiceActionModal({
     [fixedActivities],
   );
 
+  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (open) reset(initialValues, activitiesForReset);
+    if (open && !prevOpenRef.current) reset(initialValues, activitiesForReset);
+    prevOpenRef.current = open;
   }, [open, initialValues, reset, activitiesForReset]);
 
   const handleOk = () => {
@@ -278,7 +280,7 @@ function AddEditServiceActionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md">
+      <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md px-6">
         <DialogHeader>
           <DialogTitle className="text-white">
             {editIndex !== null
@@ -322,6 +324,7 @@ function AddEditServiceActionModal({
                 <div className="space-y-2">
                   {fixedActivities.length > 0 ? (
                     <Popover
+                      modal={false}
                       open={activityPopoverOpen}
                       onOpenChange={setActivityPopoverOpen}
                     >
@@ -337,9 +340,9 @@ function AddEditServiceActionModal({
                                     (a) => a.id === selectedActivityId,
                                   );
                                   return act
-                                    ? `${act.name} — €${act.price_eur.toFixed(
+                                    ? `${act.name} - ${act.price_eur.toFixed(
                                         2,
-                                      )} / ${(
+                                      )} € / ${(
                                         act.price_eur * EUR_TO_BGN
                                       ).toFixed(2)} лв.`
                                     : t("selectFixedActivity");
@@ -364,6 +367,7 @@ function AddEditServiceActionModal({
                       <PopoverContent
                         className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
                         align="start"
+                        style={{ zIndex: 9999 }}
                       >
                         {fixedActivities.map((act) => (
                           <div
@@ -375,7 +379,7 @@ function AddEditServiceActionModal({
                             }}
                           >
                             <span className="flex-1 truncate min-w-0">
-                              {act.name} — €{act.price_eur.toFixed(2)} /{" "}
+                              {act.name} - {act.price_eur.toFixed(2)} € /{" "}
                               {(act.price_eur * EUR_TO_BGN).toFixed(2)} лв.
                             </span>
                             <button
@@ -465,7 +469,7 @@ function AddEditServiceActionModal({
                   setAddNewModalOpen(v);
                 }}
               >
-                <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
+                <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm px-6">
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       {editingActivity
@@ -504,21 +508,21 @@ function AddEditServiceActionModal({
                       />
                     </div>
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      onClick={handleAddNewFixedActivity}
+                      className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
+                    >
+                      {t("ok")}
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setAddNewModalOpen(false)}
-                      className="bg-red-500 hover:bg-red-600 text-white border-red-500"
+                      className="bg-red-600 hover:bg-red-700 text-white border-red-600 w-full sm:w-auto"
                     >
                       {t("cancel")}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleAddNewFixedActivity}
-                      className="bg-green-500 hover:bg-green-600"
-                    >
-                      {t("ok")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -557,7 +561,7 @@ function AddEditServiceActionModal({
                 </Label>
                 <div className="space-y-2">
                   {hourlyActivities.length > 0 && (
-                    <Popover open={hourlyPresetPopoverOpen} onOpenChange={setHourlyPresetPopoverOpen}>
+                    <Popover modal={false} open={hourlyPresetPopoverOpen} onOpenChange={setHourlyPresetPopoverOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -576,6 +580,7 @@ function AddEditServiceActionModal({
                       <PopoverContent
                         className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
                         align="start"
+                        style={{ zIndex: 9999 }}
                       >
                         {hourlyActivities.map((act) => (
                           <div
@@ -584,7 +589,7 @@ function AddEditServiceActionModal({
                             onClick={() => handleSelectHourlyPreset(act.id)}
                           >
                             <span className="flex-1 truncate min-w-0">
-                              {act.name} — €{act.price_per_hour_eur.toFixed(2)}/ч.
+                              {act.name} - {act.price_per_hour_eur.toFixed(2)} €/ч.
                             </span>
                             <button
                               type="button"
@@ -655,7 +660,7 @@ function AddEditServiceActionModal({
                   setAddHourlyModalOpen(v);
                 }}
               >
-                <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
+                <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm px-6">
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       {editingHourly ? "Редактирай дейност" : "Добави предефинирана дейност"}
@@ -687,22 +692,22 @@ function AddEditServiceActionModal({
                       />
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAddHourlyModalOpen(false)}
-                      className="bg-red-500 hover:bg-red-600 text-white border-red-500"
-                    >
-                      {t("cancel")}
-                    </Button>
+                  <DialogFooter className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       type="button"
                       onClick={handleSaveHourlyPreset}
                       disabled={addHourlyMut.isPending || updateHourlyMut.isPending}
-                      className="bg-green-500 hover:bg-green-600"
+                      className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
                     >
                       {t("ok")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAddHourlyModalOpen(false)}
+                      className="bg-red-600 hover:bg-red-700 text-white border-red-600 w-full sm:w-auto"
+                    >
+                      {t("cancel")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -752,7 +757,7 @@ function AddEditServiceActionModal({
                   const totalWithVat = rate * hours;
                   return (
                     <p className="text-sm mt-4 text-mb-silver">
-                      Обща стойност: €{totalWithVat.toFixed(2)} {t("withVat")}
+                      Обща стойност: {totalWithVat.toFixed(2)} € {t("withVat")}
                     </p>
                   );
                 })()}
@@ -761,21 +766,21 @@ function AddEditServiceActionModal({
           )}
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="button"
+            onClick={handleOk}
+            className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
+          >
+            {t("ok")}
+          </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="bg-red-500 hover:bg-red-600 text-white border-red-500"
+            className="bg-red-600 hover:bg-red-700 text-white border-red-600 w-full sm:w-auto"
           >
             {t("cancel")}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleOk}
-            className="bg-green-500 hover:bg-green-600"
-          >
-            {t("ok")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -851,19 +856,19 @@ const ServiceActionRow = memo(function ServiceActionRow({ index, remove, openEdi
         className="min-w-0 text-white text-sm truncate text-left"
         title={actionName}
       >
-        {actionName || "—"}
+        {actionName || "-"}
       </div>
       <div
         className="text-mb-silver text-sm flex items-center justify-center"
         title={timeRequired}
       >
-        {isFixed ? "-" : timeRequired || "-"}
+        {isFixed ? "-" : (totalHours > 0 ? formatHours(totalHours) : timeRequired || "-")}
       </div>
       <div className="text-white text-sm tabular-nums flex items-center justify-end">
-        {isFixed ? "-" : `€${Number(pricePerHour).toFixed(2)}`}
+        {isFixed ? "-" : `${Number(pricePerHour).toFixed(2)} €`}
       </div>
       <div className="text-green-400 text-sm font-medium tabular-nums flex items-center justify-end">
-        €{total.toFixed(2)}
+        {total.toFixed(2)} €
       </div>
       <div className="flex items-center gap-1">
         <Button

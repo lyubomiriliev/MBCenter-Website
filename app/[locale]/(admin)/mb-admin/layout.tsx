@@ -19,7 +19,7 @@ export default function AdminLayout({
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 15 * 1000,       // 15s — admin data changes frequently
+        staleTime: 15 * 1000,       // 15s - admin data changes frequently
         gcTime: 2 * 60 * 1000,      // 2 min in-memory cache
         refetchOnWindowFocus: false,
       },

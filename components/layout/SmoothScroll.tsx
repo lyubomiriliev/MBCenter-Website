@@ -1,40 +1,55 @@
 "use client";
 
 import { useEffect } from "react";
-import Lenis from "lenis";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 export function SmoothScroll() {
   useEffect(() => {
-    // Initialize Lenis
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: "vertical",
-      gestureOrientation: "vertical",
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
-      infinite: false,
-    });
+    // Defer Lenis + GSAP ScrollTrigger init until after page is interactive
+    // This avoids long main-thread tasks during initial load
+    let lenis: import("lenis").default | null = null;
+    let rafId: number;
 
-    // Integrate Lenis with GSAP ScrollTrigger
-    function raf(time: number) {
-      lenis.raf(time);
-      ScrollTrigger.update();
-      requestAnimationFrame(raf);
+    const init = async () => {
+      const [{ default: Lenis }, { gsap }, { ScrollTrigger }] =
+        await Promise.all([
+          import("lenis"),
+          import("gsap"),
+          import("gsap/dist/ScrollTrigger"),
+        ]);
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: "vertical",
+        gestureOrientation: "vertical",
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 2,
+        infinite: false,
+      });
+
+      function raf(time: number) {
+        lenis!.raf(time);
+        ScrollTrigger.update();
+        rafId = requestAnimationFrame(raf);
+      }
+
+      rafId = requestAnimationFrame(raf);
+    };
+
+    // Use requestIdleCallback if available, otherwise defer 1s after load
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(init, { timeout: 2000 });
+    } else {
+      const timer = setTimeout(init, 1000);
+      return () => clearTimeout(timer);
     }
 
-    requestAnimationFrame(raf);
-
-    // Cleanup
     return () => {
-      lenis.destroy();
+      cancelAnimationFrame(rafId);
+      lenis?.destroy();
     };
   }, []);
 

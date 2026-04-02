@@ -10,7 +10,6 @@ import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { authClient as supabase } from "@/lib/supabase/client";
 import type { Mechanic, Receptionist } from "@/types/database";
 
-const DOCUMENT_CREATORS_KEY = "mb_document_creators";
 
 function getColumnsKey(account: string) {
   return `mb_offer_columns_visibility_${account}`;
@@ -392,12 +391,6 @@ export default function SettingsPage() {
   }, [selectedAccountForColumns]);
 
   useEffect(() => {
-    const creatorsStored = localStorage.getItem(DOCUMENT_CREATORS_KEY);
-    if (creatorsStored) {
-      try {
-        setCreators(JSON.parse(creatorsStored));
-      } catch {}
-    }
     const loadSettings = async () => {
       const { data } = await (supabase.from("app_settings").select("*") as any);
       if (data) {
@@ -405,6 +398,12 @@ export default function SettingsPage() {
         const rec = data.find((s: any) => s.key === "receptionist_pct")?.value;
         if (mech !== undefined) setMechanicEarningsRate(String(mech));
         if (rec !== undefined) setReceptionistEarningsPercent(String(rec));
+        const creatorsRow = data.find((s: any) => s.key === "document_creators");
+        if (creatorsRow?.value_text) {
+          try {
+            setCreators(JSON.parse(creatorsRow.value_text));
+          } catch {}
+        }
       }
     };
     loadSettings();
@@ -599,25 +598,25 @@ export default function SettingsPage() {
     window.dispatchEvent(new StorageEvent("storage", { key: storageKey }));
   };
 
-  const handleAddCreator = () => {
+  const handleAddCreator = async () => {
     const name = newCreatorName.trim();
     if (!name || creators.includes(name)) return;
     const updated = [...creators, name];
     setCreators(updated);
-    localStorage.setItem(DOCUMENT_CREATORS_KEY, JSON.stringify(updated));
-    window.dispatchEvent(
-      new StorageEvent("storage", { key: DOCUMENT_CREATORS_KEY }),
-    );
     setNewCreatorName("");
+    await (supabase.from("app_settings") as any).upsert(
+      { key: "document_creators", value_text: JSON.stringify(updated) },
+      { onConflict: "key" }
+    );
     showSuccess(isBg ? "Създателят е добавен" : "Creator added");
   };
 
-  const handleDeleteCreator = (name: string) => {
+  const handleDeleteCreator = async (name: string) => {
     const updated = creators.filter((c) => c !== name);
     setCreators(updated);
-    localStorage.setItem(DOCUMENT_CREATORS_KEY, JSON.stringify(updated));
-    window.dispatchEvent(
-      new StorageEvent("storage", { key: DOCUMENT_CREATORS_KEY }),
+    await (supabase.from("app_settings") as any).upsert(
+      { key: "document_creators", value_text: JSON.stringify(updated) },
+      { onConflict: "key" }
     );
     showSuccess(isBg ? "Създателят е премахнат" : "Creator removed");
   };
@@ -868,7 +867,7 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* Password reset via email — only for non-admin accounts */}
+            {/* Password reset via email - only for non-admin accounts */}
             {selectedAccount !== "admin" && (
               <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
                 <SubSection

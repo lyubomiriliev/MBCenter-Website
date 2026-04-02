@@ -1,4 +1,5 @@
 import React from "react";
+import { formatHours } from "@/lib/utils";
 import {
   Document,
   Page,
@@ -195,6 +196,7 @@ export function MechanicEarningsPDF({
 }: MechanicEarningsPDFProps) {
   const styles = createStyles();
   const totalEarnings = entries.reduce((s, e) => s + e.total, 0);
+  const totalHours = entries.reduce((s, e) => s + e.repairTime, 0);
   const net50 = totalEarnings * 0.5;
   const cardAmount = card || 0;
   const finesAmount = fines || 0;
@@ -227,40 +229,44 @@ export function MechanicEarningsPDF({
         {/* Entries */}
         {entries.map((e, i) => (
           <View key={i} style={i % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-            <Text style={styles.cellLeft}>{e.vehicle || "—"}</Text>
-            <Text style={styles.cellLeft}>{e.repairName || "—"}</Text>
-            <Text style={styles.cellMid}>{e.repairTime}</Text>
-            <Text style={styles.cellRight}>€{e.hourlyRate}</Text>
-            <Text style={styles.cellRight}>€{e.total.toFixed(2)}</Text>
+            <Text style={styles.cellLeft}>{e.vehicle || "-"}</Text>
+            <Text style={styles.cellLeft}>{e.repairName || "-"}</Text>
+            <Text style={styles.cellMid}>{formatHours(e.repairTime)}</Text>
+            <Text style={styles.cellRight}>{e.hourlyRate} €</Text>
+            <Text style={styles.cellRight}>{e.total.toFixed(2)} €</Text>
             <Text style={styles.cellRight}>{formatDate(e.date)}</Text>
           </View>
         ))}
 
         {/* Summary */}
         <View style={styles.summarySection}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Общо заработени часове</Text>
+            <Text style={styles.summaryValue}>{formatHours(totalHours)}</Text>
+          </View>
           <View style={styles.summaryRowHighlight}>
             <Text style={styles.summaryBold}>Общо заработено</Text>
-            <Text style={styles.summaryValueBold}>€{totalEarnings.toFixed(2)}</Text>
+            <Text style={styles.summaryValueBold}>{totalEarnings.toFixed(2)} €</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Нето 50%</Text>
-            <Text style={styles.summaryValue}>€{net50.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>{net50.toFixed(2)} €</Text>
           </View>
           {cardAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Карта</Text>
-              <Text style={styles.summaryValue}>-€{cardAmount.toFixed(2)}</Text>
+              <Text style={styles.summaryValue}>-{cardAmount.toFixed(2)} €</Text>
             </View>
           )}
           {finesAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Глоби</Text>
-              <Text style={styles.summaryValue}>-€{finesAmount.toFixed(2)}</Text>
+              <Text style={styles.summaryValue}>-{finesAmount.toFixed(2)} €</Text>
             </View>
           )}
           <View style={styles.summaryRowHighlight}>
             <Text style={styles.summaryBold}>В БРОЙ</Text>
-            <Text style={styles.summaryValueBold}>€{cashAmount.toFixed(2)}</Text>
+            <Text style={styles.summaryValueBold}>{cashAmount.toFixed(2)} €</Text>
           </View>
         </View>
 
@@ -328,11 +334,11 @@ export function ReceptionistEarningsPDF({
         {/* Entries */}
         {entries.map((e, i) => (
           <View key={i} style={i % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-            <Text style={styles.cellLeft}>{e.vehicle || "—"}</Text>
-            <Text style={styles.cellLeft}>{e.repairName || "—"}</Text>
-            <Text style={styles.cellRight}>€{e.repairTotal.toFixed(2)}</Text>
+            <Text style={styles.cellLeft}>{e.vehicle || "-"}</Text>
+            <Text style={styles.cellLeft}>{e.repairName || "-"}</Text>
+            <Text style={styles.cellRight}>{e.repairTotal.toFixed(2)} €</Text>
             <Text style={styles.cellMid}>{e.turnoverPct}%</Text>
-            <Text style={styles.cellRight}>€{e.earnings.toFixed(2)}</Text>
+            <Text style={styles.cellRight}>{e.earnings.toFixed(2)} €</Text>
             <Text style={styles.cellRight}>{formatDate(e.date)}</Text>
           </View>
         ))}
@@ -341,35 +347,35 @@ export function ReceptionistEarningsPDF({
         <View style={styles.summarySection}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Заработка общо</Text>
-            <Text style={styles.summaryValue}>€{totalEarnings.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>{totalEarnings.toFixed(2)} €</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Твърдо</Text>
-            <Text style={styles.summaryValue}>€{fixedAmount.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>{fixedAmount.toFixed(2)} €</Text>
           </View>
           <View style={styles.summaryRowHighlight}>
             <Text style={styles.summaryBold}>Обща заплата</Text>
-            <Text style={styles.summaryValueBold}>€{totalSalary.toFixed(2)}</Text>
+            <Text style={styles.summaryValueBold}>{totalSalary.toFixed(2)} €</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Карта</Text>
-            <Text style={styles.summaryValue}>-€{cardAmount.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>-{cardAmount.toFixed(2)} €</Text>
           </View>
           {finesAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Глоби</Text>
-              <Text style={styles.summaryValue}>-€{finesAmount.toFixed(2)}</Text>
+              <Text style={styles.summaryValue}>-{finesAmount.toFixed(2)} €</Text>
             </View>
           )}
           {cashAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>В Брой</Text>
-              <Text style={styles.summaryValue}>-€{cashAmount.toFixed(2)}</Text>
+              <Text style={styles.summaryValue}>-{cashAmount.toFixed(2)} €</Text>
             </View>
           )}
           <View style={styles.summaryRowHighlight}>
             <Text style={styles.summaryBold}>Остатък</Text>
-            <Text style={styles.summaryValueBold}>€{remaining.toFixed(2)}</Text>
+            <Text style={styles.summaryValueBold}>{remaining.toFixed(2)} €</Text>
           </View>
         </View>
 

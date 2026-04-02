@@ -27,6 +27,7 @@ interface Inspection {
   mechanic: string | null;
   client_name: string | null;
   car_model: string | null;
+  car_model_detail: string | null;
   license_plate: string | null;
   vin: string | null;
   tires: CheckFormData["tires"];
@@ -42,19 +43,23 @@ interface Inspection {
 function ActionsDropdown({
   onDownload,
   onDelete,
+  onEdit,
   onClone,
   onCreateQuote,
   downloading,
   deleting,
   cloning,
+  isMechanicView,
 }: {
   onDownload: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   onClone: () => void;
   onCreateQuote: () => void;
   downloading: boolean;
   deleting: boolean;
   cloning: boolean;
+  isMechanicView: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
@@ -133,55 +138,14 @@ function ActionsDropdown({
         Изтегли PDF
       </button>
 
-      <button
-        onClick={() => {
-          setOpen(false);
-          onCreateQuote();
-        }}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-mb-black transition-colors"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      {!isMechanicView && (
+        <button
+          onClick={() => {
+            setOpen(false);
+            onCreateQuote();
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-mb-black transition-colors"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-        Създай оферта
-      </button>
-
-      <button
-        onClick={() => {
-          setOpen(false);
-          onClone();
-        }}
-        disabled={cloning}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-mb-black transition-colors disabled:opacity-50"
-      >
-        {cloning ? (
-          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-              fill="none"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-        ) : (
           <svg
             className="w-4 h-4"
             fill="none"
@@ -192,36 +156,106 @@ function ActionsDropdown({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-        )}
-        Клонирай
-      </button>
+          Създай оферта
+        </button>
+      )}
 
-      <button
-        onClick={() => {
-          setOpen(false);
-          onDelete();
-        }}
-        disabled={deleting}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      {!isMechanicView && (
+        <button
+          onClick={() => {
+            setOpen(false);
+            onClone();
+          }}
+          disabled={cloning}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-mb-black transition-colors disabled:opacity-50"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
-        Изтрий
-      </button>
+          {cloning ? (
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          )}
+          Клонирай
+        </button>
+      )}
+
+      {isMechanicView ? (
+        <button
+          onClick={() => {
+            setOpen(false);
+            onEdit();
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-mb-black transition-colors"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+          Редактирай
+        </button>
+      ) : (
+        <button
+          onClick={() => {
+            setOpen(false);
+            onDelete();
+          }}
+          disabled={deleting}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
+          Изтрий
+        </button>
+      )}
     </div>
   ) : null;
 
@@ -360,7 +394,12 @@ export function ChecksListPage({
       };
 
       const blob = await Promise.race([
-        pdf(<CheckPDF data={formData} />).toBlob(),
+        pdf(
+          <CheckPDF
+            data={formData}
+            checkNumber={inspection.check_number || undefined}
+          />,
+        ).toBlob(),
         new Promise<Blob>((_, reject) =>
           setTimeout(() => reject(new Error("Timeout")), 30000),
         ),
@@ -369,7 +408,7 @@ export function ChecksListPage({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${inspection.check_number}.pdf`;
+      link.download = `protocol-${inspection.check_number}.pdf`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
@@ -379,7 +418,7 @@ export function ChecksListPage({
       }, 100);
     } catch (err) {
       console.error("PDF download failed:", err);
-      alert("Грешка при генериране на PDF. Проверете конзолата.");
+      alert("Грешка при създаване на PDF. Проверете конзолата.");
     } finally {
       setDownloadingId(null);
     }
@@ -438,8 +477,8 @@ export function ChecksListPage({
         customerName: inspection.client_name || "",
         customerPhone: "",
         clientEmail: "",
-        carModel: inspection.car_model || "Mercedes-Benz",
-        carModelDetail: "",
+        carModel: inspection.car_model || "",
+        carModelDetail: inspection.car_model_detail || "",
         vinText: inspection.vin || "",
         carLicensePlate: inspection.license_plate || "",
         carMileage: null,
@@ -522,8 +561,9 @@ export function ChecksListPage({
             />
           </div>
 
-          <div className="bg-mb-anthracite border border-mb-border rounded-xl overflow-x-auto">
-            <div className="grid grid-cols-[180px_1fr_1fr_140px_120px_100px_44px] gap-0 bg-mb-black border-b border-mb-border px-4 py-3 text-xs font-bold text-mb-silver uppercase tracking-wide">
+          <div className="bg-mb-anthracite border border-mb-border rounded-xl overflow-hidden">
+            {/* Desktop header */}
+            <div className="hidden md:grid md:grid-cols-[180px_1fr_1fr_140px_120px_100px_44px] lg:grid-cols-[180px_1fr_1fr_180px_120px_100px_44px] gap-0 bg-mb-black border-b border-mb-border px-4 py-3 text-xs font-bold text-mb-silver uppercase tracking-wide">
               <span>№ Проверка</span>
               <span>Клиент</span>
               <span>Автомобил</span>
@@ -564,43 +604,93 @@ export function ChecksListPage({
               inspections.map((inspection, i) => (
                 <div
                   key={inspection.id}
-                  className={`grid grid-cols-[180px_1fr_1fr_140px_120px_100px_44px] gap-0 items-center px-4 py-3 border-b border-mb-border last:border-b-0 transition-colors ${i % 2 === 1 ? "bg-mb-black/20" : ""}`}
+                  className={`border-b border-mb-border last:border-b-0 transition-colors ${i % 2 === 1 ? "bg-mb-black/20" : ""}`}
                 >
-                  <span
-                    onClick={() =>
-                      router.push(
-                        `${routePrefix}/checks/edit?id=${inspection.id}`,
-                      )
-                    }
-                    className="text-mb-blue font-mono text-sm font-medium whitespace-nowrap pr-3 cursor-pointer hover:underline"
-                  >
-                    {inspection.check_number}
-                  </span>
-                  <span className="text-white text-sm truncate pr-3">
-                    {inspection.client_name || "—"}
-                  </span>
-                  <span className="text-mb-silver text-sm truncate pr-3">
-                    {inspection.car_model || "—"}
-                  </span>
-                  <span className="text-mb-silver text-sm truncate pr-3 font-mono uppercase">
-                    {inspection.vin || "—"}
-                  </span>
-                  <span className="text-mb-silver text-sm truncate pr-3">
-                    {inspection.license_plate || "—"}
-                  </span>
-                  <span className="text-mb-silver text-sm whitespace-nowrap">
-                    {formatDate(inspection.inspection_date)}
-                  </span>
-                  <div className="flex justify-end">
-                    <ActionsDropdown
-                      onDownload={() => handleDownload(inspection)}
-                      onDelete={() => openDeleteDialog(inspection.id)}
-                      onClone={() => handleClone(inspection)}
-                      onCreateQuote={() => handleCreateQuote(inspection)}
-                      downloading={downloadingId === inspection.id}
-                      deleting={deletingId === inspection.id}
-                      cloning={cloningId === inspection.id}
-                    />
+                  {/* Mobile layout */}
+                  <div className="md:hidden flex items-center justify-between px-4 py-3 gap-3">
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() =>
+                        router.push(
+                          `${routePrefix}/checks/edit?id=${inspection.id}`,
+                        )
+                      }
+                    >
+                      <div className="text-mb-blue font-mono text-sm font-medium">
+                        {inspection.check_number}
+                      </div>
+                      <div className="text-white text-sm truncate">
+                        {inspection.client_name || "-"}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-mb-silver text-xs truncate">
+                          {inspection.car_model || "-"}
+                        </span>
+                        {inspection.license_plate && (
+                          <span className="text-mb-silver text-xs font-mono uppercase">
+                            {inspection.license_plate}
+                          </span>
+                        )}
+                        <span className="text-mb-silver/50 text-xs whitespace-nowrap">
+                          {formatDate(inspection.inspection_date)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ActionsDropdown
+                        onDownload={() => handleDownload(inspection)}
+                        onDelete={() => openDeleteDialog(inspection.id)}
+                        onEdit={() => router.push(`${routePrefix}/checks/edit?id=${inspection.id}`)}
+                        onClone={() => handleClone(inspection)}
+                        onCreateQuote={() => handleCreateQuote(inspection)}
+                        downloading={downloadingId === inspection.id}
+                        deleting={deletingId === inspection.id}
+                        cloning={cloningId === inspection.id}
+                        isMechanicView={basePath === "mb-admin-mechanics"}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Desktop layout */}
+                  <div className="hidden md:grid md:grid-cols-[180px_1fr_1fr_140px_120px_100px_44px] lg:grid-cols-[180px_1fr_1fr_180px_120px_100px_44px] gap-0 items-center px-4 py-3">
+                    <span
+                      onClick={() =>
+                        router.push(
+                          `${routePrefix}/checks/edit?id=${inspection.id}`,
+                        )
+                      }
+                      className="text-mb-blue font-mono text-sm font-medium whitespace-nowrap pr-3 cursor-pointer hover:underline"
+                    >
+                      {inspection.check_number}
+                    </span>
+                    <span className="text-white text-sm truncate pr-3">
+                      {inspection.client_name || "-"}
+                    </span>
+                    <span className="text-mb-silver text-sm truncate pr-3">
+                      {inspection.car_model || "-"}
+                    </span>
+                    <span className="text-mb-silver text-sm max-lg:truncate pr-3 font-mono uppercase">
+                      {inspection.vin || "-"}
+                    </span>
+                    <span className="text-mb-silver text-sm truncate pr-3">
+                      {inspection.license_plate || "-"}
+                    </span>
+                    <span className="text-mb-silver text-sm whitespace-nowrap">
+                      {formatDate(inspection.inspection_date)}
+                    </span>
+                    <div className="flex justify-end">
+                      <ActionsDropdown
+                        onDownload={() => handleDownload(inspection)}
+                        onDelete={() => openDeleteDialog(inspection.id)}
+                        onEdit={() => router.push(`${routePrefix}/checks/edit?id=${inspection.id}`)}
+                        onClone={() => handleClone(inspection)}
+                        onCreateQuote={() => handleCreateQuote(inspection)}
+                        downloading={downloadingId === inspection.id}
+                        deleting={deletingId === inspection.id}
+                        cloning={cloningId === inspection.id}
+                        isMechanicView={basePath === "mb-admin-mechanics"}
+                      />
+                    </div>
                   </div>
                 </div>
               ))

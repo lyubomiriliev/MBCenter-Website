@@ -13,6 +13,8 @@ export const MERCEDES_CLASSES = [
   'B-Class',
   'C-Class',
   'CLA',
+  'CLK',
+  'CLC',
   'CLS',
   'E-Class',
   'EQA',
@@ -24,14 +26,18 @@ export const MERCEDES_CLASSES = [
   'GLA',
   'GLB',
   'GLC',
+  'GLK',
   'GLE',
   'GLS',
   'S-Class',
   'SL',
   'SLC/SLK',
+  'SLS AMG',
   'AMG GT',
   'Maybach',
   'V-Class',
+  'Citan',
+  'T-Class',
   'Sprinter',
   'Vito',
 ] as const;
@@ -63,13 +69,27 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   // C-Class
   { id: 'w202', name: 'C-Class (W202)', class: 'C-Class', years: generateYears(1999, 2000) },
   { id: 'w203', name: 'C-Class (W203)', class: 'C-Class', years: generateYears(2000, 2007) },
+  { id: 'c203', name: 'C-Class Sportcoupe (C203)', class: 'C-Class', years: generateYears(2001, 2007) },
   { id: 'w204', name: 'C-Class (W204)', class: 'C-Class', years: generateYears(2007, 2014) },
+  { id: 'c204', name: 'C-Class Coupe (C204)', class: 'C-Class', years: generateYears(2011, 2015) },
   { id: 'w205', name: 'C-Class (W205)', class: 'C-Class', years: generateYears(2014, 2021) },
+  { id: 'c205', name: 'C-Class Coupe (C205)', class: 'C-Class', years: generateYears(2015, 2021) },
+  { id: 'a205', name: 'C-Class Cabrio (A205)', class: 'C-Class', years: generateYears(2016, 2021) },
   { id: 'w206', name: 'C-Class (W206)', class: 'C-Class', years: generateYears(2021, 2026) },
+  { id: 'c206', name: 'C-Class Coupe (C206)', class: 'C-Class', years: generateYears(2021, 2026) },
 
   // CLA
   { id: 'c117', name: 'CLA (C117)', class: 'CLA', years: generateYears(2013, 2019) },
   { id: 'c118', name: 'CLA (C118)', class: 'CLA', years: generateYears(2019, 2026) },
+
+  // CLK
+  { id: 'c208', name: 'CLK Coupe (C208)', class: 'CLK', years: generateYears(1999, 2002) },
+  { id: 'a208', name: 'CLK Cabrio (A208)', class: 'CLK', years: generateYears(1999, 2002) },
+  { id: 'c209', name: 'CLK Coupe (C209)', class: 'CLK', years: generateYears(2002, 2009) },
+  { id: 'a209', name: 'CLK Cabrio (A209)', class: 'CLK', years: generateYears(2002, 2009) },
+
+  // CLC
+  { id: 'cl203', name: 'CLC (CL203)', class: 'CLC', years: generateYears(2008, 2011) },
 
   // CLS
   { id: 'c219', name: 'CLS (C219)', class: 'CLS', years: generateYears(2004, 2010) },
@@ -78,10 +98,19 @@ export const MERCEDES_MODELS: MercedesModel[] = [
 
   // E-Class
   { id: 'w210', name: 'E-Class (W210)', class: 'E-Class', years: generateYears(1999, 2002) },
+  { id: 's210', name: 'E-Class Estate (S210)', class: 'E-Class', years: generateYears(1999, 2003) },
   { id: 'w211', name: 'E-Class (W211)', class: 'E-Class', years: generateYears(2002, 2009) },
+  { id: 's211', name: 'E-Class Estate (S211)', class: 'E-Class', years: generateYears(2003, 2009) },
+  { id: 'c207', name: 'E-Class Coupe (C207)', class: 'E-Class', years: generateYears(2009, 2016) },
+  { id: 'a207', name: 'E-Class Cabrio (A207)', class: 'E-Class', years: generateYears(2010, 2016) },
   { id: 'w212', name: 'E-Class (W212)', class: 'E-Class', years: generateYears(2009, 2016) },
+  { id: 's212', name: 'E-Class Estate (S212)', class: 'E-Class', years: generateYears(2009, 2016) },
   { id: 'w213', name: 'E-Class (W213)', class: 'E-Class', years: generateYears(2016, 2023) },
+  { id: 's213', name: 'E-Class Estate (S213)', class: 'E-Class', years: generateYears(2016, 2023) },
+  { id: 'c238', name: 'E-Class Coupe (C238)', class: 'E-Class', years: generateYears(2017, 2023) },
+  { id: 'a238', name: 'E-Class Cabrio (A238)', class: 'E-Class', years: generateYears(2017, 2023) },
   { id: 'w214', name: 'E-Class (W214)', class: 'E-Class', years: generateYears(2023, 2026) },
+  { id: 's214', name: 'E-Class Estate (S214)', class: 'E-Class', years: generateYears(2023, 2026) },
 
   // EQ Electric Models
   { id: 'h243', name: 'EQA (H243)', class: 'EQA', years: generateYears(2021, 2026) },
@@ -102,6 +131,9 @@ export const MERCEDES_MODELS: MercedesModel[] = [
 
   // GLB
   { id: 'x247', name: 'GLB (X247)', class: 'GLB', years: generateYears(2019, 2026) },
+
+  // GLK
+  { id: 'x204', name: 'GLK (X204)', class: 'GLK', years: generateYears(2008, 2015) },
 
   // GLC
   { id: 'x253', name: 'GLC (X253)', class: 'GLC', years: generateYears(2015, 2022) },
@@ -125,6 +157,8 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'w220', name: 'S-Class (W220)', class: 'S-Class', years: generateYears(1999, 2005) },
   { id: 'w221', name: 'S-Class (W221)', class: 'S-Class', years: generateYears(2005, 2013) },
   { id: 'w222', name: 'S-Class (W222)', class: 'S-Class', years: generateYears(2013, 2020) },
+  { id: 'c217', name: 'S-Class Coupe (C217)', class: 'S-Class', years: generateYears(2014, 2020) },
+  { id: 'a217', name: 'S-Class Cabrio (A217)', class: 'S-Class', years: generateYears(2015, 2020) },
   { id: 'w223', name: 'S-Class (W223)', class: 'S-Class', years: generateYears(2020, 2026) },
 
   // SL
@@ -138,8 +172,13 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'r171', name: 'SLK (R171)', class: 'SLC/SLK', years: generateYears(2004, 2011) },
   { id: 'r172', name: 'SLK/SLC (R172)', class: 'SLC/SLK', years: generateYears(2011, 2020) },
 
+  // SLS AMG
+  { id: 'c197', name: 'SLS AMG (C197)', class: 'SLS AMG', years: generateYears(2009, 2014) },
+  { id: 'r197', name: 'SLS AMG Roadster (R197)', class: 'SLS AMG', years: generateYears(2011, 2014) },
+
   // AMG GT
   { id: 'c190', name: 'AMG GT (C190)', class: 'AMG GT', years: generateYears(2014, 2021) },
+  { id: 'r190', name: 'AMG GT Roadster (R190)', class: 'AMG GT', years: generateYears(2016, 2021) },
   { id: 'c192', name: 'AMG GT (C192)', class: 'AMG GT', years: generateYears(2021, 2026) },
   { id: 'x290', name: 'AMG GT 4-Door (X290)', class: 'AMG GT', years: generateYears(2018, 2026) },
 
@@ -165,6 +204,15 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'w639v', name: 'Vito (W639)', class: 'Vito', years: generateYears(2003, 2014) },
   { id: 'w447v', name: 'Vito (W447)', class: 'Vito', years: generateYears(2014, 2026) },
   { id: 'evito', name: 'eVito', class: 'Vito', years: generateYears(2018, 2026) },
+
+  // Citan
+  { id: 'w415', name: 'Citan (W415)', class: 'Citan', years: generateYears(2012, 2021) },
+  { id: 'w420', name: 'Citan (W420)', class: 'Citan', years: generateYears(2021, 2026) },
+  { id: 'ecitan', name: 'eCitan', class: 'Citan', years: generateYears(2022, 2026) },
+
+  // T-Class
+  { id: 'w420t', name: 'T-Class (W420)', class: 'T-Class', years: generateYears(2022, 2026) },
+  { id: 'et420', name: 'EQT', class: 'T-Class', years: generateYears(2022, 2026) },
 ];
 
 // Helper function to get models by class

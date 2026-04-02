@@ -33,3 +33,10 @@ export function parseTimeToHours(s: string): number {
 
   return 0;
 }
+
+/** Format decimal hours as "Xч YYмин". Whole hours become "Xч 00мин". */
+export function formatHours(hours: number): string {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}ч ${String(m).padStart(2, "0")}мин`;
+}

@@ -172,16 +172,12 @@ a {
   animation-name: slide-in-from-bottom;
 }
 
-/* Smooth transitions for interactive elements */
+/* Smooth transitions for interactive elements - scoped to avoid forced reflow */
 button,
-a,
-input,
-textarea,
-select {
-  transition-property: color, background-color, border-color, transform, opacity,
-    box-shadow;
+a {
+  transition-property: color, background-color, border-color, opacity;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
+  transition-duration: 200ms;
 }
 
 /* Custom scrollbar */

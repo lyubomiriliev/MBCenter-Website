@@ -110,7 +110,7 @@ export function FloatingSummary({
           <div className="flex justify-between items-center text-sm">
             <span className="text-mb-silver">СТАВКА {t("vat")} (20%)</span>
             <div className="text-right text-mb-silver">
-              <div>€{(calculations.grossTotal / 6).toFixed(2)}</div>
+              <div>{(calculations.grossTotal / 6).toFixed(2)} €</div>
               <div className="text-xs">
                 {((calculations.grossTotal / 6) * EUR_TO_BGN).toFixed(2)} лв.
               </div>
@@ -142,7 +142,7 @@ export function FloatingSummary({
                   <span className="text-mb-silver">{t("prepayment")}</span>
                   <div className="flex items-center gap-2">
                     <div className="text-right text-green-400">
-                      <div>-€{amt.toFixed(2)}</div>
+                      <div>-{amt.toFixed(2)} €</div>
                       <div className="text-xs">
                         -{(amt * EUR_TO_BGN).toFixed(2)} лв.
                       </div>
@@ -176,7 +176,7 @@ export function FloatingSummary({
                 <span className="text-white font-bold">{t("amountDue")}</span>
                 <div className="text-right">
                   <div className="text-xl font-bold text-mb-blue">
-                    €{amountDueEur.toFixed(2)}
+                    {amountDueEur.toFixed(2)} €
                   </div>
                   <div className="text-sm text-mb-silver">
                     {amountDueBgn.toFixed(2)} лв.

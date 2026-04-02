@@ -17,7 +17,8 @@ export function useFixedActivities() {
       if (error) throw error;
       return (data ?? []) as FixedActivity[];
     },
-    staleTime: 5_000,
+    staleTime: 0,
+    refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
 }
