@@ -14,6 +14,7 @@ import {
 import { OfferPDFv3, setFontRegistered as setOfferFontRegistered } from './OfferPDFv3';
 import { ServiceCardPDFv3, setFontRegistered as setServiceCardFontRegistered } from './ServiceCardPDFv3';
 import { registerPDFFonts } from '@/lib/pdf-fonts';
+import { supabase } from '@/lib/supabase/client';
 import type { OfferWithRelations } from '@/types/database';
 
 interface PDFActionsProps {
@@ -26,31 +27,51 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
   const locale = useLocale() as 'bg' | 'en';
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
 
+  // Old service card numbers were copied from offer_number (10 random digits).
+  // New ones are 8-digit zero-padded sequential numbers (e.g. 00020240).
+  const resolveServiceCardNumber = async (): Promise<{ offer: OfferWithRelations; cardNumber: string }> => {
+    const isOldFormat = (n: string | null) => !!n && /^\d{10}$/.test(n);
+    if (!offer.service_card_number || isOldFormat(offer.service_card_number)) {
+      const { data: newCardNumber } = await supabase.rpc('generate_service_card_number');
+      const cardNumber = newCardNumber || offer.offer_number;
+      // Update the DB so the number is persisted
+      await supabase.from('offers').update({ service_card_number: cardNumber } as never).eq('id', offer.id);
+      return { offer: { ...offer, service_card_number: cardNumber }, cardNumber };
+    }
+    return { offer, cardNumber: offer.service_card_number };
+  };
+
   const generatePDF = async (type: 'offer' | 'serviceCard') => {
     setIsGenerating(type);
-    
+
     try {
       // Register fonts before generating PDF
       const fontsReady = await registerPDFFonts();
       setOfferFontRegistered(fontsReady);
       setServiceCardFontRegistered(fontsReady);
-      
+
       // Additional delay to ensure fonts are fully processed
       await new Promise((resolve) => setTimeout(resolve, 300));
-      
-      const PDFComponent = type === 'offer' 
-        ? <OfferPDFv3 offer={offer} locale={locale} />
-        : <ServiceCardPDFv3 offer={offer} locale={locale} />;
-      
+
+      let offerData = offer;
+      let cardNumber = offer.offer_number;
+      if (type === 'serviceCard') {
+        ({ offer: offerData, cardNumber } = await resolveServiceCardNumber());
+      }
+
+      const PDFComponent = type === 'offer'
+        ? <OfferPDFv3 offer={offerData} locale={locale} />
+        : <ServiceCardPDFv3 offer={offerData} locale={locale} />;
+
       const blob = await pdf(PDFComponent).toBlob();
-      
+
       // Create download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = type === 'offer' 
+      link.download = type === 'offer'
         ? `offer-${offer.offer_number}.pdf`
-        : `service-card-${offer.offer_number}.pdf`;
+        : `service-card-${cardNumber}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -64,19 +85,24 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
 
   const openPDFInNewTab = async (type: 'offer' | 'serviceCard') => {
     setIsGenerating(type);
-    
+
     try {
       // Register fonts before generating PDF
       const fontsReady = await registerPDFFonts();
       setOfferFontRegistered(fontsReady);
       setServiceCardFontRegistered(fontsReady);
-      
+
       // Additional delay to ensure fonts are fully processed
       await new Promise((resolve) => setTimeout(resolve, 300));
-      
-      const PDFComponent = type === 'offer' 
-        ? <OfferPDFv3 offer={offer} locale={locale} />
-        : <ServiceCardPDFv3 offer={offer} locale={locale} />;
+
+      let offerData = offer;
+      if (type === 'serviceCard') {
+        ({ offer: offerData } = await resolveServiceCardNumber());
+      }
+
+      const PDFComponent = type === 'offer'
+        ? <OfferPDFv3 offer={offerData} locale={locale} />
+        : <ServiceCardPDFv3 offer={offerData} locale={locale} />;
       
       const blob = await pdf(PDFComponent).toBlob();
       const url = URL.createObjectURL(blob);

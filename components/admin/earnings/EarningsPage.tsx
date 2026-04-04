@@ -727,9 +727,7 @@ export function EarningsPage() {
                     <Input
                       type="text"
                       inputMode="decimal"
-                      placeholder={
-                        isBg ? "Часове (1:30 или 1.5)" : "Hours (1:30 or 1.5)"
-                      }
+                      placeholder={isBg ? "Часове пр. 1:30" : "Hours ex.1:30"}
                       value={mechManualTime}
                       onChange={(e) => setMechManualTime(e.target.value)}
                       className="bg-mb-black text-white border-mb-border text-sm"

@@ -85,7 +85,9 @@ export function CreateOfferFormV2({
   const [licensePlateSaving, setLicensePlateSaving] = useState(false);
   const [mileageInput, setMileageInput] = useState("");
   const [mileageSaving, setMileageSaving] = useState(false);
-  const [mileageUnitInput, setMileageUnitInput] = useState<"km" | "miles">("km");
+  const [mileageUnitInput, setMileageUnitInput] = useState<"km" | "miles">(
+    "km",
+  );
   const [baselinePrepayments, setBaselinePrepayments] = useState<number[]>([]);
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
@@ -690,6 +692,35 @@ export function CreateOfferFormV2({
         }),
       };
 
+      // Compute the generation timestamp so the PDF and DB stay in sync
+      const generationTimestamp = changedAfterLastCardRef.current
+        ? new Date().toISOString()
+        : offerData.service_card_generated_at || new Date().toISOString();
+
+      // Stamp the offer data so the PDF footer uses the correct date
+      offerData.service_card_generated_at = generationTimestamp;
+
+      // Resolve the service card number before generating the PDF.
+      // Old service card numbers were copied from offer_number (10 random digits).
+      // New ones are 8-digit zero-padded sequential numbers (e.g. 00020240).
+      // If the stored number looks like an old offer number, regenerate it.
+      const isOldFormat = (n: string | null) =>
+        !!n && /^\d{10}$/.test(n);
+      let serviceCardNumber = savedOffer?.service_card_number ?? null;
+      if (
+        savedOffer &&
+        savedOffer.id !== "temp" &&
+        (!serviceCardNumber || isOldFormat(serviceCardNumber))
+      ) {
+        const { data: newCardNumber } = await supabase.rpc(
+          "generate_service_card_number",
+        );
+        serviceCardNumber = newCardNumber || savedOffer.offer_number;
+      }
+      if (serviceCardNumber) {
+        offerData.service_card_number = serviceCardNumber;
+      }
+
       // Register fonts before generating PDF
       const { registerPDFFonts } = await import("@/lib/pdf-fonts");
       const { setFontRegistered } =
@@ -714,7 +745,7 @@ export function CreateOfferFormV2({
       const link = document.createElement("a");
       link.href = url;
       link.download = savedOffer
-        ? `service-card-${savedOffer.offer_number}.pdf`
+        ? `service-card-${serviceCardNumber || savedOffer.offer_number}.pdf`
         : "service-card-draft.pdf";
       link.style.display = "none";
       document.body.appendChild(link);
@@ -728,10 +759,9 @@ export function CreateOfferFormV2({
       if (savedOffer && savedOffer.id !== "temp") {
         const updateData: any = {
           status: "finished",
-          service_card_number:
-            savedOffer.service_card_number || savedOffer.offer_number,
+          service_card_number: serviceCardNumber || savedOffer.offer_number,
           ...(changedAfterLastCardRef.current && {
-            service_card_generated_at: new Date().toISOString(),
+            service_card_generated_at: generationTimestamp,
           }),
         };
         changedAfterLastCardRef.current = false;
@@ -1300,7 +1330,8 @@ export function CreateOfferFormV2({
       const extractMessages = (obj: any, depth = 0): string[] => {
         if (depth > 3) return [];
         if (!obj || typeof obj !== "object") return [];
-        if (obj.message && typeof obj.message === "string") return [obj.message];
+        if (obj.message && typeof obj.message === "string")
+          return [obj.message];
         return Object.values(obj).flatMap((v) => extractMessages(v, depth + 1));
       };
       const errorMessages = extractMessages(errors);
@@ -1513,7 +1544,10 @@ export function CreateOfferFormV2({
                           : null;
                         await updateOfferMutation.mutateAsync({
                           id: savedOffer.id,
-                          offer: { mileage: val, mileage_unit: mileageUnitInput } as any,
+                          offer: {
+                            mileage: val,
+                            mileage_unit: mileageUnitInput,
+                          } as any,
                         });
                         queryClient.invalidateQueries({
                           queryKey: ["offer", savedOffer.id],
@@ -1872,192 +1906,193 @@ export function CreateOfferFormV2({
                       {/* Mechanic */}
                       <div className="space-y-2 pb-3 sm:pb-0 sm:border-b-0 border-b border-mb-border/50 sm:pr-4 sm:border-r">
                         <p className="text-xs text-mb-silver font-medium">
-                        {locale === "bg" ? "Механик" : "Mechanic"}
-                      </p>
-                      <select
-                        value={mechanicEarningsWorker}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setMechanicEarningsWorker(val);
-                          if (val) setMechanicHourlyRate(defaultMechRate);
-                          else setMechanicHourlyRate("");
-                        }}
-                        className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
-                      >
-                        <option value="">
-                          {locale === "bg" ? "- Избери -" : "- Select -"}
-                        </option>
-                        {mechanicsList.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">
-                            {locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}
-                          </Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            value={mechanicHourlyRate}
-                            onChange={(e) =>
-                              setMechanicHourlyRate(e.target.value)
-                            }
-                            placeholder="0.00"
-                            className="bg-gray-100 text-gray-900 border-mb-border text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">
-                            {locale === "bg"
-                              ? "Часове (1:30 или 1.5)"
-                              : "Hours (1:30 or 1.5)"}
-                          </Label>
-                          <Input
-                            type="text"
-                            inputMode="decimal"
-                            value={mechanicRepairTime}
-                            onChange={(e) =>
-                              setMechanicRepairTime(e.target.value)
-                            }
-                            placeholder="1:30"
-                            className="bg-gray-100 text-gray-900 border-mb-border text-sm"
-                          />
-                        </div>
-                      </div>
-                      {mechanicHourlyRate && mechanicRepairTime && (
-                        <p className="text-xs text-mb-silver">
-                          {locale === "bg" ? "Общо" : "Total"}:{" "}
-                          <span className="text-white font-semibold">
-                            {(
-                              parseFloat(mechanicHourlyRate || "0") *
-                              parseTimeToHours(mechanicRepairTime)
-                            ).toFixed(2)}{" "}
-                            €
-                          </span>
+                          {locale === "bg" ? "Механик" : "Mechanic"}
                         </p>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={
-                          !mechanicEarningsWorker || mechanicEarningsSaving
-                        }
-                        onClick={saveMechanicEarnings}
-                        className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
-                      >
-                        {mechanicEarningsSaving
-                          ? locale === "bg"
-                            ? "Записване…"
-                            : "Saving…"
-                          : locale === "bg"
-                            ? "Запиши"
-                            : "Save"}
-                      </Button>
-                    </div>
-
-                    {/* Receptionist */}
-                    <div className="space-y-2">
-                      <p className="text-xs text-mb-silver font-medium">
-                        {locale === "bg" ? "Приемчик" : "Receptionist"}
-                      </p>
-                      <select
-                        value={receptionistEarningsWorker}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setReceptionistEarningsWorker(val);
-                          if (val) setReceptionistTurnoverPct(defaultRecPct);
-                          else setReceptionistTurnoverPct("");
-                        }}
-                        className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
-                      >
-                        <option value="">
-                          {locale === "bg" ? "- Избери -" : "- Select -"}
-                        </option>
-                        {receptionistsList.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.name}
+                        <select
+                          value={mechanicEarningsWorker}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setMechanicEarningsWorker(val);
+                            if (val) setMechanicHourlyRate(defaultMechRate);
+                            else setMechanicHourlyRate("");
+                          }}
+                          className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
+                        >
+                          <option value="">
+                            {locale === "bg" ? "- Избери -" : "- Select -"}
                           </option>
-                        ))}
-                      </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">
-                            % {locale === "bg" ? "от оборота" : "of turnover"}
-                          </Label>
-                          <div className="relative">
+                          {mechanicsList.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}
+                            </Label>
                             <Input
                               type="number"
                               min="0"
-                              max="100"
                               step="0.5"
-                              value={receptionistTurnoverPct}
+                              value={mechanicHourlyRate}
                               onChange={(e) =>
-                                setReceptionistTurnoverPct(e.target.value)
+                                setMechanicHourlyRate(e.target.value)
                               }
-                              placeholder="0"
-                              className="bg-gray-100 text-gray-900 border-mb-border pr-6 text-sm"
+                              placeholder="0.00"
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
                             />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-xs">
-                              %
-                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {locale === "bg"
+                                ? "Часове пр.1:30"
+                                : "Hours ex.1:30"}
+                            </Label>
+                            <Input
+                              type="text"
+                              inputMode="decimal"
+                              value={mechanicRepairTime}
+                              onChange={(e) =>
+                                setMechanicRepairTime(e.target.value)
+                              }
+                              placeholder="1:30"
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                            />
                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">
-                            {locale === "bg"
-                              ? "Сума ремонт (€)"
-                              : "Repair total (€)"}
-                          </Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={
-                              receptionistRepairTotal ||
-                              offerCalculations.grossTotal.toFixed(2)
-                            }
-                            onChange={(e) =>
-                              setReceptionistRepairTotal(e.target.value)
-                            }
-                            className="bg-gray-100 text-gray-900 border-mb-border text-sm"
-                          />
-                        </div>
+                        {mechanicHourlyRate && mechanicRepairTime && (
+                          <p className="text-xs text-mb-silver">
+                            {locale === "bg" ? "Общо" : "Total"}:{" "}
+                            <span className="text-white font-semibold">
+                              {(
+                                parseFloat(mechanicHourlyRate || "0") *
+                                parseTimeToHours(mechanicRepairTime)
+                              ).toFixed(2)}{" "}
+                              €
+                            </span>
+                          </p>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            !mechanicEarningsWorker || mechanicEarningsSaving
+                          }
+                          onClick={saveMechanicEarnings}
+                          className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
+                        >
+                          {mechanicEarningsSaving
+                            ? locale === "bg"
+                              ? "Записване…"
+                              : "Saving…"
+                            : locale === "bg"
+                              ? "Запиши"
+                              : "Save"}
+                        </Button>
                       </div>
-                      {receptionistTurnoverPct && (
-                        <p className="text-xs text-mb-silver">
-                          {locale === "bg" ? "Заработка" : "Earnings"}:{" "}
-                          <span className="text-white font-semibold">
-                            {(
-                              (parseFloat(receptionistRepairTotal || "0") ||
-                                offerCalculations.grossTotal) *
-                              (parseFloat(receptionistTurnoverPct || "0") / 100)
-                            ).toFixed(2)}{" "}
-                            €
-                          </span>
+
+                      {/* Receptionist */}
+                      <div className="space-y-2">
+                        <p className="text-xs text-mb-silver font-medium">
+                          {locale === "bg" ? "Приемчик" : "Receptionist"}
                         </p>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={
-                          !receptionistEarningsWorker ||
-                          receptionistEarningsSaving
-                        }
-                        onClick={saveReceptionistEarnings}
-                        className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
-                      >
-                        {receptionistEarningsSaving
-                          ? locale === "bg"
-                            ? "Записване…"
-                            : "Saving…"
-                          : locale === "bg"
-                            ? "Запиши"
-                            : "Save"}
-                      </Button>
+                        <select
+                          value={receptionistEarningsWorker}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setReceptionistEarningsWorker(val);
+                            if (val) setReceptionistTurnoverPct(defaultRecPct);
+                            else setReceptionistTurnoverPct("");
+                          }}
+                          className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
+                        >
+                          <option value="">
+                            {locale === "bg" ? "- Избери -" : "- Select -"}
+                          </option>
+                          {receptionistsList.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              % {locale === "bg" ? "от оборота" : "of turnover"}
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.5"
+                                value={receptionistTurnoverPct}
+                                onChange={(e) =>
+                                  setReceptionistTurnoverPct(e.target.value)
+                                }
+                                placeholder="0"
+                                className="bg-gray-100 text-gray-900 border-mb-border pr-6 text-sm"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-xs">
+                                %
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {locale === "bg"
+                                ? "Сума ремонт (€)"
+                                : "Repair total (€)"}
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={
+                                receptionistRepairTotal ||
+                                offerCalculations.grossTotal.toFixed(2)
+                              }
+                              onChange={(e) =>
+                                setReceptionistRepairTotal(e.target.value)
+                              }
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                            />
+                          </div>
+                        </div>
+                        {receptionistTurnoverPct && (
+                          <p className="text-xs text-mb-silver">
+                            {locale === "bg" ? "Заработка" : "Earnings"}:{" "}
+                            <span className="text-white font-semibold">
+                              {(
+                                (parseFloat(receptionistRepairTotal || "0") ||
+                                  offerCalculations.grossTotal) *
+                                (parseFloat(receptionistTurnoverPct || "0") /
+                                  100)
+                              ).toFixed(2)}{" "}
+                              €
+                            </span>
+                          </p>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            !receptionistEarningsWorker ||
+                            receptionistEarningsSaving
+                          }
+                          onClick={saveReceptionistEarnings}
+                          className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
+                        >
+                          {receptionistEarningsSaving
+                            ? locale === "bg"
+                              ? "Записване…"
+                              : "Saving…"
+                            : locale === "bg"
+                              ? "Запиши"
+                              : "Save"}
+                        </Button>
                       </div>
                     </div>
                   </div>

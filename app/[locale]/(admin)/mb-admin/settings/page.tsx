@@ -334,6 +334,13 @@ export default function SettingsPage() {
   const [savingEmail, setSavingEmail] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
+  // Non-admin account fields (reception / mechanic)
+  const [otherNewEmail, setOtherNewEmail] = useState("");
+  const [otherNewPassword, setOtherNewPassword] = useState("");
+  const [otherConfirmPassword, setOtherConfirmPassword] = useState("");
+  const [savingOtherEmail, setSavingOtherEmail] = useState(false);
+  const [savingOtherPassword, setSavingOtherPassword] = useState(false);
+
   // Column visibility
   const [selectedAccountForColumns, setSelectedAccountForColumns] =
     useState<AccountKey>("admin");
@@ -590,6 +597,77 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpdateOtherEmail = async () => {
+    const currentEmail = ACCOUNT_EMAILS[selectedAccount];
+    if (!currentEmail || !otherNewEmail.trim()) return;
+    setSavingOtherEmail(true);
+    try {
+      const res = await fetch("/api/admin/update-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: currentEmail, newEmail: otherNewEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showSuccess(
+        isBg
+          ? "Имейлът е сменен успешно"
+          : "Email updated successfully",
+      );
+      setOtherNewEmail("");
+    } catch (err: any) {
+      showError(
+        isBg
+          ? `Грешка при смяна на имейл: ${err.message}`
+          : `Error updating email: ${err.message}`,
+      );
+    } finally {
+      setSavingOtherEmail(false);
+    }
+  };
+
+  const handleUpdateOtherPassword = async () => {
+    const currentEmail = ACCOUNT_EMAILS[selectedAccount];
+    if (!currentEmail || !otherNewPassword) return;
+    if (otherNewPassword !== otherConfirmPassword) {
+      showError(isBg ? "Паролите не съвпадат" : "Passwords do not match");
+      return;
+    }
+    if (otherNewPassword.length < 6) {
+      showError(
+        isBg
+          ? "Паролата трябва да е поне 6 символа"
+          : "Password must be at least 6 characters",
+      );
+      return;
+    }
+    setSavingOtherPassword(true);
+    try {
+      const res = await fetch("/api/admin/update-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: currentEmail, newPassword: otherNewPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showSuccess(
+        isBg
+          ? "Паролата е сменена успешно"
+          : "Password updated successfully",
+      );
+      setOtherNewPassword("");
+      setOtherConfirmPassword("");
+    } catch (err: any) {
+      showError(
+        isBg
+          ? `Грешка при смяна на парола: ${err.message}`
+          : `Error updating password: ${err.message}`,
+      );
+    } finally {
+      setSavingOtherPassword(false);
+    }
+  };
+
   const toggleColumn = (key: ColumnKey) => {
     const updated = { ...columns, [key]: !columns[key] };
     setColumns(updated);
@@ -776,7 +854,12 @@ export default function SettingsPage() {
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setSelectedAccount(opt.value)}
+                      onClick={() => {
+                        setSelectedAccount(opt.value);
+                        setOtherNewEmail("");
+                        setOtherNewPassword("");
+                        setOtherConfirmPassword("");
+                      }}
                       className={`px-3 py-2.5 rounded-lg border text-sm font-medium transition-all ${
                         selectedAccount === opt.value
                           ? "border-mb-blue bg-mb-blue/10 text-white"
@@ -867,40 +950,75 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* Password reset via email - only for non-admin accounts */}
+            {/* Email & password change for non-admin accounts */}
             {selectedAccount !== "admin" && (
-              <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
-                <SubSection
-                  title={isBg ? "Смяна на парола" : "Reset password by Email"}
-                >
-                  <p className="text-sm text-mb-silver/60">
-                    {isBg
-                      ? "Изпратете линк за нова парола на избрания акаунт."
-                      : "Send a password reset link to the selected account."}
-                  </p>
-                  <div className="flex gap-2 items-center">
-                    <span className="flex-1 bg-mb-black border border-mb-border rounded-lg px-3 py-2.5 text-sm text-mb-silver/70">
-                      {ACCOUNT_EMAILS[selectedAccount]}
-                    </span>
+              <>
+                <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+                  <SubSection title={isBg ? "Смяна на имейл" : "Change Email"}>
+                    <p className="text-sm text-mb-silver/60">
+                      {isBg
+                        ? `Текущ имейл: ${ACCOUNT_EMAILS[selectedAccount]}`
+                        : `Current email: ${ACCOUNT_EMAILS[selectedAccount]}`}
+                    </p>
+                    <InputField
+                      label={isBg ? "Нов имейл адрес" : "New email address"}
+                      type="email"
+                      value={otherNewEmail}
+                      onChange={setOtherNewEmail}
+                      placeholder="example@email.com"
+                    />
                     <Button
                       type="button"
-                      onClick={() =>
-                        handleSendReset(ACCOUNT_EMAILS[selectedAccount] ?? "")
-                      }
-                      disabled={sendingReset}
-                      className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 shrink-0"
+                      onClick={handleUpdateOtherEmail}
+                      disabled={savingOtherEmail || !otherNewEmail.trim()}
+                      className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 w-full sm:w-auto"
                     >
-                      {sendingReset
+                      {savingOtherEmail
                         ? isBg
-                          ? "Изпращане..."
-                          : "Sending..."
+                          ? "Запазване..."
+                          : "Saving..."
                         : isBg
-                          ? "Изпрати"
-                          : "Send"}
+                          ? "Смени имейл"
+                          : "Update Email"}
                     </Button>
-                  </div>
-                </SubSection>
-              </div>
+                  </SubSection>
+                </div>
+
+                <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+                  <SubSection
+                    title={isBg ? "Смяна на парола" : "Change Password"}
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <PasswordField
+                        label={isBg ? "Нова парола" : "New password"}
+                        value={otherNewPassword}
+                        onChange={setOtherNewPassword}
+                        placeholder="••••••••"
+                      />
+                      <PasswordField
+                        label={isBg ? "Потвърди парола" : "Confirm password"}
+                        value={otherConfirmPassword}
+                        onChange={setOtherConfirmPassword}
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleUpdateOtherPassword}
+                      disabled={savingOtherPassword || !otherNewPassword}
+                      className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 w-full sm:w-auto"
+                    >
+                      {savingOtherPassword
+                        ? isBg
+                          ? "Запазване..."
+                          : "Saving..."
+                        : isBg
+                          ? "Смени парола"
+                          : "Update Password"}
+                    </Button>
+                  </SubSection>
+                </div>
+              </>
             )}
           </div>
         )}

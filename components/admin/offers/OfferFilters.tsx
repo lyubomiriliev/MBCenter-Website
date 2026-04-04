@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { OfferStatus } from "@/types/database";
 
@@ -149,12 +150,22 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
   const hasActiveFilters = status !== "all" || search || dateFrom || dateTo;
 
   return (
-    <div className="bg-mb-anthracite border border-mb-border rounded-lg p-4">
-      <div className="flex flex-col gap-3">
-        {/* Row 1: Search + Status (side by side on all sizes) */}
+    <div className="relative bg-mb-anthracite border border-mb-border rounded-lg p-4 overflow-hidden">
+      {/* Decorative car image */}
+      <div className="absolute inset-0 pointer-events-none select-none z-0">
+        <Image
+          src="/assets/images/mb-pattern.webp"
+          alt=""
+          fill
+          className="object-cover object-right opacity-[0.15] scale-100 translate-x-1/3"
+          priority={false}
+        />
+      </div>
+      <div className="relative z-10 flex flex-col 2xl:flex-row gap-3">
+        {/* Row 1: Search + Status (side by side on all sizes) — on 2xl+ merges with date row */}
         <div className="flex gap-3 items-end">
           {/* Search */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 2xl:w-80 2xl:flex-none">
             <label className="text-xs text-mb-silver mb-1.5 block">
               {t("filters.search")}
             </label>
@@ -198,16 +209,18 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
                   {t("status.parts_ordered")}
                 </SelectItem>
                 <SelectItem value="finished">{t("status.finished")}</SelectItem>
-                <SelectItem value="cancelled">{t("status.cancelled")}</SelectItem>
+                <SelectItem value="cancelled">
+                  {t("status.cancelled")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Row 2: Date From + Date To (+ clear button) */}
-        <div className="flex gap-3 items-end">
+        {/* Row 2: Date From + Date To (+ clear button) — on 2xl+ sits inline with row 1 */}
+        <div className="flex gap-3 items-end flex-1 min-w-0">
           {/* Date From */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 2xl:w-44 2xl:flex-none">
             <label className="text-xs text-mb-silver mb-1.5 block">
               {t("filters.dateFrom")}
             </label>
@@ -253,7 +266,7 @@ export function OfferFilters({ onFiltersChange }: OfferFiltersProps) {
           </div>
 
           {/* Date To */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 2xl:w-44 2xl:flex-none">
             <label className="text-xs text-mb-silver mb-1.5 block">
               {t("filters.dateTo")}
             </label>

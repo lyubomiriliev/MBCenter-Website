@@ -71,16 +71,16 @@ function QuantityPopover({
   };
 
   return (
-    <div ref={ref} className="relative inline-flex items-center justify-end">
+    <div ref={ref} className="relative inline-flex items-center justify-center">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="min-w-[28px] text-right text-white text-sm tabular-nums px-1 py-0.5 rounded hover:bg-mb-anthracite transition-colors cursor-pointer"
+        className="min-w-[28px] text-center text-white text-sm tabular-nums px-1 py-0.5 rounded hover:bg-mb-anthracite transition-colors cursor-pointer"
       >
         {value}
       </button>
       {open && (
-        <div className="absolute bottom-full right-0 mb-1 z-50 flex items-center gap-1 bg-mb-anthracite border border-mb-border rounded-lg shadow-xl px-2 py-1.5">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-50 flex items-center gap-1 bg-mb-anthracite border border-mb-border rounded-lg shadow-xl px-2 py-1.5">
           <button
             type="button"
             onClick={() => setDraft((d) => Math.max(1, d - 1))}
@@ -415,7 +415,7 @@ const PartRow = memo(function PartRow({ index, remove, openEdit }: PartRowProps)
       >
         {partNumber || "-"}
       </div>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-center">
         <QuantityPopover
           value={quantity}
           onChange={(next) =>

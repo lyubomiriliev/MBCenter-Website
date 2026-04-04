@@ -74,6 +74,25 @@ export function FloatingSummary({
             </span>
           </div>
 
+          {/* Total Time (hours) */}
+          {calculations.totalHours > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-mb-silver flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                {t("time")}
+              </span>
+              <span className="text-white">
+                {(() => {
+                  const h = Math.floor(calculations.totalHours);
+                  const m = Math.round((calculations.totalHours - h) * 60);
+                  if (m === 0) return `${h}ч`;
+                  if (h === 0) return `${m}мин`;
+                  return `${h}ч ${m}мин`;
+                })()}
+              </span>
+            </div>
+          )}
+
           {/* Parts Discount */}
           {discountPartsPercent > 0 && (
             <div className="flex justify-between items-center text-sm">

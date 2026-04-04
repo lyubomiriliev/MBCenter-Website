@@ -520,7 +520,11 @@ export function ServiceCardPDFv3({
         {/* Title */}
         <Text style={styles.title}>
           Сервизна карта{" "}
-          {offer.offer_number ? `№${offer.offer_number}` : "(чернова)"}
+          {offer.service_card_number
+            ? `№${offer.service_card_number}`
+            : offer.offer_number
+              ? `№${offer.offer_number}`
+              : "(чернова)"}
         </Text>
 
         {/* Parts Table - WITH part number column (service cards have part numbers) */}
@@ -886,7 +890,7 @@ export function ServiceCardPDFv3({
           <View style={styles.footerRow}>
             <Text style={styles.footerRowText}>гр. София</Text>
             <Text style={styles.footerRowText}>
-              {new Date(offer.created_at).toLocaleString("bg-BG", {
+              {new Date(offer.service_card_generated_at || offer.created_at).toLocaleString("bg-BG", {
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",

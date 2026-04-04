@@ -12,6 +12,7 @@ interface CalculationResult {
   partsCount: number;
   laborSubtotal: number;
   laborCount: number;
+  totalHours: number;
   subtotal: number;
   partsDiscountAmount: number;
   servicesDiscountAmount: number;
@@ -80,6 +81,10 @@ export function useOfferCalculations(
       return sum + hours * price;
     }, 0);
 
+    const totalHours = serviceActions.reduce((sum: number, action: any) => {
+      return sum + parseTimeToHours(action.timeRequired || "0");
+    }, 0);
+
     // Discounts applied to subtotals (prices already include VAT)
     const partsDiscountAmount = partsSubtotal * (discountPartsPercent / 100);
     const servicesDiscountAmount =
@@ -106,6 +111,7 @@ export function useOfferCalculations(
       partsCount: parts.length,
       laborSubtotal,
       laborCount: serviceActions.length,
+      totalHours,
       subtotal,
       partsDiscountAmount,
       servicesDiscountAmount,
