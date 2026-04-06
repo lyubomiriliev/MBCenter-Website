@@ -455,10 +455,10 @@ export function CreateOfferFormV2({
             (action.pricePerHour || 0);
         }
       });
-      const subtotal = partsTotal + serviceTotal;
-      const netTotal =
-        subtotal - subtotal * ((data.discountPercent || 0) / 100);
-      const vat = netTotal * 0.2;
+      const partsDiscount = partsTotal * ((data.discountPartsPercent || 0) / 100);
+      const servicesDiscount = serviceTotal * ((data.discountServicesPercent || 0) / 100);
+      const netTotal = partsTotal + serviceTotal - partsDiscount - servicesDiscount;
+      const vat = 0;
 
       const updateData: UpdateOffer = {
         customer_name: data.customerName,
@@ -1049,15 +1049,19 @@ export function CreateOfferFormV2({
 
       let serviceTotal = 0;
       data.serviceActions.forEach((action) => {
-        const hours = parseTimeToHours(action.timeRequired || "0");
-        serviceTotal += hours * (action.pricePerHour || 0);
+        if (action.isFixedPrice && action.fixedPriceAmount) {
+          serviceTotal += action.fixedPriceAmount;
+        } else {
+          const hours = parseTimeToHours(action.timeRequired || "0");
+          serviceTotal += hours * (action.pricePerHour || 0);
+        }
       });
 
-      const subtotal = partsTotal + serviceTotal;
-      const discount = subtotal * ((data.discountPercent || 0) / 100);
-      const netTotal = subtotal - discount;
-      const vat = netTotal * 0.2; // 20% VAT
-      const grossTotal = netTotal + vat;
+      const partsDiscount = partsTotal * ((data.discountPartsPercent || 0) / 100);
+      const servicesDiscount = serviceTotal * ((data.discountServicesPercent || 0) / 100);
+      const netTotal = partsTotal + serviceTotal - partsDiscount - servicesDiscount;
+      const vat = 0;
+      const grossTotal = netTotal;
 
       let offer: Offer;
 

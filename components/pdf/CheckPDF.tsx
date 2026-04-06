@@ -16,6 +16,7 @@ export interface CheckFormData {
   inspectionDate: string;
   mechanic: string;
   clientName: string;
+  clientPhone: string;
   carModel: string;
   carModelDetail: string;
   licensePlate: string;
@@ -573,7 +574,7 @@ export function CheckPDF({ data, checkNumber }: CheckPDFProps) {
         </View>
         <View style={styles.headerDivider} />
 
-        {/* ── Info grid row 1: Date | Client | Model ── */}
+        {/* ── Info grid row 1: Date | Client | Phone | Model ── */}
         <View style={styles.infoGrid}>
           <View style={styles.infoCell}>
             <Text style={styles.infoCellLabel}>ДАТА НА ПРЕГЛЕД</Text>
@@ -585,13 +586,17 @@ export function CheckPDF({ data, checkNumber }: CheckPDFProps) {
             <Text style={styles.infoCellLabel}>ИМЕ НА КЛИЕНТ</Text>
             <Text style={styles.infoCellValue}>{data.clientName}</Text>
           </View>
+          <View style={styles.infoCell}>
+            <Text style={styles.infoCellLabel}>ТЕЛЕФОН</Text>
+            <Text style={styles.infoCellValue}>{data.clientPhone || "-"}</Text>
+          </View>
           <View style={styles.infoCellLast}>
             <Text style={styles.infoCellLabel}>МАРКА И МОДЕЛ</Text>
             <Text style={styles.infoCellValue}>{data.carModel || "-"}</Text>
           </View>
         </View>
 
-        {/* ── Info grid row 2: Exact model | Plate | VIN | Mechanic ── */}
+        {/* ── Info grid row 2: Exact model | Plate | VIN ── */}
         <View style={[styles.infoGrid, { marginTop: 10 }]}>
           <View style={styles.infoCell}>
             <Text style={styles.infoCellLabel}>ТОЧЕН МОДЕЛ</Text>

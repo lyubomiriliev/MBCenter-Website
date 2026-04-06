@@ -47,6 +47,7 @@ interface InspectionRow {
   inspection_date: string;
   mechanic: string | null;
   client_name: string | null;
+  client_phone: string | null;
   car_model: string | null;
   car_model_detail: string | null;
   license_plate: string | null;
@@ -72,6 +73,7 @@ const defaultFormData = (): CheckFormData => ({
   inspectionDate: new Date().toISOString().slice(0, 10),
   mechanic: "",
   clientName: "",
+  clientPhone: "",
   carModel: "",
   carModelDetail: "",
   licensePlate: "",
@@ -196,6 +198,7 @@ export function CheckInspectionForm({
               row.inspection_date || new Date().toISOString().slice(0, 10),
             mechanic: row.mechanic || "",
             clientName: row.client_name || "",
+            clientPhone: row.client_phone || "",
             carModel: row.car_model || "",
             carModelDetail: row.car_model_detail || "",
             licensePlate: row.license_plate || "",
@@ -312,6 +315,7 @@ export function CheckInspectionForm({
           inspection_date: form.inspectionDate,
           mechanic: form.mechanic || null,
           client_name: form.clientName || null,
+          client_phone: form.clientPhone || null,
           car_model: form.carModel || null,
           car_model_detail: form.carModelDetail || null,
           license_plate: form.licensePlate || null,
@@ -373,6 +377,7 @@ export function CheckInspectionForm({
           inspection_date: form.inspectionDate,
           mechanic: form.mechanic || null,
           client_name: form.clientName || null,
+          client_phone: form.clientPhone || null,
           car_model: form.carModel || null,
           car_model_detail: form.carModelDetail || null,
           license_plate: form.licensePlate || null,
@@ -415,6 +420,7 @@ export function CheckInspectionForm({
         inspection_date: form.inspectionDate,
         mechanic: form.mechanic || null,
         client_name: form.clientName || null,
+        client_phone: form.clientPhone || null,
         car_model: form.carModel || null,
         car_model_detail: form.carModelDetail || null,
         license_plate: form.licensePlate || null,
@@ -451,6 +457,7 @@ export function CheckInspectionForm({
             inspection_date: form.inspectionDate,
             mechanic: form.mechanic || null,
             client_name: form.clientName || null,
+            client_phone: form.clientPhone || null,
             car_model: form.carModel || null,
             car_model_detail: form.carModelDetail || null,
             license_plate: form.licensePlate || null,
@@ -582,6 +589,9 @@ export function CheckInspectionForm({
         <div className="bg-mb-black border border-mb-border rounded-xl p-6">
           <h2 className="text-lg font-bold text-white mb-5">
             ПРОТОКОЛ ЗА ТЕХНИЧЕСКО СЪСТОЯНИЕ
+            {checkNumber ? (
+              <span className="ml-3 text-mb-blue">№{checkNumber}</span>
+            ) : null}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
@@ -602,6 +612,17 @@ export function CheckInspectionForm({
               <Input
                 value={form.clientName}
                 onChange={(e) => setField("clientName", e.target.value)}
+                className="h-10 bg-mb-anthracite border-mb-border text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-mb-silver text-xs mb-1.5 block">
+                ТЕЛЕФОН:
+              </Label>
+              <Input
+                type="tel"
+                value={form.clientPhone}
+                onChange={(e) => setField("clientPhone", e.target.value)}
                 className="h-10 bg-mb-anthracite border-mb-border text-white"
               />
             </div>

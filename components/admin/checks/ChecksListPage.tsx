@@ -26,6 +26,7 @@ interface Inspection {
   inspection_date: string;
   mechanic: string | null;
   client_name: string | null;
+  client_phone: string | null;
   car_model: string | null;
   car_model_detail: string | null;
   license_plate: string | null;
@@ -381,6 +382,7 @@ export function ChecksListPage({
         inspectionDate: inspection.inspection_date,
         mechanic: inspection.mechanic ?? "",
         clientName: inspection.client_name ?? "",
+        clientPhone: inspection.client_phone ?? "",
         carModel: inspection.car_model ?? "",
         carModelDetail: inspection.car_model_detail ?? "",
         licensePlate: inspection.license_plate ?? "",
@@ -476,7 +478,7 @@ export function ChecksListPage({
       // Pre-populate a new offer draft with vehicle and client data from this review
       const draftData = {
         customerName: inspection.client_name || "",
-        customerPhone: "",
+        customerPhone: inspection.client_phone || "",
         clientEmail: "",
         carModel: inspection.car_model || "",
         carModelDetail: inspection.car_model_detail || "",

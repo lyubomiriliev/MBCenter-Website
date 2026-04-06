@@ -35,28 +35,32 @@ export const offerItemSchema = z.object({
 
 export type OfferItemFormData = z.infer<typeof offerItemSchema>;
 
-export const offerFormSchema = z
-  .object({
-    customerName: z.string().min(1, "Името на клиента е задължително"),
+export const offerFormSchema = z.object({
+    customerName: z.string().optional().default(""),
     customerPhone: z.string().optional(),
     clientEmail: z.string().email("Invalid email").optional().or(z.literal("")),
     clientId: z.string().optional(),
 
-    carModel: z.string().min(1, "Моделът е задължителен"),
+    carModel: z.string().optional().default(""),
     carModelDetail: z.string().optional(),
     repairName: z.string().optional(),
     carYear: z
       .number()
       .min(1990, "Year must be 1990 or later")
       .max(2030, "Year must be 2030 or earlier")
+      .nullable()
       .optional(),
     vinText: z.string().optional(),
     carLicensePlate: z.string().optional(),
-    carMileage: z.number().min(0, "Mileage must be positive").optional(),
+    carMileage: z
+      .number()
+      .min(0, "Mileage must be positive")
+      .nullable()
+      .optional(),
     carMileageUnit: z.enum(["km", "miles"]).default("km"),
     carId: z.string().optional(),
 
-    createdByName: z.string().min(1, "Полето 'Създадена от' е задължително"),
+    createdByName: z.string().optional().default(""),
 
     discountPercent: z
       .number()
@@ -72,9 +76,6 @@ export const offerFormSchema = z
     parts: z.array(partItemSchema).default([]),
     serviceActions: z.array(serviceActionSchema).default([]),
     items: z.array(offerItemSchema).optional(),
-  })
-  .refine((data) => data.parts.length + data.serviceActions.length > 0, {
-    path: ["parts"],
   });
 
 export type OfferFormData = z.output<typeof offerFormSchema>;
@@ -86,10 +87,10 @@ export const defaultOfferFormValues: Partial<OfferFormData> = {
   carModel: "",
   carModelDetail: "",
   repairName: "",
-  carYear: new Date().getFullYear(),
+  carYear: undefined,
   vinText: "",
   carLicensePlate: "",
-  carMileage: 0,
+  carMileage: undefined,
   carMileageUnit: "km",
   createdByName: "",
   discountPercent: 0,
