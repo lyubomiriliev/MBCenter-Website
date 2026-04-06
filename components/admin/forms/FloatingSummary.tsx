@@ -85,9 +85,7 @@ export function FloatingSummary({
                 {(() => {
                   const h = Math.floor(calculations.totalHours);
                   const m = Math.round((calculations.totalHours - h) * 60);
-                  if (m === 0) return `${h}ч`;
-                  if (h === 0) return `${m}мин`;
-                  return `${h}ч ${m}мин`;
+                  return `${h.toString().padStart(2, "0")}ч ${m.toString().padStart(2, "0")}мин`;
                 })()}
               </span>
             </div>

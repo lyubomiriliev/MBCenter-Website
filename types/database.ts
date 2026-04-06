@@ -135,6 +135,11 @@ export interface Database {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          assyst_remaining_time: string | null;
+          assyst_remaining_mileage: string | null;
+          assyst_service_code: string | null;
+          assyst_service_description: string | null;
+          assyst_mileage_unit: string | null;
         };
         Insert: {
           id?: string;
@@ -171,6 +176,11 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          assyst_remaining_time?: string | null;
+          assyst_remaining_mileage?: string | null;
+          assyst_service_code?: string | null;
+          assyst_service_description?: string | null;
+          assyst_mileage_unit?: string | null;
         };
         Update: {
           id?: string;
@@ -207,6 +217,11 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          assyst_remaining_time?: string | null;
+          assyst_remaining_mileage?: string | null;
+          assyst_service_code?: string | null;
+          assyst_service_description?: string | null;
+          assyst_mileage_unit?: string | null;
         };
       };
       offer_items: {

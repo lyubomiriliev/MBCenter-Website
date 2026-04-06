@@ -93,6 +93,14 @@ export function CreateOfferFormV2({
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [mechanicsList, setMechanicsList] = useState<Mechanic[]>([]);
 
+  // Assyst Plus state
+  const [assystRemainingTime, setAssystRemainingTime] = useState("");
+  const [assystRemainingMileage, setAssystRemainingMileage] = useState("");
+  const [assystServiceCode, setAssystServiceCode] = useState("");
+  const [assystServiceDescription, setAssystServiceDescription] = useState("");
+  const [assystMileageUnit, setAssystMileageUnit] = useState<"km" | "miles">("km");
+  const [assystSaving, setAssystSaving] = useState(false);
+
   // Earnings panel state
   const [receptionistsList, setReceptionistsList] = useState<Receptionist[]>(
     [],
@@ -137,7 +145,7 @@ export function CreateOfferFormV2({
     getValues,
   } = methods;
 
-  const { isDirty } = useFormState({ control: methods.control });
+  const { isDirty, dirtyFields } = useFormState({ control: methods.control });
   const offerCalculations = useOfferCalculations(methods.control);
 
   const prepaymentsDirty = useMemo(() => {
@@ -221,6 +229,16 @@ export function CreateOfferFormV2({
       setMileageUnitInput((savedOffer.mileage_unit as "km" | "miles") ?? "km");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id, savedOffer?.mileage_unit]);
+
+  useEffect(() => {
+    if (!savedOffer) return;
+    setAssystRemainingTime((savedOffer as any).assyst_remaining_time ?? "");
+    setAssystRemainingMileage((savedOffer as any).assyst_remaining_mileage ?? "");
+    setAssystServiceCode((savedOffer as any).assyst_service_code ?? "");
+    setAssystServiceDescription((savedOffer as any).assyst_service_description ?? "");
+    setAssystMileageUnit(((savedOffer as any).assyst_mileage_unit as "km" | "miles") ?? "km");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOffer?.id]);
 
   // Load existing offer data into form when editing
   useEffect(() => {
@@ -309,6 +327,15 @@ export function CreateOfferFormV2({
     }
     formLoadedRef.current = true;
   }, [existingOffer, isEditing, methods]);
+
+  // Keep changedAfterLastCardRef in sync whenever savedOffer updates.
+  // This covers both the initial load via useOffer (existingOffer) and the
+  // direct setSavedOffer calls after card generation (fetchOfferWithRelations).
+  useEffect(() => {
+    if (savedOffer?.service_card_generated_at) {
+      changedAfterLastCardRef.current = false;
+    }
+  }, [savedOffer?.service_card_generated_at]);
 
   // Load from localStorage on mount (only for new offers)
   useEffect(() => {
@@ -408,6 +435,9 @@ export function CreateOfferFormV2({
 
   const saveEditedOffer = async (navUrl?: string) => {
     if (!offerId) return;
+    // Capture dirty fields synchronously before any await — React state
+    // captured in closures becomes stale after async suspension points.
+    const dirtyFieldsSnapshot = { ...dirtyFields };
     setIsSaving(true);
     try {
       const data = getValues();
@@ -505,7 +535,24 @@ export function CreateOfferFormV2({
 
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
-      changedAfterLastCardRef.current = true;
+
+      // Only mark the service card as stale if a field that's VISUALLY shown
+      // in the PDF actually changed. notes, notesInternal, notesService and
+      // repairName are NOT rendered in ServiceCardPDFv3, so dirtying only
+      // those fields must not reset the service card date.
+      const NON_PDF_FIELDS = new Set([
+        "notes",
+        "notesInternal",
+        "notesService",
+        "repairName",
+      ]);
+      const dirtyKeys = Object.keys(dirtyFieldsSnapshot);
+      const pdfFieldsChanged = dirtyKeys.some((f) => !NON_PDF_FIELDS.has(f));
+
+      if (pdfFieldsChanged) {
+        changedAfterLastCardRef.current = true;
+      }
+
       methods.reset(methods.getValues());
       setBaselinePrepayments([...prepaymentsRef.current]);
       showSuccess(t("saved"));
@@ -957,6 +1004,29 @@ export function CreateOfferFormV2({
       );
     } finally {
       setReceptionistEarningsSaving(false);
+    }
+  };
+
+  const saveAssyst = async () => {
+    if (!savedOffer?.id) return;
+    setAssystSaving(true);
+    try {
+      await updateOfferMutation.mutateAsync({
+        id: savedOffer.id,
+        offer: {
+          assyst_remaining_time: assystRemainingTime.trim() || null,
+          assyst_remaining_mileage: assystRemainingMileage.trim() || null,
+          assyst_service_code: assystServiceCode.trim() || null,
+          assyst_service_description: assystServiceDescription.trim() || null,
+          assyst_mileage_unit: assystMileageUnit,
+        } as any,
+      });
+      queryClient.invalidateQueries({ queryKey: ["offer", savedOffer.id] });
+      showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+    } catch {
+      showError(locale === "bg" ? "Грешка при запазване." : "Error saving.");
+    } finally {
+      setAssystSaving(false);
     }
   };
 
@@ -1434,8 +1504,10 @@ export function CreateOfferFormV2({
           />
         ))}
 
+        {/* Car Data + ASSYST PLUS — side by side on 2K/4K */}
+        <div className="flex flex-col 2xl:flex-row 2xl:items-stretch gap-6">
         {/* Car Data */}
-        <Card className="bg-mb-anthracite border-mb-border">
+        <Card className="bg-mb-anthracite border-mb-border 2xl:w-1/2 2xl:flex 2xl:flex-col">
           <CardHeader>
             <CardTitle className="text-lg">{t("carInfo")}</CardTitle>
           </CardHeader>
@@ -1458,7 +1530,7 @@ export function CreateOfferFormV2({
                     type="text"
                     value={licensePlateInput}
                     onChange={(e) => setLicensePlateInput(e.target.value)}
-                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-1.5 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                   />
                   <Button
                     type="button"
@@ -1511,21 +1583,21 @@ export function CreateOfferFormV2({
                     type="number"
                     value={mileageInput}
                     onChange={(e) => setMileageInput(e.target.value)}
-                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-1.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     placeholder="0"
                   />
                   <div className="flex rounded-md overflow-hidden border border-mb-border text-sm shrink-0">
                     <button
                       type="button"
                       onClick={() => setMileageUnitInput("km")}
-                      className={`px-3 py-1.5 font-medium transition-colors ${mileageUnitInput === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      className={`px-3 py-2 font-medium transition-colors ${mileageUnitInput === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
                     >
                       км
                     </button>
                     <button
                       type="button"
                       onClick={() => setMileageUnitInput("miles")}
-                      className={`px-3 py-1.5 font-medium transition-colors ${mileageUnitInput === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      className={`px-3 py-2 font-medium transition-colors ${mileageUnitInput === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
                     >
                       мили
                     </button>
@@ -1571,6 +1643,127 @@ export function CreateOfferFormV2({
             </div>
           </CardContent>
         </Card>
+
+        {/* ASSYST PLUS */}
+        <Card className="bg-mb-anthracite border-mb-border 2xl:w-1/2 2xl:flex 2xl:flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg text-center tracking-widest font-bold">
+              ASSYST PLUS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Remaining Time */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-mb-silver">
+                  {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
+                </label>
+                <input
+                  type="text"
+                  value={assystRemainingTime}
+                  onChange={(e) => setAssystRemainingTime(e.target.value)}
+                  placeholder="-2001"
+                  className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                />
+              </div>
+              {/* Remaining Mileage */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-mb-silver">
+                  {locale === "bg"
+                    ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
+                    : `Remaining Mileage (${assystMileageUnit})`}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={assystRemainingMileage}
+                    onChange={(e) => setAssystRemainingMileage(e.target.value)}
+                    placeholder="+24"
+                    className="flex-1 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                  />
+                  <div className="flex rounded-md overflow-hidden border border-mb-border text-sm shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setAssystMileageUnit("km")}
+                      className={`px-3 py-2 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                    >
+                      км
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAssystMileageUnit("miles")}
+                      className={`px-3 py-2 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                    >
+                      мили
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {/* Service Code */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-mb-silver">
+                  {locale === "bg" ? "Сервизен код" : "Service Code"}
+                </label>
+                <input
+                  type="text"
+                  value={assystServiceCode}
+                  onChange={(e) => setAssystServiceCode(e.target.value)}
+                  className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                />
+              </div>
+              {/* Service Description */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-mb-silver">
+                  {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                </label>
+                <input
+                  type="text"
+                  value={assystServiceDescription}
+                  onChange={(e) => setAssystServiceDescription(e.target.value)}
+                  className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                />
+              </div>
+            </div>
+            {/* Reg number (read-only) + Mileage (read-only) + Save */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-mb-silver">
+                  {locale === "bg" ? "Рег. номер" : "Reg. Number"}
+                </label>
+                <div className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm">
+                  {savedOffer.license_plate || licensePlateInput || "—"}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-mb-silver">
+                  {locale === "bg" ? "Пробег" : "Mileage"}
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm">
+                    {mileageInput || savedOffer.mileage || "0"}
+                  </div>
+                  <span className="text-sm text-mb-silver font-medium px-2">
+                    {mileageUnitInput === "km" ? "КМ" : "МИЛИ"}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-4 shrink-0"
+                    disabled={assystSaving}
+                    onClick={saveAssyst}
+                  >
+                    {assystSaving
+                      ? "…"
+                      : locale === "bg"
+                        ? "Запази"
+                        : "Save"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        </div>{/* end Car Data + ASSYST PLUS row */}
 
         {/* Repair Name + Mechanics note + Performed by (side by side) */}
         <Card className="bg-mb-anthracite border-mb-border">
@@ -1764,10 +1957,109 @@ export function CreateOfferFormV2({
             </CardContent>
           </Card>
 
-          {/* Car Info */}
+          {/* Car Info + ASSYST PLUS */}
           <Card className="bg-mb-anthracite border-mb-border">
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 space-y-6">
               <CarSelector />
+              {/* ASSYST PLUS section */}
+              <div className="border-t border-mb-border pt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <h4 className="text-sm font-bold tracking-widest text-white uppercase">
+                    ASSYST PLUS
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Remaining Time */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-mb-silver">
+                      {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
+                    </Label>
+                    <input
+                      type="text"
+                      value={assystRemainingTime}
+                      onChange={(e) => setAssystRemainingTime(e.target.value)}
+                      placeholder="-2001"
+                      className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                  </div>
+                  {/* Remaining Mileage */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-mb-silver">
+                      {locale === "bg"
+                        ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
+                        : `Remaining Mileage (${assystMileageUnit})`}
+                    </Label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={assystRemainingMileage}
+                        onChange={(e) => setAssystRemainingMileage(e.target.value)}
+                        placeholder="+24"
+                        className="flex-1 min-w-0 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      />
+                      <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setAssystMileageUnit("km")}
+                          className={`px-2 py-2 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                        >
+                          км
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAssystMileageUnit("miles")}
+                          className={`px-2 py-2 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                        >
+                          мили
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Service Code */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-mb-silver">
+                      {locale === "bg" ? "Сервизен код" : "Service Code"}
+                    </Label>
+                    <input
+                      type="text"
+                      value={assystServiceCode}
+                      onChange={(e) => setAssystServiceCode(e.target.value)}
+                      className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                  </div>
+                  {/* Service Description */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-mb-silver">
+                      {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                    </Label>
+                    <input
+                      type="text"
+                      value={assystServiceDescription}
+                      onChange={(e) => setAssystServiceDescription(e.target.value)}
+                      className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                  </div>
+                  {/* Save button — only when editing */}
+                  {isEditing && savedOffer && (
+                    <div className="space-y-2 flex flex-col justify-end">
+                      <Label className="text-xs text-transparent select-none">
+                        &nbsp;
+                      </Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="bg-mb-blue hover:bg-mb-blue/90 text-white"
+                        disabled={assystSaving}
+                        onClick={saveAssyst}
+                      >
+                        {assystSaving
+                          ? locale === "bg" ? "Записване…" : "Saving…"
+                          : locale === "bg" ? "Запази" : "Save"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 

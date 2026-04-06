@@ -195,6 +195,8 @@ export function OffersTable({
               service_card_number, service_card_generated_at,
               status, total_net, total_gross,
               created_at, updated_at,
+              assyst_remaining_time, assyst_remaining_mileage,
+              assyst_service_code, assyst_service_description, assyst_mileage_unit,
               client:clients(id, name, phone, email),
               car:cars(id, model, year, vin, license_plate, mileage),
               items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order),

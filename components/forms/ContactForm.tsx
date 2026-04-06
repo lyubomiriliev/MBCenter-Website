@@ -57,7 +57,7 @@ export function ContactForm() {
             carBrand: data.carBrand,
             model: data.model,
             year: data.year,
-            vin: data.vin || "Not provided",
+            vin: data.vin,
             inquiry: data.inquiry,
           }),
         }
@@ -292,15 +292,26 @@ export function ContactForm() {
       {/* VIN Number (optional) */}
       <div>
         <label htmlFor="vin" className="block text-white font-medium mb-2">
-          {t("vin")}
+          {t("vin")} <span className="text-mb-blue">*</span>
         </label>
         <input
           id="vin"
           type="text"
-          {...register("vin")}
+          {...register("vin", { required: t("required") })}
           className="w-full px-4 py-3 bg-mb-anthracite border border-mb-border rounded-button text-white placeholder-mb-silver focus:outline-none focus:border-mb-blue transition-colors"
           maxLength={17}
+          aria-invalid={errors.vin ? "true" : "false"}
+          aria-describedby={errors.vin ? "vin-error" : undefined}
         />
+        {errors.vin && (
+          <p
+            id="vin-error"
+            className="mt-2 text-sm text-red-400"
+            role="alert"
+          >
+            {errors.vin.message}
+          </p>
+        )}
       </div>
 
       {/* Inquiry */}
