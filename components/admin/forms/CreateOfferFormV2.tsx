@@ -89,6 +89,10 @@ export function CreateOfferFormV2({
     "km",
   );
   const [baselinePrepayments, setBaselinePrepayments] = useState<number[]>([]);
+  // Dedicated state for the service card date — never overwritten by stale
+  // React Query refetches. Initialized from the offer on load and only moves
+  // forward when a card is actually generated.
+  const [serviceCardGeneratedAt, setServiceCardGeneratedAt] = useState<string | null>(null);
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [mechanicsList, setMechanicsList] = useState<Mechanic[]>([]);
@@ -244,6 +248,12 @@ export function CreateOfferFormV2({
   useEffect(() => {
     if (!existingOffer || !isEditing) return;
     setSavedOffer(existingOffer);
+    // Only ever move serviceCardGeneratedAt forward — never clear it.
+    // This handles both initial load and refetches: if the incoming value is
+    // non-null, accept it; if it's null (stale refetch), keep the current value.
+    if (existingOffer.service_card_generated_at) {
+      setServiceCardGeneratedAt(existingOffer.service_card_generated_at);
+    }
     // Only reset the form on initial load - never on subsequent refetches
     // (refetches happen after autosave; resetting would wipe in-progress typing)
     if (formLoadedRef.current) return;
@@ -744,10 +754,15 @@ export function CreateOfferFormV2({
         }),
       };
 
-      // Compute the generation timestamp so the PDF and DB stay in sync
-      const generationTimestamp = changedAfterLastCardRef.current
+      // Determine whether to issue a new timestamp:
+      // - First generation (no date in DB yet): always write a new one.
+      // - Re-generation with no PDF-relevant changes: keep the existing date.
+      // - Re-generation after PDF-relevant changes were saved: write a new one.
+      const existingTimestamp = savedOffer?.service_card_generated_at ?? null;
+      const needsNewTimestamp = !existingTimestamp || changedAfterLastCardRef.current;
+      const generationTimestamp = needsNewTimestamp
         ? new Date().toISOString()
-        : offerData.service_card_generated_at || new Date().toISOString();
+        : existingTimestamp;
 
       // Stamp the offer data so the PDF footer uses the correct date
       offerData.service_card_generated_at = generationTimestamp;
@@ -812,7 +827,7 @@ export function CreateOfferFormV2({
         const updateData: any = {
           status: "finished",
           service_card_number: serviceCardNumber || savedOffer.offer_number,
-          ...(changedAfterLastCardRef.current && {
+          ...(needsNewTimestamp && {
             service_card_generated_at: generationTimestamp,
           }),
         };
@@ -823,8 +838,20 @@ export function CreateOfferFormV2({
           .update(updateData as never)
           .eq("id", savedOffer.id);
 
+        // Invalidate the React Query cache BEFORE fetching so that any
+        // concurrent refetch (triggered by a prior queryClient.invalidateQueries
+        // call in saveEditedOffer) picks up the freshly-written service card
+        queryClient.invalidateQueries({ queryKey: ["offer", savedOffer.id] });
+
         const refreshedOffer = await fetchOfferWithRelations(savedOffer.id);
-        if (refreshedOffer) setSavedOffer(refreshedOffer);
+        if (refreshedOffer) {
+          setSavedOffer(refreshedOffer);
+          // Always update the dedicated display state so the sidebar shows the
+          // correct date regardless of any stale React Query refetches.
+          setServiceCardGeneratedAt(
+            refreshedOffer.service_card_generated_at ?? generationTimestamp,
+          );
+        }
       }
     } catch (error) {
       console.error("Error generating service card PDF:", error);
@@ -2062,7 +2089,7 @@ export function CreateOfferFormV2({
                       {...methods.register("vinText")}
                       placeholder="WDB1234567890"
                       className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
-                      maxLength={17}
+                      maxLength={22}
                     />
                   </div>
                   <div className="space-y-2">
@@ -2803,13 +2830,13 @@ export function CreateOfferFormV2({
                             },
                           )}
                         </div>
-                        {metaOffer.service_card_generated_at && (
+                        {serviceCardGeneratedAt && (
                           <div>
                             <span className="font-medium">
                               {t("serviceCardCreatedAt")}:
                             </span>{" "}
                             {new Date(
-                              metaOffer.service_card_generated_at,
+                              serviceCardGeneratedAt,
                             ).toLocaleDateString("bg-BG", {
                               year: "numeric",
                               month: "2-digit",
