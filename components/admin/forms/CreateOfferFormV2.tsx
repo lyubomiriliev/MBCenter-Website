@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useForm, FormProvider, useFormState, useWatch } from "react-hook-form";
+import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
@@ -1513,14 +1513,12 @@ export function CreateOfferFormV2({
           />
         ))}
 
-        {/* Car Data + ASSYST PLUS — side by side on 2K/4K */}
-        <div className="flex flex-col 2xl:flex-row 2xl:items-stretch gap-6">
-        {/* Car Data */}
-        <Card className="bg-mb-anthracite border-mb-border 2xl:w-1/2 2xl:flex 2xl:flex-col">
+        {/* Car Data + ASSYST PLUS — merged card */}
+        <Card className="bg-mb-anthracite border-mb-border">
           <CardHeader>
             <CardTitle className="text-lg">{t("carInfo")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-mb-silver text-sm">{t("carModel")}</span>
@@ -1650,114 +1648,89 @@ export function CreateOfferFormV2({
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* ASSYST PLUS */}
-        <Card className="bg-mb-anthracite border-mb-border 2xl:w-1/2 2xl:flex 2xl:flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-center tracking-widest font-bold">
-              ASSYST PLUS
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Remaining Time */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-mb-silver">
-                  {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
-                </label>
-                <input
-                  type="text"
-                  value={assystRemainingTime}
-                  onChange={(e) => setAssystRemainingTime(e.target.value)}
-                  placeholder="-2001"
-                  className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                />
-              </div>
-              {/* Remaining Mileage */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-mb-silver">
-                  {locale === "bg"
-                    ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
-                    : `Remaining Mileage (${assystMileageUnit})`}
-                </label>
-                <div className="flex gap-2">
+            {/* ASSYST PLUS */}
+            <div className="border-t border-mb-border pt-4">
+              <h4 className="text-sm font-bold tracking-widest text-white uppercase mb-4">
+                ASSYST PLUS
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Remaining Time */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-mb-silver">
+                    {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
+                  </label>
                   <input
                     type="text"
-                    value={assystRemainingMileage}
-                    onChange={(e) => setAssystRemainingMileage(e.target.value)}
-                    placeholder="+24"
-                    className="flex-1 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    value={assystRemainingTime}
+                    onChange={(e) => setAssystRemainingTime(e.target.value)}
+                    placeholder="-2001"
+                    className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                   />
-                  <div className="flex rounded-md overflow-hidden border border-mb-border text-sm shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setAssystMileageUnit("km")}
-                      className={`px-3 py-2 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
-                    >
-                      км
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAssystMileageUnit("miles")}
-                      className={`px-3 py-2 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
-                    >
-                      мили
-                    </button>
+                </div>
+                {/* Remaining Mileage */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-mb-silver">
+                    {locale === "bg"
+                      ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
+                      : `Remaining Mileage (${assystMileageUnit})`}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={assystRemainingMileage}
+                      onChange={(e) => setAssystRemainingMileage(e.target.value)}
+                      placeholder="+24"
+                      className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                    <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setAssystMileageUnit("km")}
+                        className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      >
+                        км
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAssystMileageUnit("miles")}
+                        className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      >
+                        мили
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              {/* Service Code */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-mb-silver">
-                  {locale === "bg" ? "Сервизен код" : "Service Code"}
-                </label>
-                <input
-                  type="text"
-                  value={assystServiceCode}
-                  onChange={(e) => setAssystServiceCode(e.target.value)}
-                  className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                />
-              </div>
-              {/* Service Description */}
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-mb-silver">
-                  {locale === "bg" ? "Код на обслужване" : "Service Description"}
-                </label>
-                <input
-                  type="text"
-                  value={assystServiceDescription}
-                  onChange={(e) => setAssystServiceDescription(e.target.value)}
-                  className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                />
-              </div>
-            </div>
-            {/* Reg number (read-only) + Mileage (read-only) + Save */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-mb-silver">
-                  {locale === "bg" ? "Рег. номер" : "Reg. Number"}
-                </label>
-                <div className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm">
-                  {savedOffer.license_plate || licensePlateInput || "—"}
+                {/* Service Code */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-mb-silver">
+                    {locale === "bg" ? "Сервизен код" : "Service Code"}
+                  </label>
+                  <input
+                    type="text"
+                    value={assystServiceCode}
+                    onChange={(e) => setAssystServiceCode(e.target.value)}
+                    className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                  />
                 </div>
-              </div>
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-mb-silver">
-                  {locale === "bg" ? "Пробег" : "Mileage"}
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm">
-                    {mileageInput || savedOffer.mileage || "0"}
-                  </div>
-                  <span className="text-sm text-mb-silver font-medium px-2">
-                    {mileageUnitInput === "km" ? "КМ" : "МИЛИ"}
-                  </span>
+                {/* Service Description */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-mb-silver">
+                    {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                  </label>
+                  <input
+                    type="text"
+                    value={assystServiceDescription}
+                    onChange={(e) => setAssystServiceDescription(e.target.value)}
+                    className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                  />
+                </div>
+                {/* Save button */}
+                <div className="space-y-2 flex flex-col justify-end">
                   <Button
                     type="button"
                     size="sm"
-                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-4 shrink-0"
+                    className="bg-mb-blue hover:bg-mb-blue/90 text-white"
                     disabled={assystSaving}
                     onClick={saveAssyst}
                   >
@@ -1772,7 +1745,6 @@ export function CreateOfferFormV2({
             </div>
           </CardContent>
         </Card>
-        </div>{/* end Car Data + ASSYST PLUS row */}
 
         {/* Repair Name + Mechanics note + Performed by (side by side) */}
         <Card className="bg-mb-anthracite border-mb-border">
@@ -1968,19 +1940,45 @@ export function CreateOfferFormV2({
 
           {/* Car Info + ASSYST PLUS */}
           <Card className="bg-mb-anthracite border-mb-border">
-            <CardContent className="pt-6 space-y-6">
-              <CarSelector />
-              {/* ASSYST PLUS section */}
-              <div className="border-t border-mb-border pt-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <h4 className="text-sm font-bold tracking-widest text-white uppercase">
+            <CardContent className="pt-6">
+              {/* Outer grid: left car fields | right assyst — shared row heights */}
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-x-8 gap-y-4">
+
+                {/* ── Title row ── */}
+                {/* Left title: order-1 on mobile, auto on lg */}
+                <div className="order-1 lg:order-none">
+                  <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                    <svg className="w-5 h-5 text-mb-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                    </svg>
+                    {t("carInfo")}
+                  </h3>
+                </div>
+                {/* Right title: order-5 on mobile (after Наименование), auto on lg */}
+                <div className="order-5 lg:order-none">
+                  <h4 className="text-lg font-medium text-white tracking-widest uppercase lg:text-center">
                     ASSYST PLUS
                   </h4>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Remaining Time */}
+
+                {/* ── Row 1: Модел + Точен модел | Оставащо + Оставащ пробег ── */}
+                {/* Left: Model + Exact Model — order-2 */}
+                <div className="order-2 lg:order-none grid grid-cols-2 gap-4">
+                  <CarSelector />
                   <div className="space-y-2">
-                    <Label className="text-xs text-mb-silver">
+                    <Label>{t("carModelDetail")}</Label>
+                    <Input
+                      {...methods.register("carModelDetail")}
+                      placeholder={t("carModelDetailPlaceholder")}
+                      className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+                    />
+                  </div>
+                </div>
+                {/* Right: Remaining Time + Remaining Mileage — order-6 on mobile */}
+                <div className="order-6 lg:order-none grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-mb-silver">
                       {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
                     </Label>
                     <input
@@ -1988,86 +1986,132 @@ export function CreateOfferFormV2({
                       value={assystRemainingTime}
                       onChange={(e) => setAssystRemainingTime(e.target.value)}
                       placeholder="-2001"
-                      className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
-                  {/* Remaining Mileage */}
                   <div className="space-y-2">
-                    <Label className="text-xs text-mb-silver">
+                    <Label className="text-mb-silver">
                       {locale === "bg"
                         ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
                         : `Remaining Mileage (${assystMileageUnit})`}
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <input
                         type="text"
                         value={assystRemainingMileage}
                         onChange={(e) => setAssystRemainingMileage(e.target.value)}
                         placeholder="+24"
-                        className="flex-1 min-w-0 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                        className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                       />
                       <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setAssystMileageUnit("km")}
-                          className={`px-2 py-2 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
-                        >
+                        <button type="button" onClick={() => setAssystMileageUnit("km")}
+                          className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
                           км
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setAssystMileageUnit("miles")}
-                          className={`px-2 py-2 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
-                        >
+                        <button type="button" onClick={() => setAssystMileageUnit("miles")}
+                          className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
                           мили
                         </button>
                       </div>
                     </div>
                   </div>
-                  {/* Service Code */}
+                </div>
+
+                {/* ── Row 2: Наименование | Сервизен + Код на обслужване ── */}
+                {/* Left: Repair Name — order-3 */}
+                <div className="order-3 lg:order-none space-y-2">
+                  <Label>{t("repairName")}</Label>
+                  <Input
+                    {...methods.register("repairName")}
+                    placeholder={t("repairNamePlaceholder")}
+                    className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+                  />
+                </div>
+                {/* Right: Service Code + Service Description — order-7 on mobile */}
+                <div className="order-7 lg:order-none grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs text-mb-silver">
+                    <Label className="text-mb-silver">
                       {locale === "bg" ? "Сервизен код" : "Service Code"}
                     </Label>
                     <input
                       type="text"
                       value={assystServiceCode}
                       onChange={(e) => setAssystServiceCode(e.target.value)}
-                      className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
-                  {/* Service Description */}
                   <div className="space-y-2">
-                    <Label className="text-xs text-mb-silver">
+                    <Label className="text-mb-silver">
                       {locale === "bg" ? "Код на обслужване" : "Service Description"}
                     </Label>
                     <input
                       type="text"
                       value={assystServiceDescription}
                       onChange={(e) => setAssystServiceDescription(e.target.value)}
-                      className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
-                  {/* Save button — only when editing */}
+                </div>
+
+                {/* ── Row 3: VIN + Рег.номер | Пробег ── */}
+                {/* Left: VIN + License Plate — order-4 */}
+                <div className="order-4 lg:order-none grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("carVin")}</Label>
+                    <Input
+                      {...methods.register("vinText")}
+                      placeholder="WDB1234567890"
+                      className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
+                      maxLength={17}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("carLicensePlate")}</Label>
+                    <Input
+                      {...methods.register("carLicensePlate")}
+                      placeholder="СА 1234 АВ"
+                      className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
+                    />
+                  </div>
+                </div>
+                {/* Right: Mileage + Save — order-8 on mobile */}
+                <div className="order-8 lg:order-none space-y-2">
+                  <Label className="text-mb-silver">
+                    {locale === "bg" ? "Пробег" : "Mileage"}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      {...methods.register("carMileage", {
+                        setValueAs: (v) => (v === "" || v === null || v === undefined || isNaN(Number(v)) ? 0 : Number(v)),
+                      })}
+                      placeholder="0"
+                      className="flex-1 bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+                    />
+                    <select
+                      {...methods.register("carMileageUnit")}
+                      className="w-20 h-9 rounded-md bg-gray-100 text-gray-900 border-mb-border px-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue"
+                    >
+                      <option value="km">км</option>
+                      <option value="miles">мили</option>
+                    </select>
+                  </div>
                   {isEditing && savedOffer && (
-                    <div className="space-y-2 flex flex-col justify-end">
-                      <Label className="text-xs text-transparent select-none">
-                        &nbsp;
-                      </Label>
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="bg-mb-blue hover:bg-mb-blue/90 text-white"
-                        disabled={assystSaving}
-                        onClick={saveAssyst}
-                      >
-                        {assystSaving
-                          ? locale === "bg" ? "Записване…" : "Saving…"
-                          : locale === "bg" ? "Запази" : "Save"}
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-mb-blue hover:bg-mb-blue/90 text-white w-full mt-2"
+                      disabled={assystSaving}
+                      onClick={saveAssyst}
+                    >
+                      {assystSaving
+                        ? locale === "bg" ? "Записване…" : "Saving…"
+                        : locale === "bg" ? "Запази" : "Save"}
+                    </Button>
                   )}
                 </div>
+
               </div>
             </CardContent>
           </Card>
@@ -2206,7 +2250,7 @@ export function CreateOfferFormV2({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Mechanic */}
                       <div className="space-y-2 pb-3 sm:pb-0 sm:border-b-0 border-b border-mb-border/50 sm:pr-4 sm:border-r">
-                        <p className="text-xs text-mb-silver font-medium">
+                        <p className="text-sm text-mb-silver font-medium">
                           {locale === "bg" ? "Механик" : "Mechanic"}
                         </p>
                         <select
@@ -2264,7 +2308,7 @@ export function CreateOfferFormV2({
                           </div>
                         </div>
                         {mechanicHourlyRate && mechanicRepairTime && (
-                          <p className="text-xs text-mb-silver">
+                          <p className="text-sm text-mb-silver">
                             {locale === "bg" ? "Общо" : "Total"}:{" "}
                             <span className="text-white font-semibold">
                               {(
@@ -2296,7 +2340,7 @@ export function CreateOfferFormV2({
 
                       {/* Receptionist */}
                       <div className="space-y-2">
-                        <p className="text-xs text-mb-silver font-medium">
+                        <p className="text-sm text-mb-silver font-medium">
                           {locale === "bg" ? "Приемчик" : "Receptionist"}
                         </p>
                         <select
@@ -2363,7 +2407,7 @@ export function CreateOfferFormV2({
                           </div>
                         </div>
                         {receptionistTurnoverPct && (
-                          <p className="text-xs text-mb-silver">
+                          <p className="text-sm text-mb-silver">
                             {locale === "bg" ? "Заработка" : "Earnings"}:{" "}
                             <span className="text-white font-semibold">
                               {(
@@ -2743,7 +2787,7 @@ export function CreateOfferFormV2({
                   (() => {
                     const metaOffer = savedOffer ?? existingOffer!;
                     return (
-                      <div className="w-full p-3 bg-mb-black/30 border border-mb-border rounded-lg text-xs text-mb-silver space-y-1.5">
+                      <div className="w-full p-3 bg-mb-black/30 border border-mb-border rounded-lg text-sm text-mb-silver space-y-1.5">
                         <div>
                           <span className="font-medium">
                             {t("offerCreatedAt")}:
