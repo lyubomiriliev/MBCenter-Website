@@ -725,8 +725,8 @@ export function CheckInspectionForm({
               </Label>
               <Input
                 value={form.licensePlate}
-                onChange={(e) => setField("licensePlate", e.target.value)}
-                className="h-10 bg-mb-anthracite border-mb-border text-white"
+                onChange={(e) => setField("licensePlate", e.target.value.toUpperCase())}
+                className="h-10 bg-mb-anthracite border-mb-border text-white uppercase"
               />
             </div>
             <div>
@@ -735,7 +735,7 @@ export function CheckInspectionForm({
               </Label>
               <Input
                 value={form.vin}
-                onChange={(e) => setField("vin", e.target.value)}
+                onChange={(e) => setField("vin", e.target.value.toUpperCase())}
                 className="h-10 bg-mb-anthracite border-mb-border text-white uppercase"
               />
             </div>

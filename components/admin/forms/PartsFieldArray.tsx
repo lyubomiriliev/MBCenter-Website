@@ -31,94 +31,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { OfferFormData, PartItemFormData } from "@/lib/schemas/offer";
-
-/**
- * Inline quantity popover - appears when clicking directly on a qty number.
- * showConfirm=true  → shows +/- plus a checkmark save button (direct-click mode)
- * showConfirm=false → shows only +/- (inside Edit Part modal, not used here)
- */
-function QuantityPopover({
-  value,
-  onChange,
-  showConfirm = true,
-}: {
-  value: number;
-  onChange: (next: number) => void;
-  showConfirm?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (open) setDraft(value);
-  }, [open, value]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const commit = () => {
-    onChange(Math.max(1, draft));
-    setOpen(false);
-  };
-
-  return (
-    <div ref={ref} className="relative inline-flex items-center justify-center">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="min-w-[28px] text-center text-white text-sm tabular-nums px-1 py-0.5 rounded hover:bg-mb-anthracite transition-colors cursor-pointer"
-      >
-        {value}
-      </button>
-      {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-50 flex items-center gap-1 bg-mb-anthracite border border-mb-border rounded-lg shadow-xl px-2 py-1.5">
-          <button
-            type="button"
-            onClick={() => setDraft((d) => Math.max(1, d - 1))}
-            className="w-7 h-7 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors"
-          >
-            −
-          </button>
-          <input
-            type="number"
-            min={1}
-            value={draft}
-            onChange={(e) => setDraft(Math.max(1, Number(e.target.value) || 1))}
-            onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setOpen(false); }}
-            className="w-12 text-center bg-white text-gray-900 border border-mb-border rounded text-sm py-0.5 tabular-nums"
-          />
-          <button
-            type="button"
-            onClick={() => setDraft((d) => d + 1)}
-            className="w-7 h-7 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors"
-          >
-            +
-          </button>
-          {showConfirm && (
-            <button
-              type="button"
-              onClick={commit}
-              className="w-7 h-7 flex items-center justify-center rounded bg-green-600 hover:bg-green-700 text-white border border-green-700 transition-colors"
-              aria-label="Confirm"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+import { QuantityPopover } from "@/components/admin/shared/QuantityPopover";
+import { supabase } from "@/lib/supabase/client";
+interface WarehouseSuggestion {
+  id: string;
+  name: string;
+  part_number: string;
+  sale_price: number;
+  cost_price: number;
+  quantity: number;
 }
 
 function AddEditPartModal({
@@ -135,6 +56,7 @@ function AddEditPartModal({
   onConfirm: (part: PartItemFormData) => void;
 }) {
   const t = useTranslations("admin.form");
+  const tWh = useTranslations("admin.warehouse.warehouseLookup");
   const [description, setDescription] = useState("");
   const [brand, setBrand] = useState("MERCEDES");
   const [partNumber, setPartNumber] = useState("");
@@ -142,6 +64,12 @@ function AddEditPartModal({
   const [unitPrice, setUnitPrice] = useState(0);
   const [priceInput, setPriceInput] = useState("0");
   const [error, setError] = useState("");
+
+  // Warehouse lookup state
+  const [wsSuggestions, setWsSuggestions] = useState<WarehouseSuggestion[]>([]);
+  const [wsDropdownOpen, setWsDropdownOpen] = useState(false);
+  const [wsMatchedPart, setWsMatchedPart] = useState<WarehouseSuggestion | null>(null);
+  const pnDropdownRef = useRef<HTMLDivElement>(null);
 
   const reset = useCallback((vals: PartItemFormData | null) => {
     if (vals) {
@@ -160,11 +88,63 @@ function AddEditPartModal({
       setPriceInput("0");
     }
     setError("");
+    setWsSuggestions([]);
+    setWsDropdownOpen(false);
+    setWsMatchedPart(null);
   }, []);
 
   useEffect(() => {
     if (open) reset(initialValues);
   }, [open, initialValues, reset]);
+
+  // Debounced warehouse lookup
+  useEffect(() => {
+    const term = partNumber.trim();
+    if (term.length < 2) {
+      setWsSuggestions([]);
+      setWsDropdownOpen(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from("warehouse_parts")
+          .select("id, name, part_number, sale_price, cost_price, quantity")
+          .ilike("part_number", `%${term}%`)
+          .limit(10);
+        if (data && data.length > 0) {
+          setWsSuggestions(data as WarehouseSuggestion[]);
+          setWsDropdownOpen(true);
+        } else {
+          setWsSuggestions([]);
+          setWsDropdownOpen(false);
+        }
+      } catch {
+        // silently ignore
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [partNumber]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!wsDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pnDropdownRef.current && !pnDropdownRef.current.contains(e.target as Node)) {
+        setWsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [wsDropdownOpen, pnDropdownRef]);
+
+  const handleSelectSuggestion = (match: WarehouseSuggestion) => {
+    setDescription(match.name);
+    setUnitPrice(match.sale_price);
+    setPriceInput(match.sale_price.toString());
+    setWsMatchedPart(match);
+    setWsDropdownOpen(false);
+  };
 
   const handleOpen = useCallback(
     (isOpen: boolean) => onOpenChange(isOpen),
@@ -185,16 +165,57 @@ function AddEditPartModal({
       setError("Price must be positive");
       return;
     }
-    onConfirm({
+
+    const part: PartItemFormData = {
       type: "part",
       description: desc,
       brand: brand || undefined,
       partNumber: partNumber || undefined,
       unitPrice: Number(unitPrice) || 0,
       quantity: Number(quantity) || 1,
-    });
+    };
+
+    onConfirm(part);
     onOpenChange(false);
+
+    // Auto-create warehouse entry if part_number set and no match exists
+    const trimmedPN = partNumber.trim();
+    if (trimmedPN) {
+      (async () => {
+        try {
+          const { data: existing } = await supabase
+            .from("warehouse_parts")
+            .select("id")
+            .eq("part_number", trimmedPN)
+            .maybeSingle();
+          if (!existing) {
+            await supabase.from("warehouse_parts").insert({
+              name: part.description,
+              part_number: trimmedPN,
+              manufacturer: part.brand || "MERCEDES",
+              quantity: 0,
+              cost_price: 0,
+              sale_price: part.unitPrice,
+            } as never);
+          }
+        } catch {
+          // silently ignore — never block the offer save
+        }
+      })();
+    }
   };
+
+  const wsMargin = wsMatchedPart && wsMatchedPart.cost_price > 0
+    ? ((wsMatchedPart.sale_price - wsMatchedPart.cost_price) / wsMatchedPart.cost_price * 100).toFixed(1) + "%"
+    : null;
+
+  const wsStockColor = wsMatchedPart
+    ? wsMatchedPart.quantity > 3
+      ? "text-green-400"
+      : wsMatchedPart.quantity >= 1
+      ? "text-yellow-400"
+      : "text-red-400"
+    : "";
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
@@ -237,17 +258,45 @@ function AddEditPartModal({
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" ref={pnDropdownRef}>
               <Label htmlFor="modal-pn" className="text-gray-200">
                 {t("partNumber")}
               </Label>
-              <Input
-                id="modal-pn"
-                value={partNumber}
-                onChange={(e) => setPartNumber(e.target.value)}
-                placeholder={t("partNumber")}
-                className="bg-gray-100 text-gray-900 border-mb-border"
-              />
+              <div className="relative">
+                <Input
+                  id="modal-pn"
+                  value={partNumber}
+                  onChange={(e) => {
+                    setPartNumber(e.target.value);
+                    setWsMatchedPart(null);
+                  }}
+                  placeholder={t("partNumber")}
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                  autoComplete="off"
+                />
+                {wsDropdownOpen && wsSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-mb-anthracite border border-mb-border rounded-lg shadow-xl overflow-hidden">
+                    {wsSuggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(s)}
+                        className="w-full text-left px-3 py-2 hover:bg-mb-black/60 transition-colors border-b border-mb-border/30 last:border-0"
+                      >
+                        <div className="text-white text-sm font-mono">{s.part_number}</div>
+                        <div className="text-mb-silver text-xs truncate">{s.name}</div>
+                        <div className="text-xs text-mb-blue tabular-nums">{s.sale_price.toFixed(2)} €</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {wsMatchedPart && (
+                <div className={`text-xs mt-1 ${wsStockColor}`}>
+                  {tWh("stock")}: {wsMatchedPart.quantity}
+                  {wsMargin && ` | ${tWh("margin")}: ${wsMargin}`}
+                </div>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

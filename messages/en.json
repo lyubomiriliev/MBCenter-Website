@@ -1226,6 +1226,7 @@
       "checks": "Reviews",
       "createCheck": "New Review",
       "earnings": "Earnings",
+      "warehouse": "Warehouse",
       "backToSite": "Back to Site",
       "logout": "Logout"
     },
@@ -1439,6 +1440,82 @@
         "serviceCardFailed": "Failed to generate service card",
         "pdfFailedButSaved": "Offer saved successfully, but PDF generation failed. You can generate it later.",
         "noItemsForServiceCard": "Add at least one part or service to generate service card"
+      }
+    },
+    "warehouse": {
+      "title": "Warehouse",
+      "subtitle": "Parts inventory management",
+      "addPart": "Add Part",
+      "editPart": "Edit Part",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "export": "Export",
+      "import": "Import",
+      "template": "Download Template",
+      "importPreviewTitle": "Import Preview",
+      "importPreviewSubtitle": "First {count} rows from file",
+      "importConfirm": "Import {count} rows",
+      "importSuccess": "{imported} imported, {skipped} skipped",
+      "searchPlaceholder": "Search by name, part number or replacement number...",
+      "noResults": "No parts found",
+      "addFirstPart": "Add your first part",
+      "deleteConfirm": {
+        "title": "Delete Part",
+        "description": "Are you sure you want to delete this part? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "deleteSuccess": "Part deleted successfully"
+      },
+      "columns": {
+        "name": "Name",
+        "partNumber": "Part #",
+        "manufacturer": "Manufacturer",
+        "quantity": "Qty",
+        "costPrice": "Cost",
+        "salePrice": "Sale",
+        "margin": "Margin",
+        "status": "Status",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "fields": {
+        "name": "Part Name",
+        "partNumber": "Part Number",
+        "manufacturer": "Manufacturer",
+        "quantity": "Quantity",
+        "costPrice": "Cost Price",
+        "salePrice": "Sale Price",
+        "replacedBy": "Replaced By",
+        "replacedByPlaceholder": "Substitute part number",
+        "margin": "Margin",
+        "profit": "Profit"
+      },
+      "status": {
+        "inStock": "In Stock",
+        "limited": "Limited",
+        "outOfStock": "Out of Stock"
+      },
+      "errors": {
+        "nameRequired": "Part name is required",
+        "partNumberRequired": "Part number is required",
+        "quantityInvalid": "Quantity must be 0 or more",
+        "priceInvalid": "Price must be 0 or more"
+      },
+      "transfer": {
+        "title": "Transfer Data",
+        "subtitle": "Append parts and labor to another offer",
+        "offerNumber": "Target Offer Number",
+        "offerNumberPlaceholder": "Search by offer number...",
+        "confirmButton": "Transfer Parts & Labor",
+        "cancel": "Cancel",
+        "success": "Parts and labor transferred to offer #{number}",
+        "sameOfferError": "Cannot transfer to the same offer",
+        "notFoundError": "Target offer not found",
+        "transferring": "Transferring..."
+      },
+      "warehouseLookup": {
+        "stock": "Stock",
+        "margin": "Margin"
       }
     }
   }

@@ -1226,6 +1226,7 @@
       "checks": "Прегледи",
       "createCheck": "Нов преглед",
       "earnings": "Заработки",
+      "warehouse": "Склад",
       "backToSite": "Към сайта",
       "logout": "Изход"
     },
@@ -1440,6 +1441,82 @@
         "serviceCardFailed": "Грешка при генериране на сервизна карта",
         "pdfFailedButSaved": "Офертата е запазена успешно, но PDF-ът не беше генериран. Може да го генерирате по-късно.",
         "noItemsForServiceCard": "Добавете поне една част или услуга за да генерирате сервизна карта"
+      }
+    },
+    "warehouse": {
+      "title": "Склад",
+      "subtitle": "Управление на складовите части",
+      "addPart": "Добави част",
+      "editPart": "Редактирай част",
+      "confirm": "Потвърди",
+      "cancel": "Отказ",
+      "export": "Експорт",
+      "import": "Импорт",
+      "template": "Изтегли Шаблон",
+      "importPreviewTitle": "Преглед на импорт",
+      "importPreviewSubtitle": "Първите {count} реда от файла",
+      "importConfirm": "Импортирай {count} реда",
+      "importSuccess": "{imported} импортирани, {skipped} пропуснати",
+      "searchPlaceholder": "Търси по наименование, парт номер или заменяем номер...",
+      "noResults": "Няма намерени части",
+      "addFirstPart": "Добавете първата си част",
+      "deleteConfirm": {
+        "title": "Изтриване на част",
+        "description": "Сигурни ли сте, че искате да изтриете тази част? Това действие е необратимо.",
+        "cancel": "Отказ",
+        "confirm": "Изтрий",
+        "deleteSuccess": "Частта е изтрита успешно"
+      },
+      "columns": {
+        "name": "Наименование на част",
+        "partNumber": "Парт номер",
+        "manufacturer": "Производител",
+        "quantity": "Количество",
+        "costPrice": "Доставна цена",
+        "salePrice": "Продажна цена",
+        "margin": "Марж",
+        "status": "Статус",
+        "date": "Дата",
+        "actions": "Действия"
+      },
+      "fields": {
+        "name": "Наименование на частта",
+        "partNumber": "Номер на частта",
+        "manufacturer": "Производител",
+        "quantity": "Количество",
+        "costPrice": "Себестойност",
+        "salePrice": "Продажна цена",
+        "replacedBy": "Заменена от",
+        "replacedByPlaceholder": "Номер на заместваща част",
+        "margin": "Марж",
+        "profit": "Печалба"
+      },
+      "status": {
+        "inStock": "Налично",
+        "limited": "Ограничена наличност",
+        "outOfStock": "Няма наличност"
+      },
+      "errors": {
+        "nameRequired": "Наименованието е задължително",
+        "partNumberRequired": "Номерът на частта е задължителен",
+        "quantityInvalid": "Количеството трябва да е 0 или повече",
+        "priceInvalid": "Цената трябва да е 0 или повече"
+      },
+      "transfer": {
+        "title": "Прехвърляне на данни",
+        "subtitle": "Добавяне на части и труд към друга оферта",
+        "offerNumber": "Номер на целевата оферта",
+        "offerNumberPlaceholder": "Търсене по номер на оферта...",
+        "confirmButton": "Прехвърли части и труд",
+        "cancel": "Отказ",
+        "success": "Части и труд прехвърлени към оферта #{number}",
+        "sameOfferError": "Не може да прехвърлите към същата оферта",
+        "notFoundError": "Целевата оферта не е намерена",
+        "transferring": "Прехвърляне..."
+      },
+      "warehouseLookup": {
+        "stock": "Наличност",
+        "margin": "Марж"
       }
     }
   }

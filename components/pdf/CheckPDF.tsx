@@ -606,7 +606,7 @@ export function CheckPDF({ data, checkNumber }: CheckPDFProps) {
           </View>
           <View style={styles.infoCell}>
             <Text style={styles.infoCellLabel}>РЕГ. НОМЕР</Text>
-            <Text style={styles.infoCellValue}>{data.licensePlate || "-"}</Text>
+            <Text style={styles.infoCellValue}>{data.licensePlate ? data.licensePlate.toUpperCase() : "-"}</Text>
           </View>
           <View style={styles.infoCellLast}>
             <Text style={styles.infoCellLabel}>VIN (РАМА)</Text>

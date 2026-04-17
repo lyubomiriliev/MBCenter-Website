@@ -1,3 +1,12 @@
+# Force HTTPS - prevents "Connection Not Private" errors
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Force non-www (canonical domain)
+RewriteCond %{HTTP_HOST} ^www\.mbcenter\.bg [NC]
+RewriteRule ^(.*)$ https://mbcenter.bg/$1 [L,R=301]
+
 # Custom 404 page (Next.js static export generates /404.html)
 ErrorDocument 404 /404.html
 
@@ -6,8 +15,15 @@ ErrorDocument 404 /404.html
   Header set Content-Type "image/jpeg"
 </Files>
 
-# 301 redirects: old WordPress URLs → new Next.js paths (for static export in public_html)
-RewriteEngine On
+# Security headers
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+</IfModule>
+
+# 301 redirects: old WordPress URLs → new Next.js paths
 RewriteBase /
 RewriteCond %{QUERY_STRING} ^page_id=3122$ [NC]
 RewriteRule ^$ /bg/contacts? [R=301,L]
@@ -16,3 +32,19 @@ RewriteRule ^about-us/?$ /bg/about [R=301,L]
 RewriteRule ^contact-us/?$ /bg/contacts [R=301,L]
 RewriteRule ^terms/?$ /bg/terms [R=301,L]
 RewriteRule ^$ /bg [R=301,L]
+
+# 301 redirects: known old WordPress URL patterns → homepage
+# Only matches recognizable WordPress paths, everything else shows the custom 404
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^wp-(admin|content|includes|login|json|cron|signup|activate|mail|trackback|comments)(/.*)?$ /bg [R=301,L]
+RewriteRule ^feed(/.*)?$ /bg [R=301,L]
+RewriteRule ^xmlrpc\.php$ /bg [R=301,L]
+RewriteRule ^author/(.*)$ /bg [R=301,L]
+RewriteRule ^tag/(.*)$ /bg [R=301,L]
+RewriteRule ^category/(.*)$ /bg [R=301,L]
+RewriteRule ^product-category/(.*)$ /bg [R=301,L]
+RewriteRule ^product/(.*)$ /bg [R=301,L]
+RewriteRule ^shop(/.*)?$ /bg [R=301,L]
+RewriteRule ^\?p=[0-9]+$ /bg [R=301,L]
+RewriteRule ^\?page_id=[0-9]+$ /bg [R=301,L]

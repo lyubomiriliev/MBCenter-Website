@@ -627,7 +627,7 @@ export function ChecksListPage({
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-mb-silver text-xs truncate">
-                          {inspection.car_model || "-"}
+                          {[inspection.car_model, inspection.car_model_detail].filter(Boolean).join(" ") || "-"}
                         </span>
                         {inspection.license_plate && (
                           <span className="text-mb-silver text-xs font-mono uppercase">
@@ -670,7 +670,7 @@ export function ChecksListPage({
                       {inspection.client_name || "-"}
                     </span>
                     <span className="text-mb-silver text-sm truncate pr-3">
-                      {inspection.car_model || "-"}
+                      {[inspection.car_model, inspection.car_model_detail].filter(Boolean).join(" ") || "-"}
                     </span>
                     <span className="text-mb-silver text-sm max-lg:truncate pr-3 font-mono uppercase">
                       {inspection.vin || "-"}

@@ -1,6 +1,8 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
+Disallow: /bg/mb-admin/
+Disallow: /en/mb-admin/
 
 Sitemap: https://mbcenter.bg/sitemap.xml
 

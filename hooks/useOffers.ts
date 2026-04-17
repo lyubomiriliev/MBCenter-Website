@@ -54,6 +54,14 @@ export function getSearchVariants(term: string): string[] {
   return Array.from(variants);
 }
 
+export type OfferSortColumn =
+  | "last_edited_at"
+  | "created_at"
+  | "customer_name"
+  | "status"
+  | "total_gross"
+  | "offer_number";
+
 interface OffersFilters {
   status?: OfferStatus | "all";
   search?: string;
@@ -61,6 +69,8 @@ interface OffersFilters {
   dateTo?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: OfferSortColumn;
+  sortDir?: "asc" | "desc";
 }
 
 // Fetch offers with filters
@@ -72,10 +82,12 @@ export function useOffers(filters: OffersFilters = {}) {
     dateTo,
     page = 1,
     pageSize = 20,
+    sortBy = "last_edited_at",
+    sortDir = "desc",
   } = filters;
 
   return useQuery({
-    queryKey: ["offers", { status, search, dateFrom, dateTo, page, pageSize }],
+    queryKey: ["offers", { status, search, dateFrom, dateTo, page, pageSize, sortBy, sortDir }],
     queryFn: async () => {
       let query = supabase
         .from("offers")
@@ -94,6 +106,7 @@ export function useOffers(filters: OffersFilters = {}) {
           status,
           total_gross,
           created_at,
+          last_edited_at,
           service_card_number,
           service_card_generated_at,
           client:clients(id, name),
@@ -101,7 +114,7 @@ export function useOffers(filters: OffersFilters = {}) {
         `,
           { count: "exact" }
         )
-        .order("created_at", { ascending: false })
+        .order(sortBy, { ascending: sortDir === "asc", nullsFirst: sortDir === "asc" })
         .range((page - 1) * pageSize, page * pageSize - 1);
 
       // Apply filters
@@ -311,7 +324,7 @@ export function useUpdateOffer() {
       // Update offer
       const offerRes = await supabase
         .from("offers")
-        .update(data.offer as never)
+        .update({ ...data.offer, last_edited_at: new Date().toISOString() } as never)
         .eq("id", data.id)
         .select()
         .single();
@@ -362,7 +375,7 @@ export function useUpdateOfferStatus() {
     mutationFn: async ({ id, status }: { id: string; status: OfferStatus }) => {
       const res = await supabase
         .from("offers")
-        .update({ status } as never)
+        .update({ status, last_edited_at: new Date().toISOString() } as never)
         .eq("id", id)
         .select()
         .single();

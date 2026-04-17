@@ -7,8 +7,6 @@ import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
-  SortingState,
   flexRender,
   createColumnHelper,
   RowSelectionState,
@@ -22,6 +20,7 @@ import {
   useUpdateOfferStatus,
   useDeleteOffer,
   useCloneOffer,
+  type OfferSortColumn,
 } from "@/hooks/useOffers";
 import { OfferStatusBadge } from "./OfferStatusBadge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { OfferWithRelations, OfferStatus } from "@/types/database";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { TransferDataModal } from "@/components/admin/warehouse/TransferDataModal";
 
 const EUR_TO_BGN = 1.95583;
 
@@ -123,7 +123,24 @@ export function OffersTable({
   const { profile } = useSupabaseAuthContext();
   const columnsKey = getColumnsKey(profile?.role ?? "admin");
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const SORT_STORAGE_KEY = isMechanicView
+    ? "mb_offers_sort_mechanic"
+    : "mb_offers_sort_admin";
+
+  function loadSort(): { sortBy: OfferSortColumn; sortDir: "asc" | "desc" } {
+    try {
+      const stored = localStorage.getItem(SORT_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return { sortBy: "last_edited_at", sortDir: "desc" };
+  }
+
+  const [sortBy, setSortBy] = useState<OfferSortColumn>(
+    () => loadSort().sortBy,
+  );
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(
+    () => loadSort().sortDir,
+  );
   const [page, setPage] = useState(1);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
@@ -147,6 +164,8 @@ export function OffersTable({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [transferSourceOffer, setTransferSourceOffer] = useState<{ id: string; offer_number: string } | null>(null);
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
@@ -170,10 +189,46 @@ export function OffersTable({
     search: filters?.search,
     dateFrom: filters?.dateFrom?.toISOString(),
     dateTo: filters?.dateTo?.toISOString(),
+    sortBy,
+    sortDir,
   });
   const updateStatus = useUpdateOfferStatus();
   const deleteOffer = useDeleteOffer();
   const cloneOffer = useCloneOffer();
+
+  const handleSort = useCallback((col: OfferSortColumn) => {
+    const newDir =
+      sortBy === col ? (sortDir === "desc" ? "asc" : "desc") : "desc";
+    const newCol = col;
+    setSortBy(newCol);
+    setSortDir(newDir);
+    setPage(1);
+    try {
+      localStorage.setItem(
+        SORT_STORAGE_KEY,
+        JSON.stringify({ sortBy: newCol, sortDir: newDir }),
+      );
+    } catch {}
+  }, [sortBy, sortDir, SORT_STORAGE_KEY]);
+
+  const SortIcon = ({ col }: { col: OfferSortColumn }) => {
+    if (sortBy !== col) {
+      return (
+        <svg className="w-4 h-4 ml-1.5 opacity-30 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortDir === "desc" ? (
+      <svg className="w-4 h-4 ml-1.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    ) : (
+      <svg className="w-4 h-4 ml-1.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    );
+  };
 
   const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -278,7 +333,11 @@ export function OffersTable({
         (row) => row.service_card_number || row.offer_number,
         {
           id: "offer_number",
-          header: () => t("offers.columns.offerNumber"),
+          header: () => (
+            <button onClick={() => handleSort("offer_number")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
+              {t("offers.columns.offerNumber")}<SortIcon col="offer_number" />
+            </button>
+          ),
           cell: (info) => (
             <Link
               href={`${basePath}/offers/edit?id=${info.row.original.id}`}
@@ -291,7 +350,11 @@ export function OffersTable({
       ),
       columnHelper.accessor((row) => row.customer_name || row.client?.name, {
         id: "client",
-        header: () => t("offers.columns.client"),
+        header: () => (
+          <button onClick={() => handleSort("customer_name")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
+            {t("offers.columns.client")}<SortIcon col="customer_name" />
+          </button>
+        ),
         cell: (info) => info.getValue() || "-",
       }),
       columnHelper.accessor(
@@ -348,7 +411,11 @@ export function OffersTable({
         },
       ),
       columnHelper.accessor("status", {
-        header: () => t("offers.columns.status"),
+        header: () => (
+          <button onClick={() => handleSort("status")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
+            {t("offers.columns.status")}<SortIcon col="status" />
+          </button>
+        ),
         cell: (info) =>
           isMechanicView ? (
             <OfferStatusBadge status={info.getValue()} />
@@ -369,7 +436,9 @@ export function OffersTable({
         columnHelper.accessor("total_gross", {
           meta: { className: "hidden sm:table-cell" },
           header: () => (
-            <div className="text-center">{t("offers.columns.total")}</div>
+            <button onClick={() => handleSort("total_gross")} className="flex items-center w-full justify-center hover:text-white transition-colors">
+              {t("offers.columns.total")}<SortIcon col="total_gross" />
+            </button>
           ),
           cell: (info) => {
             const eur = info.getValue();
@@ -389,7 +458,11 @@ export function OffersTable({
         {
           id: "created_at",
           meta: { className: "hidden sm:table-cell" },
-          header: () => t("offers.columns.date"),
+          header: () => (
+            <button onClick={() => handleSort("created_at")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
+              {t("offers.columns.date")}<SortIcon col="created_at" />
+            </button>
+          ),
           cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
         },
       ),
@@ -450,6 +523,31 @@ export function OffersTable({
                   {t("form.clone")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => {
+                    setTransferSourceOffer({
+                      id: info.row.original.id,
+                      offer_number: info.row.original.offer_number,
+                    });
+                    setTransferModalOpen(true);
+                  }}
+                  className="cursor-pointer text-white bg-purple-600 hover:bg-purple-700 focus:bg-purple-700 hover:text-white focus:text-white"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                    />
+                  </svg>
+                  {t("warehouse.transfer.title")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={() =>
                     router.push(
                       `${basePath}/offers/edit?id=${info.row.original.id}`,
@@ -505,6 +603,9 @@ export function OffersTable({
       basePath,
       router,
       handleClone,
+      handleSort,
+      sortBy,
+      sortDir,
       setDeletingOfferId,
       setEditingOffer,
       setSelectedStatus,
@@ -517,12 +618,10 @@ export function OffersTable({
     columns: columns.filter((c): c is ColumnDef<OfferWithRelations, any> =>
       Boolean(c),
     ),
-    state: { sorting, rowSelection, columnVisibility },
-    onSortingChange: setSorting,
+    state: { rowSelection, columnVisibility },
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     enableRowSelection: !isMechanicView,
   });
 
@@ -817,6 +916,19 @@ export function OffersTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer data modal */}
+      {transferSourceOffer && (
+        <TransferDataModal
+          open={transferModalOpen}
+          onOpenChange={(open) => {
+            setTransferModalOpen(open);
+            if (!open) setTransferSourceOffer(null);
+          }}
+          sourceOfferId={transferSourceOffer.id}
+          sourceOfferNumber={transferSourceOffer.offer_number}
+        />
+      )}
 
       {/* Bulk delete dialog */}
       <Dialog

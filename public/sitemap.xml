@@ -3,7 +3,7 @@
   <!-- English Pages (no trailing slash - matches next.config trailingSlash: false) -->
   <url>
     <loc>https://mbcenter.bg/en</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg" />
@@ -12,7 +12,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/about</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/about" />
@@ -20,7 +20,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/services</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/services" />
@@ -28,7 +28,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/gallery</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/gallery" />
@@ -36,7 +36,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/career</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/career" />
@@ -44,7 +44,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/contacts</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/contacts" />
@@ -52,7 +52,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/booking</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/booking" />
@@ -60,7 +60,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/en/terms</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/terms" />
@@ -70,7 +70,7 @@
   <!-- Bulgarian Pages (x-default = bg = default locale) -->
   <url>
     <loc>https://mbcenter.bg/bg</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg" />
@@ -79,7 +79,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/about</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/about" />
@@ -87,7 +87,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/services</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/services" />
@@ -95,7 +95,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/gallery</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/gallery" />
@@ -103,7 +103,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/career</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/career" />
@@ -111,7 +111,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/contacts</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/contacts" />
@@ -119,7 +119,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/booking</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/booking" />
@@ -127,7 +127,7 @@
   </url>
   <url>
     <loc>https://mbcenter.bg/bg/terms</loc>
-    <lastmod>2024-01-01</lastmod>
+    <lastmod>2026-04-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
     <xhtml:link rel="alternate" hreflang="bg" href="https://mbcenter.bg/bg/terms" />

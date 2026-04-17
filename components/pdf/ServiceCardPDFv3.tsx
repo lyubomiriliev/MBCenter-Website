@@ -508,7 +508,7 @@ export function ServiceCardPDFv3({
             )}
             <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Рег. номер:</Text>{" "}
-              {offer.license_plate || ""}
+              {offer.license_plate ? offer.license_plate.toUpperCase() : ""}
             </Text>
             <Text style={styles.customerInfo}>
               <Text style={styles.customerInfoLabel}>Пробег:</Text>{" "}

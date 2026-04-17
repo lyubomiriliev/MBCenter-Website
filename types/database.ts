@@ -621,3 +621,18 @@ export interface OfferWithRelations extends Offer {
 export interface CarWithClient extends Car {
   client?: Client | null;
 }
+
+export interface WarehousePart {
+  id: string;
+  name: string;
+  part_number: string;
+  manufacturer: string;
+  quantity: number;
+  cost_price: number;
+  sale_price: number;
+  replaced_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export type WarehousePartInsert = Omit<WarehousePart, 'id' | 'created_at' | 'updated_at'>;
+export type WarehousePartUpdate = Partial<WarehousePartInsert>;

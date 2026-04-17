@@ -39,6 +39,7 @@ import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
 import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
+import { TransferDataModal } from "@/components/admin/warehouse/TransferDataModal";
 import { useOfferCalculations } from "@/hooks/useOfferCalculations";
 import type {
   OfferWithRelations,
@@ -63,6 +64,7 @@ export function CreateOfferFormV2({
   isMechanicView = false,
 }: CreateOfferFormV2Props) {
   const t = useTranslations("admin.form");
+  const tWarehouse = useTranslations("admin.warehouse");
   const locale = useLocale() as "bg" | "en";
   const router = useRouter();
   const pathname = usePathname();
@@ -71,6 +73,9 @@ export function CreateOfferFormV2({
   const [offerPdfGenerating, setOfferPdfGenerating] = useState(false);
   const [serviceCardGenerating, setServiceCardGenerating] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [savedOffer, setSavedOffer] = useState<OfferWithRelations | null>(null);
   const [isLoadingOffer, setIsLoadingOffer] = useState(false);
   const [prepayments, setPrepayments] = useState<number[]>([]);
@@ -1563,8 +1568,8 @@ export function CreateOfferFormV2({
                   <input
                     type="text"
                     value={licensePlateInput}
-                    onChange={(e) => setLicensePlateInput(e.target.value)}
-                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    onChange={(e) => setLicensePlateInput(e.target.value.toUpperCase())}
+                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mb-blue/50 uppercase"
                   />
                   <Button
                     type="button"
@@ -1681,7 +1686,7 @@ export function CreateOfferFormV2({
               <h4 className="text-sm font-bold tracking-widest text-white uppercase mb-4">
                 ASSYST PLUS
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Remaining Time */}
                 <div className="space-y-2">
                   <label className="block text-xs font-medium text-mb-silver">
@@ -1728,45 +1733,47 @@ export function CreateOfferFormV2({
                     </div>
                   </div>
                 </div>
-                {/* Service Code */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-mb-silver">
-                    {locale === "bg" ? "Сервизен код" : "Service Code"}
-                  </label>
-                  <input
-                    type="text"
-                    value={assystServiceCode}
-                    onChange={(e) => setAssystServiceCode(e.target.value)}
-                    className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                  />
-                </div>
-                {/* Service Description */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-mb-silver">
-                    {locale === "bg" ? "Код на обслужване" : "Service Description"}
-                  </label>
-                  <input
-                    type="text"
-                    value={assystServiceDescription}
-                    onChange={(e) => setAssystServiceDescription(e.target.value)}
-                    className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                  />
-                </div>
-                {/* Save button */}
-                <div className="space-y-2 flex flex-col justify-end">
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-mb-blue hover:bg-mb-blue/90 text-white"
-                    disabled={assystSaving}
-                    onClick={saveAssyst}
-                  >
-                    {assystSaving
-                      ? "…"
-                      : locale === "bg"
-                        ? "Запази"
-                        : "Save"}
-                  </Button>
+                {/* Service Code + Service Description + Save button */}
+                <div className="sm:col-span-2 flex items-end gap-3">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <label className="block text-xs font-medium text-mb-silver">
+                      {locale === "bg" ? "Сервизен код" : "Service Code"}
+                    </label>
+                    <input
+                      type="text"
+                      value={assystServiceCode}
+                      onChange={(e) => setAssystServiceCode(e.target.value)}
+                      maxLength={6}
+                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                  </div>
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <label className="block text-xs font-medium text-mb-silver whitespace-nowrap">
+                      {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                    </label>
+                    <input
+                      type="text"
+                      value={assystServiceDescription}
+                      onChange={(e) => setAssystServiceDescription(e.target.value)}
+                      maxLength={3}
+                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                  </div>
+                  <div className="shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-mb-blue hover:bg-mb-blue/90 text-white w-full h-9"
+                      disabled={assystSaving}
+                      onClick={saveAssyst}
+                    >
+                      {assystSaving
+                        ? "…"
+                        : locale === "bg"
+                          ? "Запази"
+                          : "Save"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1969,11 +1976,11 @@ export function CreateOfferFormV2({
           <Card className="bg-mb-anthracite border-mb-border">
             <CardContent className="pt-6">
               {/* Outer grid: left car fields | right assyst — shared row heights */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-x-8 gap-y-4">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-x-6 gap-y-4">
 
                 {/* ── Title row ── */}
-                {/* Left title: order-1 on mobile, auto on lg */}
-                <div className="order-1 lg:order-none">
+                {/* Left title */}
+                <div className="order-1 xl:order-none">
                   <h3 className="text-lg font-medium text-white flex items-center gap-2">
                     <svg className="w-5 h-5 text-mb-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -1982,16 +1989,16 @@ export function CreateOfferFormV2({
                     {t("carInfo")}
                   </h3>
                 </div>
-                {/* Right title: order-5 on mobile (after Наименование), auto on lg */}
-                <div className="order-5 lg:order-none">
-                  <h4 className="text-lg font-medium text-white tracking-widest uppercase lg:text-center">
+                {/* Right title: after car fields on <xl, auto on xl */}
+                <div className="order-5 xl:order-none">
+                  <h4 className="text-lg font-medium text-white tracking-widest uppercase xl:text-center">
                     ASSYST PLUS
                   </h4>
                 </div>
 
                 {/* ── Row 1: Модел + Точен модел | Оставащо + Оставащ пробег ── */}
-                {/* Left: Model + Exact Model — order-2 */}
-                <div className="order-2 lg:order-none grid grid-cols-2 gap-4">
+                {/* Left: Model + Exact Model */}
+                <div className="order-2 xl:order-none grid grid-cols-2 gap-4">
                   <CarSelector />
                   <div className="space-y-2">
                     <Label>{t("carModelDetail")}</Label>
@@ -2002,10 +2009,10 @@ export function CreateOfferFormV2({
                     />
                   </div>
                 </div>
-                {/* Right: Remaining Time + Remaining Mileage — order-6 on mobile */}
-                <div className="order-6 lg:order-none grid grid-cols-2 gap-4">
+                {/* Right: Remaining Time + Remaining Mileage */}
+                <div className="order-6 xl:order-none grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-mb-silver">
+                    <Label className="text-mb-silver text-xs">
                       {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
                     </Label>
                     <input
@@ -2017,7 +2024,7 @@ export function CreateOfferFormV2({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-mb-silver">
+                    <Label className="text-mb-silver text-xs">
                       {locale === "bg"
                         ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
                         : `Remaining Mileage (${assystMileageUnit})`}
@@ -2028,15 +2035,15 @@ export function CreateOfferFormV2({
                         value={assystRemainingMileage}
                         onChange={(e) => setAssystRemainingMileage(e.target.value)}
                         placeholder="+24"
-                        className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                        className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                       />
                       <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0">
                         <button type="button" onClick={() => setAssystMileageUnit("km")}
-                          className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
+                          className={`px-1.5 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
                           км
                         </button>
                         <button type="button" onClick={() => setAssystMileageUnit("miles")}
-                          className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
+                          className={`px-1.5 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
                           мили
                         </button>
                       </div>
@@ -2045,8 +2052,8 @@ export function CreateOfferFormV2({
                 </div>
 
                 {/* ── Row 2: Наименование | Сервизен + Код на обслужване ── */}
-                {/* Left: Repair Name — order-3 */}
-                <div className="order-3 lg:order-none space-y-2">
+                {/* Left: Repair Name */}
+                <div className="order-3 xl:order-none space-y-2">
                   <Label>{t("repairName")}</Label>
                   <Input
                     {...methods.register("repairName")}
@@ -2054,35 +2061,52 @@ export function CreateOfferFormV2({
                     className="bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
                   />
                 </div>
-                {/* Right: Service Code + Service Description — order-7 on mobile */}
-                <div className="order-7 lg:order-none grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-mb-silver">
+                {/* Right: Service Code + Service Description + Save */}
+                <div className="order-7 xl:order-none flex items-end gap-3">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <Label className="text-mb-silver text-xs whitespace-nowrap">
                       {locale === "bg" ? "Сервизен код" : "Service Code"}
                     </Label>
                     <input
                       type="text"
                       value={assystServiceCode}
                       onChange={(e) => setAssystServiceCode(e.target.value)}
+                      maxLength={6}
                       className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-mb-silver">
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <Label className="text-mb-silver text-xs whitespace-nowrap">
                       {locale === "bg" ? "Код на обслужване" : "Service Description"}
                     </Label>
                     <input
                       type="text"
                       value={assystServiceDescription}
                       onChange={(e) => setAssystServiceDescription(e.target.value)}
+                      maxLength={3}
                       className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
+                  {isEditing && savedOffer && (
+                    <div className="shrink-0">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="bg-mb-blue hover:bg-mb-blue/90 text-white h-9 px-4"
+                        disabled={assystSaving}
+                        onClick={saveAssyst}
+                      >
+                        {assystSaving
+                          ? locale === "bg" ? "Записване…" : "Saving…"
+                          : locale === "bg" ? "Запази" : "Save"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
-                {/* ── Row 3: VIN + Рег.номер | Пробег ── */}
-                {/* Left: VIN + License Plate — order-4 */}
-                <div className="order-4 lg:order-none grid grid-cols-2 gap-4">
+                {/* ── Row 3: VIN + Рег.номер | Пробег + Save ── */}
+                {/* Left: VIN + License Plate */}
+                <div className="order-4 xl:order-none grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t("carVin")}</Label>
                     <Input
@@ -2090,6 +2114,10 @@ export function CreateOfferFormV2({
                       placeholder="WDB1234567890"
                       className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
                       maxLength={22}
+                      onChange={(e) => {
+                        const upper = e.target.value.toUpperCase();
+                        methods.setValue("vinText", upper, { shouldDirty: true });
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -2098,12 +2126,16 @@ export function CreateOfferFormV2({
                       {...methods.register("carLicensePlate")}
                       placeholder="СА 1234 АВ"
                       className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
+                      onChange={(e) => {
+                        const upper = e.target.value.toUpperCase();
+                        methods.setValue("carLicensePlate", upper, { shouldDirty: true });
+                      }}
                     />
                   </div>
                 </div>
-                {/* Right: Mileage + Save — order-8 on mobile */}
-                <div className="order-8 lg:order-none space-y-2">
-                  <Label className="text-mb-silver">
+                {/* Right: Mileage */}
+                <div className="order-8 xl:order-none space-y-2">
+                  <Label className="text-mb-silver text-xs">
                     {locale === "bg" ? "Пробег" : "Mileage"}
                   </Label>
                   <div className="flex gap-2">
@@ -2118,25 +2150,12 @@ export function CreateOfferFormV2({
                     />
                     <select
                       {...methods.register("carMileageUnit")}
-                      className="w-20 h-9 rounded-md bg-gray-100 text-gray-900 border-mb-border px-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue"
+                      className="w-16 h-9 rounded-md bg-gray-100 text-gray-900 border-mb-border px-1 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue"
                     >
                       <option value="km">км</option>
                       <option value="miles">мили</option>
                     </select>
                   </div>
-                  {isEditing && savedOffer && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="bg-mb-blue hover:bg-mb-blue/90 text-white w-full mt-2"
-                      disabled={assystSaving}
-                      onClick={saveAssyst}
-                    >
-                      {assystSaving
-                        ? locale === "bg" ? "Записване…" : "Saving…"
-                        : locale === "bg" ? "Запази" : "Save"}
-                    </Button>
-                  )}
                 </div>
 
               </div>
@@ -2671,7 +2690,7 @@ export function CreateOfferFormV2({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-amber-600 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400"
+                    className="w-full border-amber-600 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 hover:text-white"
                     disabled={isCloning}
                     onClick={cloneCurrentOffer}
                   >
@@ -2719,24 +2738,37 @@ export function CreateOfferFormV2({
                   </Button>
                 )}
 
+                {/* Transfer Data Button (only for existing offers) */}
+                {isEditing && savedOffer && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setTransferModalOpen(true)}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                      />
+                    </svg>
+                    {tWarehouse("transfer.title")}
+                  </Button>
+                )}
+
                 {/* Delete Button (only for existing offers) */}
                 {isEditing && savedOffer && (
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={async () => {
-                      if (confirm(t("errors.saveFailed"))) {
-                        await supabase
-                          .from("offers")
-                          .delete()
-                          .eq("id", savedOffer.id);
-                        const basePath = pathname.includes("/mb-admin")
-                          ? pathname.split("/mb-admin")[0] + "/mb-admin"
-                          : pathname.split("/mb-admin-mechanics")[0] +
-                            "/mb-admin-mechanics";
-                        router.push(`${basePath}/offers`);
-                      }
-                    }}
+                    onClick={() => setDeleteModalOpen(true)}
                     className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600"
                   >
                     <svg
@@ -2974,6 +3006,65 @@ export function CreateOfferFormV2({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation modal */}
+      {isEditing && savedOffer && (
+        <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+          <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-white">
+                {locale === "bg" ? "Изтриване на оферта" : "Delete Offer"}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-300 text-sm py-2">
+              {locale === "bg"
+                ? `Сигурни ли сте, че искате да изтриете оферта #${savedOffer.offer_number}? Това действие е необратимо.`
+                : `Are you sure you want to delete offer #${savedOffer.offer_number}? This action cannot be undone.`}
+            </p>
+            <DialogFooter className="flex gap-2 flex-col sm:flex-row">
+              <Button
+                type="button"
+                onClick={() => setDeleteModalOpen(false)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {locale === "bg" ? "Отказ" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  await supabase.from("offers").delete().eq("id", savedOffer.id);
+                  setIsDeleting(false);
+                  setDeleteModalOpen(false);
+                  const basePath = pathname.includes("/mb-admin")
+                    ? pathname.split("/mb-admin")[0] + "/mb-admin"
+                    : pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics";
+                  router.push(`${basePath}/offers`);
+                }}
+                className="bg-mb-blue hover:bg-mb-blue/90 text-white"
+              >
+                {isDeleting
+                  ? locale === "bg" ? "Изтриване..." : "Deleting..."
+                  : locale === "bg" ? "Изтрий" : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Transfer Data Modal */}
+      {isEditing && savedOffer && (
+        <TransferDataModal
+          open={transferModalOpen}
+          onOpenChange={setTransferModalOpen}
+          sourceOfferId={savedOffer.id}
+          sourceOfferNumber={savedOffer.offer_number}
+          onSuccess={(targetOfferNumber) => {
+            showSuccess(tWarehouse("transfer.success", { number: targetOfferNumber }));
+          }}
+        />
+      )}
     </FormProvider>
   );
 }

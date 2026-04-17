@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { OfferFormData } from "@/lib/schemas/offer";
-import { authClient as supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 
 export function CreatedBySelector() {
   const t = useTranslations("admin.form");
