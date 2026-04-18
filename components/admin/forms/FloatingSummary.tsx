@@ -147,6 +147,31 @@ export function FloatingSummary({
             </div>
           </div>
 
+          {/* Profit on parts with known cost */}
+          {calculations.totalCost > 0 && (
+            <div className="flex justify-between items-center text-sm pt-1 border-t border-mb-border/40">
+              <span className="text-mb-silver">
+                Печалба (части)
+                {calculations.totalProfitMargin !== null && (
+                  <span className="ml-1 text-xs text-green-400">
+                    Марж: {calculations.totalProfitMargin.toFixed(1)}%
+                  </span>
+                )}
+                <div className="text-sm text-mb-silver mt-0.5">
+                  Доставна: {calculations.totalCost.toFixed(2)} € / {(calculations.totalCost * EUR_TO_BGN).toFixed(2)} лв.
+                </div>
+              </span>
+              <div className="text-right">
+                <div className={calculations.totalProfit >= 0 ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
+                  {calculations.totalProfit >= 0 ? "+" : ""}{calculations.totalProfit.toFixed(2)} €
+                </div>
+                <div className="text-xs text-mb-silver">
+                  {(calculations.totalProfit * EUR_TO_BGN).toFixed(2)} лв.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Prepayments */}
           {prepayments.length > 0 && (
             <>

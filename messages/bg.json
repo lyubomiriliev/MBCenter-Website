@@ -1403,7 +1403,7 @@
       "prepayment": "Авансово плащане",
       "downloadOfferPdf": "Изтегли оферта",
       "deleteOffer": "Изтриване",
-      "offerCreatedAt": "Оферта създадена на",
+      "offerCreatedAt": "Оферта актуализирана на",
       "serviceCardCreatedAt": "Сервизна карта създадена на",
       "performedBy": "Изпълнено от",
       "performedByChoose": "Избери",
@@ -1492,6 +1492,7 @@
         "profit": "Печалба"
       },
       "status": {
+        "all": "Всички статуси",
         "inStock": "Налично",
         "limited": "Ограничена наличност",
         "outOfStock": "Няма наличност"

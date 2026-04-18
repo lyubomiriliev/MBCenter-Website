@@ -236,6 +236,7 @@ export interface Database {
           quantity: number;
           total: number;
           sort_order: number;
+          cost_price: number | null;
         };
         Insert: {
           id?: string;
@@ -248,6 +249,7 @@ export interface Database {
           quantity?: number;
           total: number;
           sort_order?: number;
+          cost_price?: number | null;
         };
         Update: {
           id?: string;
@@ -260,6 +262,7 @@ export interface Database {
           quantity?: number;
           total?: number;
           sort_order?: number;
+          cost_price?: number | null;
         };
       };
       service_actions: {

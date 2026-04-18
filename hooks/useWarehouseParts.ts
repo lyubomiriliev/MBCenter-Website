@@ -20,6 +20,7 @@ export function useWarehouseParts(filters: WarehouseFilters = {}) {
       let query = supabase
         .from("warehouse_parts")
         .select("*", { count: "exact" })
+        .order("quantity", { ascending: false })
         .order("created_at", { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
 

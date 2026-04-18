@@ -211,7 +211,7 @@ export function OffersTable({
     } catch {}
   }, [sortBy, sortDir, SORT_STORAGE_KEY]);
 
-  const SortIcon = ({ col }: { col: OfferSortColumn }) => {
+  const SortIcon = useCallback(({ col }: { col: OfferSortColumn }) => {
     if (sortBy !== col) {
       return (
         <svg className="w-4 h-4 ml-1.5 opacity-30 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -228,7 +228,7 @@ export function OffersTable({
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
     );
-  };
+  }, [sortBy, sortDir]);
 
   const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -604,12 +604,11 @@ export function OffersTable({
       router,
       handleClone,
       handleSort,
-      sortBy,
-      sortDir,
       setDeletingOfferId,
       setEditingOffer,
       setSelectedStatus,
       setStatusDialogOpen,
+      SortIcon,
     ],
   );
 

@@ -81,7 +81,8 @@ create table if not exists offer_items (
   unit_price decimal(10,2) not null,
   quantity int default 1,
   total decimal(10,2) not null,
-  sort_order int default 0
+  sort_order int default 0,
+  cost_price decimal(10,2) default null
 );
 
 -- ============================================

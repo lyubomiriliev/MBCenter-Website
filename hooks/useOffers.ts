@@ -213,7 +213,7 @@ export function useOffer(id: string | undefined) {
           assyst_mileage_unit,
           client:clients(id, name, phone, email),
           car:cars(id, model, year, vin, license_plate, mileage),
-          items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order),
+          items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order, cost_price),
           service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, total_eur_net, is_fixed_price, fixed_price_amount, sort_order)
         `
         )

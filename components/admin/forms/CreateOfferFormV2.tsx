@@ -314,6 +314,7 @@ export function CreateOfferFormV2({
           partNumber: item.part_number ?? "",
           unitPrice: item.unit_price,
           quantity: item.quantity,
+          costPrice: item.cost_price ?? undefined,
         })),
 
       serviceActions: (existingOffer.service_actions ?? [])
@@ -522,6 +523,7 @@ export function CreateOfferFormV2({
         quantity: part.quantity,
         total: part.unitPrice * part.quantity,
         sort_order: i,
+        cost_price: part.costPrice ?? null,
       }));
       const serviceInserts = data.serviceActions.map((action, i) => {
         const isFixed = action.isFixedPrice ?? false;
@@ -733,6 +735,7 @@ export function CreateOfferFormV2({
           quantity: part.quantity,
           total: part.unitPrice * part.quantity,
           sort_order: index,
+          cost_price: part.costPrice ?? null,
         })),
         service_actions: formValues.serviceActions.map((action, index) => {
           const isFixed = action.isFixedPrice ?? false;
@@ -1129,6 +1132,7 @@ export function CreateOfferFormV2({
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
           prepayments_eur: prepayments.length > 0 ? prepayments : null,
+          updated_at: new Date().toISOString(),
         };
 
         const offerRes = await supabase
@@ -1255,6 +1259,7 @@ export function CreateOfferFormV2({
         quantity: part.quantity,
         total: part.unitPrice * part.quantity,
         sort_order: index,
+        cost_price: part.costPrice ?? null,
       }));
 
       // Prepare service actions inserts
@@ -2851,7 +2856,7 @@ export function CreateOfferFormV2({
                           <span className="font-medium">
                             {t("offerCreatedAt")}:
                           </span>{" "}
-                          {new Date(metaOffer.created_at).toLocaleDateString(
+                          {new Date(metaOffer.updated_at ?? metaOffer.created_at).toLocaleDateString(
                             "bg-BG",
                             {
                               year: "numeric",

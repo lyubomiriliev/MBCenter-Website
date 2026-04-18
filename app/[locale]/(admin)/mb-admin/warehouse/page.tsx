@@ -53,6 +53,7 @@ export default function WarehousePage() {
 
   const [search, setSearchState] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "inStock" | "limited" | "outOfStock">("all");
   const [page, setPageState] = useState(1);
 
   // Restore from sessionStorage on mount
@@ -120,7 +121,13 @@ export default function WarehousePage() {
   const deletePart = useDeleteWarehousePart();
   const upsertParts = useUpsertWarehouseParts();
 
-  const parts = data?.parts ?? [];
+  const allParts = data?.parts ?? [];
+  const parts = allParts.filter((p) => {
+    if (statusFilter === "inStock") return p.quantity > 3;
+    if (statusFilter === "limited") return p.quantity >= 1 && p.quantity <= 3;
+    if (statusFilter === "outOfStock") return p.quantity === 0;
+    return true;
+  });
   const totalPages = data?.totalPages ?? 1;
 
   // Open add modal
@@ -377,9 +384,9 @@ export default function WarehousePage() {
         }
       />
 
-      {/* Search */}
-      <div className="px-4 sm:px-6 py-3 border-b border-mb-border">
-        <div className="relative max-w-sm">
+      {/* Search + Status Filter */}
+      <div className="px-4 sm:px-6 py-3 border-b border-mb-border flex items-center gap-3">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-mb-silver pointer-events-none"
             fill="none"
@@ -406,6 +413,17 @@ export default function WarehousePage() {
             </button>
           )}
         </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          style={{ backgroundColor: "#1a1a1a", colorScheme: "dark" }}
+          className="h-9 border border-mb-border text-white text-sm rounded-md px-3 pr-8 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-mb-border shrink-0"
+        >
+          <option value="all">{t("status.all")}</option>
+          <option value="inStock">{t("status.inStock")}</option>
+          <option value="limited">{t("status.limited")}</option>
+          <option value="outOfStock">{t("status.outOfStock")}</option>
+        </select>
       </div>
 
       {/* Bulk action bar */}
@@ -490,28 +508,28 @@ export default function WarehousePage() {
                   <th className="text-left py-2 px-3 font-medium">
                     {t("columns.name")}
                   </th>
-                  <th className="text-left py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-3 font-medium">
                     {t("columns.partNumber")}
                   </th>
-                  <th className="text-left py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-3 font-medium">
                     {t("columns.manufacturer")}
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-1 font-medium w-16">
                     {t("columns.quantity")}
                   </th>
-                  <th className="text-right py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-3 font-medium">
                     {t("columns.costPrice")}
                   </th>
-                  <th className="text-right py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-3 font-medium">
                     {t("columns.salePrice")}
                   </th>
-                  <th className="text-right py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-3 font-medium">
                     {t("columns.margin")}
                   </th>
                   <th className="text-center py-2 px-3 font-medium">
                     {t("columns.status")}
                   </th>
-                  <th className="text-left py-2 px-3 font-medium">
+                  <th className="text-center py-2 px-3 font-medium">
                     {t("columns.date")}
                   </th>
                   <th className="text-right py-2 px-3 font-medium">
@@ -544,41 +562,41 @@ export default function WarehousePage() {
                         />
                       </td>
                       <td
-                        className="py-2 px-3 text-white truncate max-w-[180px]"
+                        className="py-2 px-3 text-white truncate max-w-[260px]"
                         title={part.name}
                       >
                         {part.name}
                       </td>
                       <td
-                        className="py-2 px-3 text-mb-silver font-mono truncate max-w-[140px]"
+                        className="py-2 px-3 text-mb-silver font-mono truncate max-w-[140px] text-center"
                         title={part.part_number}
                       >
                         {part.part_number}
                       </td>
-                      <td className="py-2 px-3 text-mb-silver truncate max-w-[120px]">
+                      <td className="py-2 px-3 text-mb-silver truncate max-w-[120px] text-center">
                         {part.manufacturer}
                       </td>
-                      <td className="py-2 px-3 text-center">
+                      <td className="py-2 px-1 text-center w-16">
                         <QuantityPopover
                           value={part.quantity}
                           onChange={(qty) => handleQtyUpdate(part.id, qty)}
                           min={0}
                         />
                       </td>
-                      <td className="py-2 px-3 text-right text-mb-silver tabular-nums">
+                      <td className="py-2 px-3 text-center text-white tabular-nums">
                         {part.cost_price.toFixed(2)} €
                       </td>
-                      <td className="py-2 px-3 text-right text-white tabular-nums">
+                      <td className="py-2 px-3 text-center text-white tabular-nums">
                         {part.sale_price.toFixed(2)} €
                       </td>
-                      <td className="py-2 px-3 text-right tabular-nums">
+                      <td className="py-2 px-3 text-center tabular-nums">
                         <div className="text-white">{pct}</div>
                         <div className="text-xs text-mb-silver">{eur}</div>
                       </td>
                       <td className="py-2 px-3 text-center">
                         <StockStatusBadge qty={part.quantity} />
                       </td>
-                      <td className="py-2 px-3 text-mb-silver text-xs whitespace-nowrap">
+                      <td className="py-2 px-3 text-white whitespace-nowrap text-center">
                         {dateStr}
                       </td>
                       <td className="py-2 px-3">

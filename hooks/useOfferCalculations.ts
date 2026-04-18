@@ -10,6 +10,9 @@ import { parseTimeToHours } from "@/lib/utils";
 interface CalculationResult {
   partsSubtotal: number;
   partsCount: number;
+  totalCost: number;
+  totalProfit: number;
+  totalProfitMargin: number | null;
   laborSubtotal: number;
   laborCount: number;
   totalHours: number;
@@ -72,6 +75,21 @@ export function useOfferCalculations(
       return sum + price * qty;
     }, 0);
 
+    const totalCost = parts.reduce((sum: number, part: any) => {
+      if (!part.costPrice) return sum;
+      const qty = part.quantity || 1;
+      return sum + part.costPrice * qty;
+    }, 0);
+
+    const partsWithCost = parts.filter((p: any) => p.costPrice > 0);
+    const revenueForCostedParts = partsWithCost.reduce((sum: number, part: any) => {
+      return sum + (part.unitPrice || 0) * (part.quantity || 1);
+    }, 0);
+    const totalProfit = revenueForCostedParts - totalCost;
+    const totalProfitMargin = totalCost > 0
+      ? (totalProfit / totalCost) * 100
+      : null;
+
     const laborSubtotal = serviceActions.reduce((sum: number, action: any) => {
       if (action.isFixedPrice && action.fixedPriceAmount) {
         return sum + (action.fixedPriceAmount || 0);
@@ -109,6 +127,9 @@ export function useOfferCalculations(
     return {
       partsSubtotal,
       partsCount: parts.length,
+      totalCost,
+      totalProfit,
+      totalProfitMargin,
       laborSubtotal,
       laborCount: serviceActions.length,
       totalHours,

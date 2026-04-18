@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSidebar } from './SidebarContext';
 
 interface AdminHeaderProps {
-  title: string;
+  title: React.ReactNode;
   subtitle?: string;
   actions?: React.ReactNode;
 }

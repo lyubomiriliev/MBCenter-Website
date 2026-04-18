@@ -8,6 +8,7 @@ export const partItemSchema = z.object({
   partNumber: z.string().optional(),
   unitPrice: z.number().min(0, "Price must be positive"),
   quantity: z.number().min(1, "Quantity must be at least 1"),
+  costPrice: z.number().min(0).optional(),
 });
 
 export type PartItemFormData = z.infer<typeof partItemSchema>;

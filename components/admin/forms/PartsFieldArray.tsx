@@ -37,9 +37,21 @@ interface WarehouseSuggestion {
   id: string;
   name: string;
   part_number: string;
-  sale_price: number;
-  cost_price: number;
-  quantity: number;
+  sale_price: number | null;
+  cost_price: number | null;
+  quantity: number | null;
+}
+
+function rankSuggestions(items: WarehouseSuggestion[], term: string, field: "name" | "part_number"): WarehouseSuggestion[] {
+  const t = term.toLowerCase();
+  const score = (item: WarehouseSuggestion) => {
+    const val = (item[field] ?? "").toLowerCase();
+    if (val === t) return 0;           // exact
+    if (val.startsWith(t)) return 1;   // prefix
+    if (val.includes(` ${t}`)) return 2; // word boundary
+    return 3;                          // substring anywhere
+  };
+  return [...items].sort((a, b) => score(a) - score(b));
 }
 
 function AddEditPartModal({
@@ -63,13 +75,21 @@ function AddEditPartModal({
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
   const [priceInput, setPriceInput] = useState("0");
+  const [costPrice, setCostPrice] = useState<number | undefined>(undefined);
   const [error, setError] = useState("");
 
-  // Warehouse lookup state
+  // Warehouse lookup state (by part number)
   const [wsSuggestions, setWsSuggestions] = useState<WarehouseSuggestion[]>([]);
   const [wsDropdownOpen, setWsDropdownOpen] = useState(false);
   const [wsMatchedPart, setWsMatchedPart] = useState<WarehouseSuggestion | null>(null);
   const pnDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Warehouse lookup state (by name)
+  const [wsNameSuggestions, setWsNameSuggestions] = useState<WarehouseSuggestion[]>([]);
+  const [wsNameDropdownOpen, setWsNameDropdownOpen] = useState(false);
+  const nameDropdownRef = useRef<HTMLDivElement>(null);
+  const skipNameSearch = useRef(false);
+  const skipPnSearch = useRef(false);
 
   const reset = useCallback((vals: PartItemFormData | null) => {
     if (vals) {
@@ -79,6 +99,7 @@ function AddEditPartModal({
       setQuantity(vals.quantity ?? 1);
       setUnitPrice(vals.unitPrice ?? 0);
       setPriceInput((vals.unitPrice ?? 0).toString());
+      setCostPrice(vals.costPrice ?? undefined);
     } else {
       setDescription("");
       setBrand("MERCEDES");
@@ -86,11 +107,16 @@ function AddEditPartModal({
       setQuantity(1);
       setUnitPrice(0);
       setPriceInput("0");
+      setCostPrice(undefined);
     }
     setError("");
     setWsSuggestions([]);
     setWsDropdownOpen(false);
     setWsMatchedPart(null);
+    setWsNameSuggestions([]);
+    setWsNameDropdownOpen(false);
+    skipNameSearch.current = true;
+    skipPnSearch.current = true;
   }, []);
 
   useEffect(() => {
@@ -99,6 +125,10 @@ function AddEditPartModal({
 
   // Debounced warehouse lookup
   useEffect(() => {
+    if (skipPnSearch.current) {
+      skipPnSearch.current = false;
+      return;
+    }
     const term = partNumber.trim();
     if (term.length < 2) {
       setWsSuggestions([]);
@@ -111,9 +141,9 @@ function AddEditPartModal({
           .from("warehouse_parts")
           .select("id, name, part_number, sale_price, cost_price, quantity")
           .ilike("part_number", `%${term}%`)
-          .limit(10);
+          .limit(20);
         if (data && data.length > 0) {
-          setWsSuggestions(data as WarehouseSuggestion[]);
+          setWsSuggestions(rankSuggestions(data as WarehouseSuggestion[], term, "part_number"));
           setWsDropdownOpen(true);
         } else {
           setWsSuggestions([]);
@@ -126,7 +156,40 @@ function AddEditPartModal({
     return () => clearTimeout(timer);
   }, [partNumber]);
 
-  // Close dropdown on outside click
+  // Debounced warehouse lookup by name
+  useEffect(() => {
+    if (skipNameSearch.current) {
+      skipNameSearch.current = false;
+      return;
+    }
+    const term = description.trim();
+    if (term.length < 2) {
+      setWsNameSuggestions([]);
+      setWsNameDropdownOpen(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from("warehouse_parts")
+          .select("id, name, part_number, sale_price, cost_price, quantity")
+          .ilike("name", `%${term}%`)
+          .limit(20);
+        if (data && data.length > 0) {
+          setWsNameSuggestions(rankSuggestions(data as WarehouseSuggestion[], term, "name"));
+          setWsNameDropdownOpen(true);
+        } else {
+          setWsNameSuggestions([]);
+          setWsNameDropdownOpen(false);
+        }
+      } catch {
+        // silently ignore
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [description]);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     if (!wsDropdownOpen) return;
     const handler = (e: MouseEvent) => {
@@ -138,11 +201,40 @@ function AddEditPartModal({
     return () => document.removeEventListener("mousedown", handler);
   }, [wsDropdownOpen, pnDropdownRef]);
 
+  useEffect(() => {
+    if (!wsNameDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
+        setWsNameDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [wsNameDropdownOpen, nameDropdownRef]);
+
   const handleSelectSuggestion = (match: WarehouseSuggestion) => {
+    skipNameSearch.current = true;
+    skipPnSearch.current = true;
     setDescription(match.name);
-    setUnitPrice(match.sale_price);
-    setPriceInput(match.sale_price.toString());
+    setPartNumber(match.part_number ?? "");
+    setUnitPrice(match.sale_price ?? 0);
+    setPriceInput((match.sale_price ?? 0).toString());
+    setCostPrice(match.cost_price ?? undefined);
     setWsMatchedPart(match);
+    setWsDropdownOpen(false);
+    setWsNameDropdownOpen(false);
+  };
+
+  const handleSelectNameSuggestion = (match: WarehouseSuggestion) => {
+    skipNameSearch.current = true;
+    skipPnSearch.current = true;
+    setDescription(match.name);
+    setPartNumber(match.part_number ?? "");
+    setUnitPrice(match.sale_price ?? 0);
+    setPriceInput((match.sale_price ?? 0).toString());
+    setCostPrice(match.cost_price ?? undefined);
+    setWsMatchedPart(match);
+    setWsNameDropdownOpen(false);
     setWsDropdownOpen(false);
   };
 
@@ -173,6 +265,7 @@ function AddEditPartModal({
       partNumber: partNumber || undefined,
       unitPrice: Number(unitPrice) || 0,
       quantity: Number(quantity) || 1,
+      costPrice: costPrice ?? undefined,
     };
 
     onConfirm(part);
@@ -205,14 +298,14 @@ function AddEditPartModal({
     }
   };
 
-  const wsMargin = wsMatchedPart && wsMatchedPart.cost_price > 0
-    ? ((wsMatchedPart.sale_price - wsMatchedPart.cost_price) / wsMatchedPart.cost_price * 100).toFixed(1) + "%"
+  const wsMargin = wsMatchedPart && (wsMatchedPart.cost_price ?? 0) > 0 && (wsMatchedPart.sale_price ?? 0) > 0
+    ? (((wsMatchedPart.sale_price ?? 0) - (wsMatchedPart.cost_price ?? 0)) / (wsMatchedPart.cost_price ?? 1) * 100).toFixed(1) + "%"
     : null;
 
   const wsStockColor = wsMatchedPart
-    ? wsMatchedPart.quantity > 3
+    ? (wsMatchedPart.quantity ?? 0) > 3
       ? "text-green-400"
-      : wsMatchedPart.quantity >= 1
+      : (wsMatchedPart.quantity ?? 0) >= 1
       ? "text-yellow-400"
       : "text-red-400"
     : "";
@@ -226,24 +319,49 @@ function AddEditPartModal({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
-          <div className="space-y-2">
+          <div className="space-y-2" ref={nameDropdownRef}>
             <Label htmlFor="modal-desc" className="text-gray-200">
               {t("productName")} *
             </Label>
-            <Input
-              id="modal-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onFocus={(e) => {
-                const t = e.target;
-                setTimeout(
-                  () => t.setSelectionRange(t.value.length, t.value.length),
-                  0,
-                );
-              }}
-              placeholder={t("productName")}
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
+            <div className="relative">
+              <Input
+                id="modal-desc"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  setWsMatchedPart(null);
+                }}
+                onFocus={(e) => {
+                  const t = e.target;
+                  setTimeout(
+                    () => t.setSelectionRange(t.value.length, t.value.length),
+                    0,
+                  );
+                }}
+                placeholder={t("productName")}
+                className="bg-gray-100 text-gray-900 border-mb-border"
+                autoComplete="off"
+              />
+              {wsNameDropdownOpen && wsNameSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-[200] bg-mb-anthracite border border-mb-border rounded-lg shadow-xl overflow-y-auto max-h-60">
+                  {wsNameSuggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSelectNameSuggestion(s);
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-mb-black/60 transition-colors border-b border-mb-border/30 last:border-0"
+                    >
+                      <div className="text-white text-sm truncate">{s.name}</div>
+                      <div className="text-mb-silver text-xs font-mono">{s.part_number}</div>
+                      <div className="text-xs text-mb-blue tabular-nums">{(s.sale_price ?? 0).toFixed(2)} €</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -269,34 +387,32 @@ function AddEditPartModal({
                   onChange={(e) => {
                     setPartNumber(e.target.value);
                     setWsMatchedPart(null);
+                    setWsNameDropdownOpen(false);
                   }}
                   placeholder={t("partNumber")}
                   className="bg-gray-100 text-gray-900 border-mb-border"
                   autoComplete="off"
                 />
                 {wsDropdownOpen && wsSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-mb-anthracite border border-mb-border rounded-lg shadow-xl overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 z-[200] bg-mb-anthracite border border-mb-border rounded-lg shadow-xl overflow-y-auto max-h-60">
                     {wsSuggestions.map((s) => (
                       <button
                         key={s.id}
                         type="button"
-                        onClick={() => handleSelectSuggestion(s)}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectSuggestion(s);
+                        }}
                         className="w-full text-left px-3 py-2 hover:bg-mb-black/60 transition-colors border-b border-mb-border/30 last:border-0"
                       >
                         <div className="text-white text-sm font-mono">{s.part_number}</div>
                         <div className="text-mb-silver text-xs truncate">{s.name}</div>
-                        <div className="text-xs text-mb-blue tabular-nums">{s.sale_price.toFixed(2)} €</div>
+                        <div className="text-xs text-mb-blue tabular-nums">{(s.sale_price ?? 0).toFixed(2)} €</div>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              {wsMatchedPart && (
-                <div className={`text-xs mt-1 ${wsStockColor}`}>
-                  {tWh("stock")}: {wsMatchedPart.quantity}
-                  {wsMargin && ` | ${tWh("margin")}: ${wsMargin}`}
-                </div>
-              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -327,6 +443,11 @@ function AddEditPartModal({
                   +
                 </button>
               </div>
+              {wsMatchedPart && (
+                <div className={`text-xs text-center ${wsStockColor}`}>
+                  {tWh("stock")}: {wsMatchedPart.quantity}
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="modal-price" className="text-gray-200">
@@ -358,6 +479,12 @@ function AddEditPartModal({
                 placeholder="0.00"
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
+              {wsMatchedPart && (wsMatchedPart.cost_price ?? 0) > 0 && (
+                <div className="text-xs text-mb-silver">
+                  <div>Доставна цена {(wsMatchedPart.cost_price ?? 0).toFixed(2)} €</div>
+                  {wsMargin && <div>{tWh("margin")}: {wsMargin} / {((wsMatchedPart.sale_price ?? 0) - (wsMatchedPart.cost_price ?? 0)).toFixed(2)} €</div>}
+                </div>
+              )}
             </div>
           </div>
           {error && <p className="text-sm text-red-400">{error}</p>}

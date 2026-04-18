@@ -890,7 +890,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
           <View style={styles.footerRow}>
             <Text style={styles.footerRowText}>гр. София</Text>
             <Text style={styles.footerRowText}>
-              {new Date(offer.created_at).toLocaleString("bg-BG", {
+              {new Date(offer.updated_at ?? offer.created_at).toLocaleString("bg-BG", {
                 year: "numeric",
                 month: "2-digit",
                 day: "2-digit",

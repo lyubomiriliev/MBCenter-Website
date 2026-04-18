@@ -150,8 +150,9 @@ export function TransferDataModal({
       const baseItemOrder = ((targetItemsRes.data as { sort_order: number }[] | null)?.[0]?.sort_order ?? -1) + 1;
       const baseActionOrder = ((targetActionsRes.data as { sort_order: number }[] | null)?.[0]?.sort_order ?? -1) + 1;
 
+      type OfferItem = { type: string; description: string; brand: string; part_number: string; unit_price: number; quantity: number; total: number; sort_order: number };
       if (itemsRes.data && itemsRes.data.length > 0) {
-        const newItems = itemsRes.data.map((item, i) => ({
+        const newItems = (itemsRes.data as OfferItem[]).map((item, i) => ({
           offer_id: targetId,
           type: item.type,
           description: item.description,
@@ -162,12 +163,13 @@ export function TransferDataModal({
           total: item.total,
           sort_order: baseItemOrder + i,
         }));
-        const { error: itemsErr } = await supabase.from("offer_items").insert(newItems);
+        const { error: itemsErr } = await (supabase as any).from("offer_items").insert(newItems);
         if (itemsErr) throw itemsErr;
       }
 
+      type ServiceAction = { action_name: string; time_required_text: string; price_per_hour_eur_net: number; total_eur_net: number; is_fixed_price: boolean; fixed_price_amount: number; sort_order: number };
       if (actionsRes.data && actionsRes.data.length > 0) {
-        const newActions = actionsRes.data.map((action, i) => ({
+        const newActions = (actionsRes.data as ServiceAction[]).map((action, i) => ({
           offer_id: targetId,
           action_name: action.action_name,
           time_required_text: action.time_required_text,
@@ -177,7 +179,7 @@ export function TransferDataModal({
           fixed_price_amount: action.fixed_price_amount,
           sort_order: baseActionOrder + i,
         }));
-        const { error: actionsErr } = await supabase.from("service_actions").insert(newActions);
+        const { error: actionsErr } = await (supabase as any).from("service_actions").insert(newActions);
         if (actionsErr) throw actionsErr;
       }
 

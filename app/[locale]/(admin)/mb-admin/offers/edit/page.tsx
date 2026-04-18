@@ -2,10 +2,11 @@
 
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CreateOfferFormV2 } from "@/components/admin/forms/CreateOfferFormV2";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase/client";
 
 export default function EditOfferPage() {
   const searchParams = useSearchParams();
@@ -14,11 +15,19 @@ export default function EditOfferPage() {
   const t = useTranslations("admin");
   const offerId = searchParams.get("id");
   const locale = params.locale as string;
+  const [offerNumber, setOfferNumber] = useState<string | null>(null);
 
   useEffect(() => {
     if (!offerId) {
       router.replace(`/${locale}/mb-admin/offers`);
+      return;
     }
+    supabase
+      .from("offers")
+      .select("offer_number")
+      .eq("id", offerId)
+      .single()
+      .then(({ data }) => setOfferNumber((data as { offer_number: string } | null)?.offer_number ?? null));
   }, [offerId, locale, router]);
 
   if (!offerId) return null;
@@ -47,7 +56,14 @@ export default function EditOfferPage() {
       </div>
       <div className="relative z-10 flex flex-col flex-1 min-h-0">
         <AdminHeader
-          title={t("offers.editOffer")}
+          title={
+            <span>
+              {t("offers.editOffer")}
+              {offerNumber && (
+                <span className="ml-2 text-mb-blue">№{offerNumber}</span>
+              )}
+            </span>
+          }
           subtitle={`ID: ${offerId}`}
         />
         <div className="flex max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
