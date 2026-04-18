@@ -37,6 +37,7 @@ interface WarehouseSuggestion {
   id: string;
   name: string;
   part_number: string;
+  manufacturer: string | null;
   sale_price: number | null;
   cost_price: number | null;
   quantity: number | null;
@@ -75,8 +76,18 @@ function AddEditPartModal({
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
   const [priceInput, setPriceInput] = useState("0");
-  const [costPrice, setCostPrice] = useState<number | undefined>(undefined);
+  // warehouseCostPrice holds the cost_price from the selected warehouse record;
+  // it persists even when the user edits the sale price, so margin/profit stay live.
+  const [warehouseCostPrice, setWarehouseCostPrice] = useState<number | null>(null);
   const [error, setError] = useState("");
+
+  // "Добави в склада" state
+  const [whExistsState, setWhExistsState] = useState<"unknown" | "exists" | "notExists">("unknown");
+  const [showDeliveryPrompt, setShowDeliveryPrompt] = useState(false);
+  const [deliveryPriceInput, setDeliveryPriceInput] = useState("0");
+  const [deliveryPrice, setDeliveryPrice] = useState(0);
+  const [addingToWarehouse, setAddingToWarehouse] = useState(false);
+  const [warehouseSuccess, setWarehouseSuccess] = useState(false);
 
   // Warehouse lookup state (by part number)
   const [wsSuggestions, setWsSuggestions] = useState<WarehouseSuggestion[]>([]);
@@ -99,7 +110,7 @@ function AddEditPartModal({
       setQuantity(vals.quantity ?? 1);
       setUnitPrice(vals.unitPrice ?? 0);
       setPriceInput((vals.unitPrice ?? 0).toString());
-      setCostPrice(vals.costPrice ?? undefined);
+      setWarehouseCostPrice(vals.costPrice ?? null);
     } else {
       setDescription("");
       setBrand("MERCEDES");
@@ -107,7 +118,7 @@ function AddEditPartModal({
       setQuantity(1);
       setUnitPrice(0);
       setPriceInput("0");
-      setCostPrice(undefined);
+      setWarehouseCostPrice(null);
     }
     setError("");
     setWsSuggestions([]);
@@ -115,6 +126,11 @@ function AddEditPartModal({
     setWsMatchedPart(null);
     setWsNameSuggestions([]);
     setWsNameDropdownOpen(false);
+    setWhExistsState("unknown");
+    setShowDeliveryPrompt(false);
+    setDeliveryPriceInput("0");
+    setDeliveryPrice(0);
+    setWarehouseSuccess(false);
     skipNameSearch.current = true;
     skipPnSearch.current = true;
   }, []);
@@ -123,7 +139,31 @@ function AddEditPartModal({
     if (open) reset(initialValues);
   }, [open, initialValues, reset]);
 
-  // Debounced warehouse lookup
+  // Check warehouse existence when part number changes (debounced)
+  useEffect(() => {
+    const trimmed = partNumber.trim();
+    if (!trimmed) {
+      setWhExistsState("unknown");
+      setWarehouseSuccess(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from("warehouse_parts")
+          .select("id")
+          .eq("part_number", trimmed)
+          .maybeSingle();
+        setWhExistsState(data ? "exists" : "notExists");
+        if (data) setWarehouseSuccess(false);
+      } catch {
+        setWhExistsState("unknown");
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [partNumber]);
+
+  // Debounced warehouse lookup by part number
   useEffect(() => {
     if (skipPnSearch.current) {
       skipPnSearch.current = false;
@@ -139,7 +179,7 @@ function AddEditPartModal({
       try {
         const { data } = await supabase
           .from("warehouse_parts")
-          .select("id, name, part_number, sale_price, cost_price, quantity")
+          .select("id, name, part_number, manufacturer, sale_price, cost_price, quantity")
           .ilike("part_number", `%${term}%`)
           .limit(20);
         if (data && data.length > 0) {
@@ -172,7 +212,7 @@ function AddEditPartModal({
       try {
         const { data } = await supabase
           .from("warehouse_parts")
-          .select("id, name, part_number, sale_price, cost_price, quantity")
+          .select("id, name, part_number, manufacturer, sale_price, cost_price, quantity")
           .ilike("name", `%${term}%`)
           .limit(20);
         if (data && data.length > 0) {
@@ -216,11 +256,13 @@ function AddEditPartModal({
     skipNameSearch.current = true;
     skipPnSearch.current = true;
     setDescription(match.name);
+    setBrand(match.manufacturer ?? "");
     setPartNumber(match.part_number ?? "");
     setUnitPrice(match.sale_price ?? 0);
     setPriceInput((match.sale_price ?? 0).toString());
-    setCostPrice(match.cost_price ?? undefined);
+    setWarehouseCostPrice(match.cost_price ?? null);
     setWsMatchedPart(match);
+    setWhExistsState("exists");
     setWsDropdownOpen(false);
     setWsNameDropdownOpen(false);
   };
@@ -229,11 +271,13 @@ function AddEditPartModal({
     skipNameSearch.current = true;
     skipPnSearch.current = true;
     setDescription(match.name);
+    setBrand(match.manufacturer ?? "");
     setPartNumber(match.part_number ?? "");
     setUnitPrice(match.sale_price ?? 0);
     setPriceInput((match.sale_price ?? 0).toString());
-    setCostPrice(match.cost_price ?? undefined);
+    setWarehouseCostPrice(match.cost_price ?? null);
     setWsMatchedPart(match);
+    setWhExistsState("exists");
     setWsNameDropdownOpen(false);
     setWsDropdownOpen(false);
   };
@@ -265,41 +309,50 @@ function AddEditPartModal({
       partNumber: partNumber || undefined,
       unitPrice: Number(unitPrice) || 0,
       quantity: Number(quantity) || 1,
-      costPrice: costPrice ?? undefined,
+      costPrice: warehouseCostPrice ?? undefined,
     };
 
     onConfirm(part);
     onOpenChange(false);
+  };
 
-    // Auto-create warehouse entry if part_number set and no match exists
+  const handleAddToWarehouse = async () => {
+    if (!showDeliveryPrompt) {
+      setShowDeliveryPrompt(true);
+      return;
+    }
     const trimmedPN = partNumber.trim();
-    if (trimmedPN) {
-      (async () => {
-        try {
-          const { data: existing } = await supabase
-            .from("warehouse_parts")
-            .select("id")
-            .eq("part_number", trimmedPN)
-            .maybeSingle();
-          if (!existing) {
-            await supabase.from("warehouse_parts").insert({
-              name: part.description,
-              part_number: trimmedPN,
-              manufacturer: part.brand || "MERCEDES",
-              quantity: 0,
-              cost_price: 0,
-              sale_price: part.unitPrice,
-            } as never);
-          }
-        } catch {
-          // silently ignore — never block the offer save
-        }
-      })();
+    if (!trimmedPN) return;
+    setAddingToWarehouse(true);
+    try {
+      await supabase.from("warehouse_parts").insert({
+        name: description.trim() || trimmedPN,
+        part_number: trimmedPN,
+        manufacturer: brand || "MERCEDES",
+        quantity: 0,
+        cost_price: deliveryPrice,
+        sale_price: unitPrice,
+      } as never);
+      setWhExistsState("exists");
+      setWarehouseSuccess(true);
+      setShowDeliveryPrompt(false);
+    } catch {
+      // silently ignore
+    } finally {
+      setAddingToWarehouse(false);
     }
   };
 
-  const wsMargin = wsMatchedPart && (wsMatchedPart.cost_price ?? 0) > 0 && (wsMatchedPart.sale_price ?? 0) > 0
-    ? (((wsMatchedPart.sale_price ?? 0) - (wsMatchedPart.cost_price ?? 0)) / (wsMatchedPart.cost_price ?? 1) * 100).toFixed(1) + "%"
+  // Fix #2: live margin/profit — always based on warehouseCostPrice (frozen when part selected)
+  // and current unitPrice (updated on every keystroke).
+  const liveCost = warehouseCostPrice ?? (wsMatchedPart?.cost_price ?? null);
+  const liveMargin = liveCost !== null && liveCost > 0
+    ? (((unitPrice - liveCost) / liveCost) * 100).toFixed(1) + "%"
+    : liveCost !== null && liveCost === 0
+    ? "—"
+    : null;
+  const liveProfit = liveCost !== null
+    ? (unitPrice - liveCost).toFixed(2) + " €"
     : null;
 
   const wsStockColor = wsMatchedPart
@@ -388,6 +441,8 @@ function AddEditPartModal({
                     setPartNumber(e.target.value);
                     setWsMatchedPart(null);
                     setWsNameDropdownOpen(false);
+                    setWarehouseSuccess(false);
+                    setShowDeliveryPrompt(false);
                   }}
                   placeholder={t("partNumber")}
                   className="bg-gray-100 text-gray-900 border-mb-border"
@@ -460,7 +515,6 @@ function AddEditPartModal({
                 value={priceInput}
                 onChange={(e) => {
                   const val = e.target.value;
-                  // Allow only digits, dot, and comma
                   if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
                     setPriceInput(val);
                     const numVal = val.replace(",", ".");
@@ -468,25 +522,73 @@ function AddEditPartModal({
                   }
                 }}
                 onBlur={() => {
-                  // Format on blur
-                  if (
-                    priceInput &&
-                    !isNaN(Number(priceInput.replace(",", ".")))
-                  ) {
+                  if (priceInput && !isNaN(Number(priceInput.replace(",", ".")))) {
                     setPriceInput(unitPrice.toString());
                   }
                 }}
                 placeholder="0.00"
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
-              {wsMatchedPart && (wsMatchedPart.cost_price ?? 0) > 0 && (
-                <div className="text-xs text-mb-silver">
-                  <div>Доставна цена {(wsMatchedPart.cost_price ?? 0).toFixed(2)} €</div>
-                  {wsMargin && <div>{tWh("margin")}: {wsMargin} / {((wsMatchedPart.sale_price ?? 0) - (wsMatchedPart.cost_price ?? 0)).toFixed(2)} €</div>}
+              {/* Fix #2: live margin/profit based on warehouseCostPrice + current unitPrice */}
+              {liveCost !== null && (
+                <div className="text-xs text-mb-silver space-y-0.5">
+                  <div>Доставна цена: {liveCost.toFixed(2)} €</div>
+                  <div>
+                    Марж: <span className="text-white">{liveMargin}</span>
+                    {" / "}
+                    Печалба: <span className="text-white">{liveProfit}</span>
+                  </div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Fix #1: "Добави в склада" button */}
+          {partNumber.trim() && (
+            <div className="space-y-2">
+              {warehouseSuccess ? (
+                <p className="text-sm text-green-400">Частта е добавена в склада.</p>
+              ) : whExistsState === "exists" ? (
+                <p className="text-xs text-mb-silver italic">Вече е в склада</p>
+              ) : whExistsState === "notExists" ? (
+                <>
+                  {showDeliveryPrompt && (
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="delivery-price" className="text-gray-200 text-xs whitespace-nowrap shrink-0">
+                        Доставна цена (€)
+                      </Label>
+                      <Input
+                        id="delivery-price"
+                        type="text"
+                        inputMode="decimal"
+                        value={deliveryPriceInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                            setDeliveryPriceInput(val);
+                            const n = val.replace(",", ".");
+                            setDeliveryPrice(n === "" ? 0 : Number(n) || 0);
+                          }
+                        }}
+                        placeholder="0.00"
+                        className="bg-gray-100 text-gray-900 border-mb-border h-8 text-sm"
+                      />
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={addingToWarehouse}
+                    onClick={handleAddToWarehouse}
+                    className="bg-green-600 hover:bg-green-700 text-white w-full"
+                  >
+                    {addingToWarehouse ? "…" : "Добави в склада"}
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          )}
+
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>
         <DialogFooter className="flex flex-col gap-2 sm:flex-row">

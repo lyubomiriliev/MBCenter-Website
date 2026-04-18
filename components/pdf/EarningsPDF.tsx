@@ -38,6 +38,7 @@ interface MechanicEarningsPDFProps {
   entries: MechanicEarningEntry[];
   card?: number;
   fines?: number;
+  bonus?: number;
 }
 
 interface ReceptionistEarningsPDFProps {
@@ -193,6 +194,7 @@ export function MechanicEarningsPDF({
   entries,
   card,
   fines,
+  bonus,
 }: MechanicEarningsPDFProps) {
   const styles = createStyles();
   const totalEarnings = entries.reduce((s, e) => s + e.total, 0);
@@ -200,7 +202,8 @@ export function MechanicEarningsPDF({
   const net50 = totalEarnings * 0.5;
   const cardAmount = card || 0;
   const finesAmount = fines || 0;
-  const cashAmount = net50 - cardAmount - finesAmount;
+  const bonusAmount = bonus || 0;
+  const cashAmount = net50 - cardAmount - finesAmount + bonusAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -256,6 +259,12 @@ export function MechanicEarningsPDF({
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Карта</Text>
               <Text style={styles.summaryValue}>-{cardAmount.toFixed(2)} €</Text>
+            </View>
+          )}
+          {bonusAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryBold}>Бонус (€)</Text>
+              <Text style={styles.summaryValueBold}>+{bonusAmount.toFixed(2)} €</Text>
             </View>
           )}
           {finesAmount > 0 && (

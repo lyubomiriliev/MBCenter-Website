@@ -3,25 +3,26 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import type { WarehousePart, WarehousePartInsert, WarehousePartUpdate } from "@/types/database";
-import * as XLSX from "xlsx";
+export type WarehouseSortColumn = "created_at" | "quantity" | "sale_price";
 
 interface WarehouseFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: WarehouseSortColumn;
+  sortDir?: "asc" | "desc";
 }
 
 export function useWarehouseParts(filters: WarehouseFilters = {}) {
-  const { search = "", page = 1, pageSize = 50 } = filters;
+  const { search = "", page = 1, pageSize = 50, sortBy = "created_at", sortDir = "desc" } = filters;
 
   return useQuery({
-    queryKey: ["warehouse_parts", { search, page, pageSize }],
+    queryKey: ["warehouse_parts", { search, page, pageSize, sortBy, sortDir }],
     queryFn: async () => {
       let query = supabase
         .from("warehouse_parts")
         .select("*", { count: "exact" })
-        .order("quantity", { ascending: false })
-        .order("created_at", { ascending: false })
+        .order(sortBy, { ascending: sortDir === "asc" })
         .range((page - 1) * pageSize, page * pageSize - 1);
 
       if (search.trim()) {
@@ -133,7 +134,8 @@ export function useUpsertWarehouseParts() {
   });
 }
 
-export function downloadWarehouseTemplate() {
+export async function downloadWarehouseTemplate() {
+  const XLSX = await import("xlsx");
   const headers = [
     {
       Name: "",
@@ -147,18 +149,15 @@ export function downloadWarehouseTemplate() {
   ];
 
   const ws = XLSX.utils.json_to_sheet(headers);
-  // Remove the single example row — keep only the header row
   ws["!ref"] = "A1:G1";
-
-  // Set column widths
   ws["!cols"] = [
-    { wch: 30 }, // Name
-    { wch: 20 }, // Part Number
-    { wch: 15 }, // Manufacturer
-    { wch: 10 }, // Quantity
-    { wch: 18 }, // Cost Price
-    { wch: 18 }, // Sale Price
-    { wch: 20 }, // Replaced By
+    { wch: 30 },
+    { wch: 20 },
+    { wch: 15 },
+    { wch: 10 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 20 },
   ];
 
   const wb = XLSX.utils.book_new();
@@ -167,6 +166,7 @@ export function downloadWarehouseTemplate() {
 }
 
 export async function exportWarehouseToXlsx(parts: WarehousePart[]) {
+  const XLSX = await import("xlsx");
   const rows = parts.map((p) => ({
     Name: p.name,
     "Part Number": p.part_number,

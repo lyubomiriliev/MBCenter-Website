@@ -15,13 +15,13 @@ import {
   useUpsertWarehouseParts,
   exportWarehouseToXlsx,
   downloadWarehouseTemplate,
+  type WarehouseSortColumn,
 } from "@/hooks/useWarehouseParts";
 import { WarehousePartModal } from "@/components/admin/warehouse/WarehousePartModal";
 import { StockStatusBadge } from "@/components/admin/warehouse/StockStatusBadge";
 import { QuantityPopover } from "@/components/admin/shared/QuantityPopover";
 import type { WarehousePart, WarehousePartInsert } from "@/types/database";
 import type { WarehousePartFormData } from "@/lib/schemas/warehouse";
-import * as XLSX from "xlsx";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,25 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+
+function SortIconWh({ col, sortBy, sortDir }: { col: string; sortBy: string; sortDir: "asc" | "desc" }) {
+  if (sortBy !== col) {
+    return (
+      <svg className="w-3.5 h-3.5 opacity-30 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    );
+  }
+  return sortDir === "desc" ? (
+    <svg className="w-3.5 h-3.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  ) : (
+    <svg className="w-3.5 h-3.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  );
+}
 
 const SESSION_KEY = "mb_warehouse_filters";
 
@@ -55,6 +74,8 @@ export default function WarehousePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "inStock" | "limited" | "outOfStock">("all");
   const [page, setPageState] = useState(1);
+  const [sortBy, setSortBy] = useState<WarehouseSortColumn>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Restore from sessionStorage on mount
   useEffect(() => {
@@ -110,11 +131,23 @@ export default function WarehousePage() {
 
   const { notifications, dismiss, showError, showSuccess } = useNotification();
 
+  const handleSort = (col: WarehouseSortColumn) => {
+    if (sortBy === col) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortBy(col);
+      setSortDir("desc");
+    }
+    setPageState(1);
+  };
+
   // Data hooks
   const { data, isLoading } = useWarehouseParts({
     search: debouncedSearch,
     page,
-    pageSize: 50,
+    pageSize: 18,
+    sortBy,
+    sortDir,
   });
   const createPart = useCreateWarehousePart();
   const updatePart = useUpdateWarehousePart();
@@ -151,10 +184,10 @@ export default function WarehousePage() {
     try {
       if (editingPart) {
         await updatePart.mutateAsync({ id: editingPart.id, ...normalized });
-        showSuccess(t("editPart") + " ✓");
+        showSuccess("Запазено");
       } else {
         await createPart.mutateAsync(normalized);
-        showSuccess(t("addPart") + " ✓");
+        showSuccess("Запазено");
       }
     } catch (err) {
       showError(String(err));
@@ -245,15 +278,14 @@ export default function WarehousePage() {
     const isCsv = file.name.toLowerCase().endsWith(".csv");
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
-        let wb: XLSX.WorkBook;
+        const XLSX = await import("xlsx");
+        let wb;
         if (isCsv) {
-          // CSV: read as UTF-8 text to preserve Cyrillic characters
           const text = ev.target?.result as string;
           wb = XLSX.read(text, { type: "string" });
         } else {
-          // XLSX: binary format, read as array buffer
           const data = new Uint8Array(ev.target?.result as ArrayBuffer);
           wb = XLSX.read(data, { type: "array" });
         }
@@ -493,11 +525,11 @@ export default function WarehousePage() {
             </Button>
           </div>
         ) : (
-          <div className="min-w-0 overflow-x-auto">
+          <div className="min-w-0 overflow-x-auto rounded-lg border border-mb-border">
             <table className="w-full text-sm min-w-[900px]">
               <thead>
-                <tr className="border-b border-mb-border text-mb-silver text-xs uppercase tracking-wider">
-                  <th className="py-2 px-3 w-8">
+                <tr className="border-b border-mb-border text-mb-silver text-[13px] uppercase tracking-wider align-middle">
+                  <th className="py-3 px-3 w-8 align-middle">
                     <input
                       type="checkbox"
                       checked={allSelected}
@@ -505,34 +537,43 @@ export default function WarehousePage() {
                       className="rounded border-mb-border bg-transparent"
                     />
                   </th>
-                  <th className="text-left py-2 px-3 font-medium">
+                  <th className="text-left py-3 px-3 font-medium align-middle">
                     {t("columns.name")}
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
+                  <th className="text-center py-3 px-3 font-medium align-middle">
                     {t("columns.partNumber")}
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
+                  <th className="text-center py-3 px-3 font-medium align-middle">
                     {t("columns.manufacturer")}
                   </th>
-                  <th className="text-center py-2 px-1 font-medium w-16">
+                  <th className="text-center py-3 px-1 font-medium w-16 align-middle">
                     {t("columns.quantity")}
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
+                  <th className="text-center py-3 px-3 font-medium align-middle">
                     {t("columns.costPrice")}
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
-                    {t("columns.salePrice")}
+                  <th className="text-center py-3 px-3 font-medium align-middle">
+                    <button onClick={() => handleSort("sale_price")} className="flex items-center justify-center gap-1 mx-auto hover:text-mb-blue transition-colors uppercase tracking-wider">
+                      {t("columns.salePrice")}
+                      <SortIconWh col="sale_price" sortBy={sortBy} sortDir={sortDir} />
+                    </button>
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
+                  <th className="text-center py-3 px-3 font-medium align-middle">
                     {t("columns.margin")}
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
-                    {t("columns.status")}
+                  <th className="text-center py-3 px-3 font-medium align-middle">
+                    <button onClick={() => handleSort("quantity")} className="flex items-center justify-center gap-1 mx-auto hover:text-mb-blue transition-colors uppercase tracking-wider">
+                      {t("columns.status")}
+                      <SortIconWh col="quantity" sortBy={sortBy} sortDir={sortDir} />
+                    </button>
                   </th>
-                  <th className="text-center py-2 px-3 font-medium">
-                    {t("columns.date")}
+                  <th className="text-center py-3 px-3 font-medium align-middle">
+                    <button onClick={() => handleSort("created_at")} className="flex items-center justify-center gap-1 mx-auto hover:text-mb-blue transition-colors uppercase tracking-wider">
+                      {t("columns.date")}
+                      <SortIconWh col="created_at" sortBy={sortBy} sortDir={sortDir} />
+                    </button>
                   </th>
-                  <th className="text-right py-2 px-3 font-medium">
+                  <th className="text-right py-3 px-3 font-medium align-middle">
                     {t("columns.actions")}
                   </th>
                 </tr>
@@ -655,28 +696,62 @@ export default function WarehousePage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="border-mb-border text-mb-silver hover:text-white"
-            >
-              ←
-            </Button>
-            <span className="text-mb-silver text-sm">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="border-mb-border text-mb-silver hover:text-white"
-            >
-              →
-            </Button>
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="border-mb-border text-black hover:text-black font-medium disabled:opacity-50"
+              >
+                Предишна
+              </Button>
+              <div className="flex items-center gap-1 mx-2 sm:mx-4">
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const pageNum = i + 1;
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= page - 1 && pageNum <= page + 1)
+                  ) {
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={page === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className={`w-8 h-8 sm:w-9 sm:h-9 p-0 ${
+                          page === pageNum
+                            ? "bg-mb-blue font-bold text-white shadow-md shadow-mb-blue/20 hover:bg-mb-blue"
+                            : "border-mb-border text-black hover:text-black hover:bg-gray-100 font-medium"
+                        }`}
+                        onClick={() => setPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  } else if (
+                    (pageNum === page - 2 && page > 3) ||
+                    (pageNum === page + 2 && page < totalPages - 2)
+                  ) {
+                    return <span key={pageNum} className="text-mb-silver px-1">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="border-mb-border text-black hover:text-black font-medium disabled:opacity-50"
+              >
+                Следваща
+              </Button>
+            </div>
+            <p className="text-sm text-mb-silver opacity-80 mt-1">
+              Показване на {(page - 1) * 18 + 1} до {Math.min(page * 18, data?.totalCount ?? 0)} от {data?.totalCount ?? 0} части
+            </p>
           </div>
         )}
       </div>

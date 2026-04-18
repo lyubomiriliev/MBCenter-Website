@@ -846,6 +846,47 @@ export function CreateOfferFormV2({
           .update(updateData as never)
           .eq("id", savedOffer.id);
 
+        // Deduct warehouse stock — only on first generation (needsNewTimestamp).
+        // This prevents double-deduction on re-generation.
+        if (needsNewTimestamp) {
+          try {
+            const { data: offerItems } = await supabase
+              .from("offer_items")
+              .select("part_number, quantity")
+              .eq("offer_id", savedOffer.id)
+              .not("part_number", "is", null);
+
+            if (offerItems && offerItems.length > 0) {
+              const partNumbers = offerItems.map((i: any) => i.part_number as string).filter(Boolean);
+              if (partNumbers.length > 0) {
+                const { data: whParts } = await supabase
+                  .from("warehouse_parts")
+                  .select("id, part_number, quantity")
+                  .in("part_number", partNumbers);
+
+                if (whParts && whParts.length > 0) {
+                  for (const whPart of whParts as { id: string; part_number: string; quantity: number }[]) {
+                    const matchingItems = offerItems.filter(
+                      (i: any) => i.part_number === whPart.part_number
+                    );
+                    const totalDeduct = matchingItems.reduce(
+                      (sum: number, i: any) => sum + (Number(i.quantity) || 0),
+                      0
+                    );
+                    const newQty = Math.max(0, whPart.quantity - totalDeduct);
+                    await supabase
+                      .from("warehouse_parts")
+                      .update({ quantity: newQty } as never)
+                      .eq("id", whPart.id);
+                  }
+                }
+              }
+            }
+          } catch {
+            // Stock deduction is best-effort — never block service card generation
+          }
+        }
+
         // Invalidate the React Query cache BEFORE fetching so that any
         // concurrent refetch (triggered by a prior queryClient.invalidateQueries
         // call in saveEditedOffer) picks up the freshly-written service card
@@ -1749,6 +1790,7 @@ export function CreateOfferFormV2({
                       value={assystServiceCode}
                       onChange={(e) => setAssystServiceCode(e.target.value)}
                       maxLength={6}
+                      placeholder="W0W"
                       className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
@@ -1761,6 +1803,7 @@ export function CreateOfferFormV2({
                       value={assystServiceDescription}
                       onChange={(e) => setAssystServiceDescription(e.target.value)}
                       maxLength={3}
+                      placeholder="B2"
                       className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
@@ -2077,6 +2120,7 @@ export function CreateOfferFormV2({
                       value={assystServiceCode}
                       onChange={(e) => setAssystServiceCode(e.target.value)}
                       maxLength={6}
+                      placeholder="W0W"
                       className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>
@@ -2089,6 +2133,7 @@ export function CreateOfferFormV2({
                       value={assystServiceDescription}
                       onChange={(e) => setAssystServiceDescription(e.target.value)}
                       maxLength={3}
+                      placeholder="B2"
                       className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
                   </div>

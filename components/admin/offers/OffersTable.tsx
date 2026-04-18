@@ -166,15 +166,15 @@ export function OffersTable({
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [transferSourceOffer, setTransferSourceOffer] = useState<{ id: string; offer_number: string } | null>(null);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(17);
 
   useEffect(() => {
     const handleResize = () => {
       // 1920px is typical 1080p, > 1920px covers 2K (1440p / 2560px) and 4K
       if (window.innerWidth > 1920) {
-        setPageSize(16);
+        setPageSize(17);
       } else {
-        setPageSize(10);
+        setPageSize(17);
       }
     };
     handleResize(); // initial check
@@ -457,7 +457,7 @@ export function OffersTable({
         (row) => row.service_card_generated_at || row.created_at,
         {
           id: "created_at",
-          meta: { className: "hidden sm:table-cell" },
+          meta: { className: isMechanicView ? "" : "hidden sm:table-cell" },
           header: () => (
             <button onClick={() => handleSort("created_at")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
               {t("offers.columns.date")}<SortIcon col="created_at" />
@@ -674,7 +674,7 @@ export function OffersTable({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className={`text-mb-silver whitespace-nowrap ${(header.column.columnDef.meta as any)?.className ?? ""}`}
+                    className={`text-mb-silver whitespace-nowrap text-[13px] font-bold uppercase tracking-wider ${(header.column.columnDef.meta as any)?.className ?? ""}`}
                   >
                     {header.isPlaceholder
                       ? null

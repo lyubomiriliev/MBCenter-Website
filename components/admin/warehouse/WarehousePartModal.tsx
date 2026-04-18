@@ -130,7 +130,7 @@ export function WarehousePartModal({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
-          {/* Name */}
+          {/* Name — full width */}
           <div className="space-y-2">
             <Label htmlFor="wh-name" className="text-gray-200">
               {t("fields.name")} *
@@ -144,59 +144,73 @@ export function WarehousePartModal({
             />
           </div>
 
-          {/* Part Number */}
-          <div className="space-y-2">
-            <Label htmlFor="wh-pn" className="text-gray-200">
-              {t("fields.partNumber")} *
-            </Label>
-            <Input
-              id="wh-pn"
-              value={partNumber}
-              onChange={(e) => setPartNumber(e.target.value)}
-              placeholder={t("fields.partNumber")}
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
-          </div>
-
-          {/* Manufacturer */}
-          <div className="space-y-2">
-            <Label htmlFor="wh-mfr" className="text-gray-200">
-              {t("fields.manufacturer")}
-            </Label>
-            <Input
-              id="wh-mfr"
-              value={manufacturer}
-              onChange={(e) => setManufacturer(e.target.value)}
-              placeholder="MERCEDES"
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
-          </div>
-
-          {/* Quantity */}
-          <div className="space-y-2">
-            <Label className="text-gray-200">{t("fields.quantity")}</Label>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(0, q - 1))}
-                className="w-8 h-9 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors shrink-0"
-              >
-                −
-              </button>
+          {/* Part Number | Replaced By */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="wh-pn" className="text-gray-200">
+                {t("fields.partNumber")} *
+              </Label>
               <Input
-                type="number"
-                min={0}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(0, Number(e.target.value) || 0))}
-                className="bg-gray-100 text-gray-900 border-mb-border text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                id="wh-pn"
+                value={partNumber}
+                onChange={(e) => setPartNumber(e.target.value)}
+                placeholder={t("fields.partNumber")}
+                className="bg-gray-100 text-gray-900 border-mb-border"
               />
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => q + 1)}
-                className="w-8 h-9 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors shrink-0"
-              >
-                +
-              </button>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wh-rb" className="text-gray-200">
+                {t("fields.replacedBy")}
+              </Label>
+              <Input
+                id="wh-rb"
+                value={replacedBy}
+                onChange={(e) => setReplacedBy(e.target.value)}
+                placeholder={t("fields.replacedByPlaceholder")}
+                className="bg-gray-100 text-gray-900 border-mb-border"
+              />
+            </div>
+          </div>
+
+          {/* Manufacturer | Quantity */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="wh-mfr" className="text-gray-200">
+                {t("fields.manufacturer")}
+              </Label>
+              <Input
+                id="wh-mfr"
+                value={manufacturer}
+                onChange={(e) => setManufacturer(e.target.value)}
+                placeholder="MERCEDES"
+                className="bg-gray-100 text-gray-900 border-mb-border"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-200">{t("fields.quantity")}</Label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(0, q - 1))}
+                  className="w-8 h-9 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors shrink-0"
+                >
+                  −
+                </button>
+                <Input
+                  type="number"
+                  min={0}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(0, Number(e.target.value) || 0))}
+                  className="bg-gray-100 text-gray-900 border-mb-border text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  className="w-8 h-9 flex items-center justify-center rounded bg-mb-black hover:bg-mb-blue/20 text-white text-lg font-bold border border-mb-border transition-colors shrink-0"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
 
@@ -236,20 +250,6 @@ export function WarehousePartModal({
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
             </div>
-          </div>
-
-          {/* Replaced By */}
-          <div className="space-y-2">
-            <Label htmlFor="wh-rb" className="text-gray-200">
-              {t("fields.replacedBy")}
-            </Label>
-            <Input
-              id="wh-rb"
-              value={replacedBy}
-              onChange={(e) => setReplacedBy(e.target.value)}
-              placeholder={t("fields.replacedByPlaceholder")}
-              className="bg-gray-100 text-gray-900 border-mb-border"
-            />
           </div>
 
           {/* Live margin/profit */}

@@ -2,11 +2,11 @@
 
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CheckInspectionForm } from "@/components/admin/forms/CheckInspectionForm";
 
-export default function EditCheckPage() {
+function EditCheckMechanicsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const params = useParams();
@@ -34,5 +34,13 @@ export default function EditCheckPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EditCheckPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-mb-silver">Зареждане...</div>}>
+      <EditCheckMechanicsContent />
+    </Suspense>
   );
 }

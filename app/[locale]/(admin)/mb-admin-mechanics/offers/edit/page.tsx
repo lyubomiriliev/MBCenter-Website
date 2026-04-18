@@ -2,11 +2,11 @@
 
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CreateOfferFormV2 } from "@/components/admin/forms/CreateOfferFormV2";
 
-export default function EditOfferPageMechanics() {
+function EditOfferMechanicsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const params = useParams();
@@ -32,5 +32,13 @@ export default function EditOfferPageMechanics() {
         <CreateOfferFormV2 offerId={offerId} isMechanicView />
       </div>
     </div>
+  );
+}
+
+export default function EditOfferPageMechanics() {
+  return (
+    <Suspense fallback={<div className="p-4 text-mb-silver">Зареждане...</div>}>
+      <EditOfferMechanicsContent />
+    </Suspense>
   );
 }

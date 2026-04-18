@@ -111,6 +111,7 @@ export function EarningsPage() {
   // Monthly summary fields for active worker
   const [mechanicCard, setMechanicCard] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
+  const [mechanicBonus, setMechanicBonus] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
   const [receptionistCash, setReceptionistCash] = useState("");
@@ -207,6 +208,7 @@ export function EarningsPage() {
           setMechanicEntries([]);
           setMechanicCard("");
           setMechanicFines("");
+          setMechanicBonus("");
         } else {
           setReceptionistEntries([]);
           setReceptionistFixed("");
@@ -249,9 +251,11 @@ export function EarningsPage() {
         if (sumData) {
           setMechanicCard(sumData.card_amount?.toString() || "");
           setMechanicFines(sumData.fines_amount?.toString() || "");
+          setMechanicBonus(sumData.bonus_amount?.toString() || "");
         } else {
           setMechanicCard("");
           setMechanicFines("");
+          setMechanicBonus("");
         }
       } else {
         if (sumData) {
@@ -433,6 +437,7 @@ export function EarningsPage() {
             entries={pdfEntries}
             card={parseFloat(mechanicCard) || 0}
             fines={parseFloat(mechanicFines) || 0}
+            bonus={parseFloat(mechanicBonus) || 0}
           />
         );
         filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${selectedYear}.pdf`;
@@ -522,7 +527,8 @@ export function EarningsPage() {
   const mechanicNet = mechanicTotal * 0.5;
   const mechCardVal = parseFloat(mechanicCard) || 0;
   const mechFinesVal = parseFloat(mechanicFines) || 0;
-  const mechanicCash = mechanicNet - mechCardVal - mechFinesVal;
+  const mechBonusVal = parseFloat(mechanicBonus) || 0;
+  const mechanicCash = mechanicNet - mechCardVal - mechFinesVal + mechBonusVal;
 
   const receptionistTotal = receptionistEntries.reduce(
     (s, e) => s + (e.earnings || 0),
@@ -759,7 +765,13 @@ export function EarningsPage() {
                 {/* Mechanic Entries List */}
                 {mechanicEntries.length > 0 && (
                   <div className="mt-4 border border-mb-border rounded-lg bg-mb-black/50 overflow-hidden">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm table-fixed">
+                      <colgroup>
+                        <col className="w-auto" />
+                        <col style={{ width: "110px" }} />
+                        <col style={{ width: "90px" }} />
+                        <col style={{ width: "32px" }} />
+                      </colgroup>
                       <thead>
                         <tr className="border-b border-mb-border text-mb-silver text-xs uppercase">
                           <th className="text-left py-2 px-3">
@@ -780,23 +792,23 @@ export function EarningsPage() {
                             key={e.id}
                             className="group hover:bg-white/5 transition-colors"
                           >
-                            <td className="py-2 px-3">
-                              <div className="text-white">
+                            <td className="py-2 px-3 min-w-0">
+                              <div className="text-white truncate">
                                 {e.vehicle || "-"}
                               </div>
-                              <div className="text-mb-silver text-xs">
+                              <div className="text-mb-silver text-xs truncate">
                                 {e.repair_name || "-"}
                               </div>
                             </td>
                             <td className="py-2 pr-2 text-right">
-                              <div className="text-mb-silver">
+                              <div className="text-mb-silver whitespace-nowrap">
                                 {formatHours(e.repair_time || 0)}
                               </div>
-                              <div className="text-mb-silver text-xs">
+                              <div className="text-mb-silver text-xs whitespace-nowrap">
                                 {e.hourly_rate} €
                               </div>
                             </td>
-                            <td className="py-2 pr-2 text-right text-white font-medium">
+                            <td className="py-2 pr-2 text-right text-white font-medium whitespace-nowrap">
                               {(e.total || 0).toFixed(2)} €
                             </td>
                             <td className="py-2">
@@ -858,7 +870,7 @@ export function EarningsPage() {
                         <p className="text-xs text-mb-silver uppercase tracking-wide">
                           {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                         </p>
-                        <div className="grid grid-cols-2 gap-3 max-w-xl">
+                        <div className="grid grid-cols-3 gap-3 max-w-xl">
                           <div className="space-y-1">
                             <Label className="text-xs">
                               {isBg ? "Карта (€)" : "Card (€)"}
@@ -899,6 +911,30 @@ export function EarningsPage() {
                                   "mechanic",
                                   {
                                     fines_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
+                                );
+                              }}
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {isBg ? "Бонус (€)" : "Bonus (€)"}
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={mechanicBonus}
+                              onChange={(e) => {
+                                setMechanicBonus(e.target.value);
+                                saveMonthlySummary(
+                                  selectedMechanic,
+                                  "mechanic",
+                                  {
+                                    bonus_amount:
                                       parseFloat(e.target.value) || 0,
                                   },
                                 );

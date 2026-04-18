@@ -2,13 +2,13 @@
 
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { CreateOfferFormV2 } from "@/components/admin/forms/CreateOfferFormV2";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase/client";
 
-export default function EditOfferPage() {
+function EditOfferContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const params = useParams();
@@ -16,6 +16,7 @@ export default function EditOfferPage() {
   const offerId = searchParams.get("id");
   const locale = params.locale as string;
   const [offerNumber, setOfferNumber] = useState<string | null>(null);
+  const [serviceCardNumber, setServiceCardNumber] = useState<string | null>(null);
 
   useEffect(() => {
     if (!offerId) {
@@ -24,10 +25,14 @@ export default function EditOfferPage() {
     }
     supabase
       .from("offers")
-      .select("offer_number")
+      .select("offer_number, service_card_number")
       .eq("id", offerId)
       .single()
-      .then(({ data }) => setOfferNumber((data as { offer_number: string } | null)?.offer_number ?? null));
+      .then(({ data }) => {
+        const d = data as { offer_number: string; service_card_number: string | null } | null;
+        setOfferNumber(d?.offer_number ?? null);
+        setServiceCardNumber(d?.service_card_number ?? null);
+      });
   }, [offerId, locale, router]);
 
   if (!offerId) return null;
@@ -57,10 +62,19 @@ export default function EditOfferPage() {
       <div className="relative z-10 flex flex-col flex-1 min-h-0">
         <AdminHeader
           title={
-            <span>
-              {t("offers.editOffer")}
+            <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span>{t("offers.editOffer")}</span>
               {offerNumber && (
-                <span className="ml-2 text-mb-blue">№{offerNumber}</span>
+                <span className="text-mb-blue">
+                  <span className="text-mb-silver text-sm font-normal">Оферта</span>{" "}
+                  <span className="font-semibold">№{offerNumber}</span>
+                </span>
+              )}
+              {serviceCardNumber && (
+                <span className="text-green-400">
+                  <span className="text-mb-silver text-sm font-normal">Сервизна карта</span>{" "}
+                  <span className="font-semibold">№{serviceCardNumber}</span>
+                </span>
               )}
             </span>
           }
@@ -71,5 +85,25 @@ export default function EditOfferPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EditOfferPage() {
+  return (
+    <Suspense fallback={<div className="flex flex-col gap-6 p-4 sm:p-6 lg:flex-row lg:items-start lg:p-8 animate-pulse">
+      <div className="flex-1 space-y-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-4">
+            <div className="h-4 w-32 bg-white/10 rounded" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-10 bg-white/10 rounded" />
+              <div className="h-10 bg-white/10 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>}>
+      <EditOfferContent />
+    </Suspense>
   );
 }

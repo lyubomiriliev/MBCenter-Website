@@ -82,6 +82,7 @@ export function EarningsEditPage({
   // Monthly summary fields
   const [mechanicCard, setMechanicCard] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
+  const [mechanicBonus, setMechanicBonus] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
   const [receptionistCash, setReceptionistCash] = useState("");
@@ -134,6 +135,7 @@ export function EarningsEditPage({
       if (workerType === "mechanic") {
         setMechanicCard(sumData.card_amount?.toString() || "");
         setMechanicFines(sumData.fines_amount?.toString() || "");
+        setMechanicBonus(sumData.bonus_amount?.toString() || "");
       } else {
         setReceptionistFixed(sumData.fixed_salary?.toString() || "");
         setReceptionistCard(sumData.card_amount?.toString() || "");
@@ -144,6 +146,7 @@ export function EarningsEditPage({
       if (workerType === "mechanic") {
         setMechanicCard("");
         setMechanicFines("");
+        setMechanicBonus("");
       } else {
         setReceptionistFixed("");
         setReceptionistCard("");
@@ -269,7 +272,8 @@ export function EarningsEditPage({
   const mechanicNet = mechanicTotal * 0.5;
   const cardVal = parseFloat(mechanicCard) || 0;
   const finesVal = parseFloat(mechanicFines) || 0;
-  const mechanicCash = mechanicNet - cardVal - finesVal;
+  const bonusVal = parseFloat(mechanicBonus) || 0;
+  const mechanicCash = mechanicNet - cardVal - finesVal + bonusVal;
 
   const receptionistTotal = entries.reduce((s, e) => s + (e.earnings || 0), 0);
   const recFixedVal = parseFloat(receptionistFixed) || 0;
@@ -316,6 +320,7 @@ export function EarningsEditPage({
             entries={pdfEntries}
             card={cardVal}
             fines={finesVal}
+            bonus={bonusVal}
           />
         );
         filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${year}.pdf`;
@@ -423,7 +428,16 @@ export function EarningsEditPage({
             <>
               {/* Entries Table */}
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm table-fixed">
+                  <colgroup>
+                    <col style={{ width: "160px" }} />
+                    <col className="w-auto" />
+                    <col style={{ width: "80px" }} />
+                    <col style={{ width: "75px" }} />
+                    <col style={{ width: "90px" }} />
+                    <col style={{ width: "100px" }} />
+                    <col style={{ width: "32px" }} />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-mb-border text-mb-silver text-xs uppercase">
                       <th className="text-left py-3 pr-2">
@@ -641,38 +655,38 @@ export function EarningsEditPage({
                           key={e.id}
                           className="border-b border-mb-border/40 group"
                         >
-                          <td className="py-1.5 pr-2 text-white">
+                          <td className="py-1.5 pr-2 text-white truncate max-w-0">
                             {e.vehicle || "-"}
                           </td>
-                          <td className="py-1.5 pr-2 text-mb-silver">
+                          <td className="py-1.5 pr-2 text-mb-silver truncate max-w-0">
                             {e.repair_name || "-"}
                           </td>
                           {workerType === "mechanic" ? (
                             <>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                              <td className="py-1.5 pr-2 text-right text-mb-silver whitespace-nowrap">
                                 {formatHours(e.repair_time || 0)}
                               </td>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                              <td className="py-1.5 pr-2 text-right text-mb-silver whitespace-nowrap">
                                 {e.hourly_rate} €
                               </td>
-                              <td className="py-1.5 pr-2 text-right text-white font-medium">
+                              <td className="py-1.5 pr-2 text-right text-white font-medium whitespace-nowrap">
                                 {(e.total || 0).toFixed(2)} €
                               </td>
                             </>
                           ) : (
                             <>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                              <td className="py-1.5 pr-2 text-right text-mb-silver whitespace-nowrap">
                                 {(e.repair_total || 0).toFixed(2)} €
                               </td>
-                              <td className="py-1.5 pr-2 text-right text-mb-silver">
+                              <td className="py-1.5 pr-2 text-right text-mb-silver whitespace-nowrap">
                                 {e.turnover_pct}%
                               </td>
-                              <td className="py-1.5 pr-2 text-right text-white font-medium">
+                              <td className="py-1.5 pr-2 text-right text-white font-medium whitespace-nowrap">
                                 {(e.earnings || 0).toFixed(2)} €
                               </td>
                             </>
                           )}
-                          <td className="py-1.5 pr-2 text-right text-mb-silver">
+                          <td className="py-1.5 pr-2 text-right text-mb-silver whitespace-nowrap">
                             {formatDate(e.entry_date)}
                           </td>
                           <td className="py-1.5">
@@ -760,7 +774,7 @@ export function EarningsEditPage({
                     <p className="text-xs text-mb-silver uppercase tracking-wide">
                       {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                     </p>
-                    <div className="grid grid-cols-2 gap-3 max-w-xl">
+                    <div className="grid grid-cols-3 gap-3 max-w-xl">
                       <div className="space-y-1">
                         <Label className="text-xs">
                           {isBg ? "Карта (€)" : "Card (€)"}
@@ -793,6 +807,25 @@ export function EarningsEditPage({
                             setMechanicFines(e.target.value);
                             saveMonthlySummary({
                               fines_amount: parseFloat(e.target.value) || 0,
+                            });
+                          }}
+                          className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {isBg ? "Бонус (€)" : "Bonus (€)"}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={mechanicBonus}
+                          onChange={(e) => {
+                            setMechanicBonus(e.target.value);
+                            saveMonthlySummary({
+                              bonus_amount: parseFloat(e.target.value) || 0,
                             });
                           }}
                           className="bg-gray-100 text-gray-900 border-mb-border text-sm"

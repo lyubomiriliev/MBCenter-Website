@@ -509,6 +509,7 @@ export interface Database {
           year: number;
           card_amount: number;
           fines_amount: number;
+          bonus_amount: number;
           fixed_salary: number;
           cash_amount: number;
           created_at: string;
@@ -522,6 +523,7 @@ export interface Database {
           year: number;
           card_amount?: number;
           fines_amount?: number;
+          bonus_amount?: number;
           fixed_salary?: number;
           cash_amount?: number;
           created_at?: string;
@@ -535,6 +537,7 @@ export interface Database {
           year?: number;
           card_amount?: number;
           fines_amount?: number;
+          bonus_amount?: number;
           fixed_salary?: number;
           cash_amount?: number;
           created_at?: string;
