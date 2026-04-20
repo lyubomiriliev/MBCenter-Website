@@ -139,6 +139,28 @@ function AddEditPartModal({
     if (open) reset(initialValues);
   }, [open, initialValues, reset]);
 
+  // On open in edit mode: silently load warehouse record for stock/cost display.
+  // Never touches unitPrice or priceInput — only sets wsMatchedPart + warehouseCostPrice.
+  useEffect(() => {
+    if (!open || editIndex === null) return;
+    const pn = initialValues?.partNumber?.trim();
+    if (!pn) return;
+    supabase
+      .from("warehouse_parts")
+      .select("id, name, part_number, manufacturer, sale_price, cost_price, quantity")
+      .eq("part_number", pn)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const match = data as WarehouseSuggestion;
+        setWsMatchedPart(match);
+        setWhExistsState("exists");
+        // Only set warehouseCostPrice if it wasn't already loaded from the saved offer
+        setWarehouseCostPrice((prev) => prev ?? (match.cost_price ?? null));
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editIndex]);
+
   // Check warehouse existence when part number changes (debounced)
   useEffect(() => {
     const trimmed = partNumber.trim();
@@ -810,6 +832,7 @@ export function PartsFieldArray() {
             partNumber: p.partNumber ?? "",
             unitPrice: Number(p.unitPrice) ?? 0,
             quantity: Number(p.quantity) ?? 1,
+            costPrice: p.costPrice ?? undefined,
           }
         : null,
     );

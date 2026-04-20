@@ -1781,31 +1781,33 @@ export function CreateOfferFormV2({
                 </div>
                 {/* Service Code + Service Description + Save button */}
                 <div className="sm:col-span-2 flex items-end gap-3">
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <label className="block text-xs font-medium text-mb-silver">
-                      {locale === "bg" ? "Сервизен код" : "Service Code"}
-                    </label>
-                    <input
-                      type="text"
-                      value={assystServiceCode}
-                      onChange={(e) => setAssystServiceCode(e.target.value)}
-                      maxLength={6}
-                      placeholder="W0W"
-                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                    />
-                  </div>
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <label className="block text-xs font-medium text-mb-silver whitespace-nowrap">
-                      {locale === "bg" ? "Код на обслужване" : "Service Description"}
-                    </label>
-                    <input
-                      type="text"
-                      value={assystServiceDescription}
-                      onChange={(e) => setAssystServiceDescription(e.target.value)}
-                      maxLength={3}
-                      placeholder="B2"
-                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                    />
+                  <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-mb-silver">
+                        {locale === "bg" ? "Сервизен код" : "Service Code"}
+                      </label>
+                      <input
+                        type="text"
+                        value={assystServiceCode}
+                        onChange={(e) => setAssystServiceCode(e.target.value)}
+                        maxLength={100}
+                        placeholder="W0W"
+                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-mb-silver whitespace-nowrap">
+                        {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                      </label>
+                      <input
+                        type="text"
+                        value={assystServiceDescription}
+                        onChange={(e) => setAssystServiceDescription(e.target.value)}
+                        maxLength={12}
+                        placeholder="B2"
+                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      />
+                    </div>
                   </div>
                   <div className="shrink-0">
                     <Button
@@ -2111,31 +2113,33 @@ export function CreateOfferFormV2({
                 </div>
                 {/* Right: Service Code + Service Description + Save */}
                 <div className="order-7 xl:order-none flex items-end gap-3">
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <Label className="text-mb-silver text-xs whitespace-nowrap">
-                      {locale === "bg" ? "Сервизен код" : "Service Code"}
-                    </Label>
-                    <input
-                      type="text"
-                      value={assystServiceCode}
-                      onChange={(e) => setAssystServiceCode(e.target.value)}
-                      maxLength={6}
-                      placeholder="W0W"
-                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                    />
-                  </div>
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <Label className="text-mb-silver text-xs whitespace-nowrap">
-                      {locale === "bg" ? "Код на обслужване" : "Service Description"}
-                    </Label>
-                    <input
-                      type="text"
-                      value={assystServiceDescription}
-                      onChange={(e) => setAssystServiceDescription(e.target.value)}
-                      maxLength={3}
-                      placeholder="B2"
-                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                    />
+                  <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
+                    <div className="space-y-2">
+                      <Label className="text-mb-silver text-xs whitespace-nowrap">
+                        {locale === "bg" ? "Сервизен код" : "Service Code"}
+                      </Label>
+                      <input
+                        type="text"
+                        value={assystServiceCode}
+                        onChange={(e) => setAssystServiceCode(e.target.value)}
+                        maxLength={100}
+                        placeholder="W0W"
+                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-mb-silver text-xs whitespace-nowrap">
+                        {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                      </Label>
+                      <input
+                        type="text"
+                        value={assystServiceDescription}
+                        onChange={(e) => setAssystServiceDescription(e.target.value)}
+                        maxLength={12}
+                        placeholder="B2"
+                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      />
+                    </div>
                   </div>
                   {isEditing && savedOffer && (
                     <div className="shrink-0">

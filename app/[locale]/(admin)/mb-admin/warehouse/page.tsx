@@ -581,14 +581,18 @@ export default function WarehousePage() {
               <tbody>
                 {parts.map((part) => {
                   const { pct, eur } = computeMargin(part);
-                  const dateStr = new Date(part.created_at).toLocaleDateString(
-                    "bg-BG",
-                    {
+                  const _dateObj = new Date(part.updated_at);
+                  const dateStr =
+                    _dateObj.toLocaleDateString("bg-BG", {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
-                    },
-                  );
+                    }) +
+                    " " +
+                    _dateObj.toLocaleTimeString("bg-BG", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
                   return (
                     <tr
                       key={part.id}
