@@ -25,13 +25,13 @@ export function FloatingSummary({
   const { profile } = useSupabaseAuthContext();
   const isAdmin = profile?.role === "admin";
   const { control } = useFormContext<OfferFormData>();
-  const parts = useWatch({ control, name: "parts" }) || [];
-  const serviceActions = useWatch({ control, name: "serviceActions" }) || [];
+  const rawParts = useWatch({ control, name: "parts" });
+  const rawServiceActions = useWatch({ control, name: "serviceActions" });
   const discountPartsPercent = useWatch({ control, name: "discountPartsPercent" }) || 0;
   const discountServicesPercent = useWatch({ control, name: "discountServicesPercent" }) || 0;
   const calculations = useMemo(
-    () => calculateOffer(parts, serviceActions, discountPartsPercent, discountServicesPercent),
-    [parts, serviceActions, discountPartsPercent, discountServicesPercent]
+    () => calculateOffer(rawParts || [], rawServiceActions || [], discountPartsPercent, discountServicesPercent),
+    [rawParts, rawServiceActions, discountPartsPercent, discountServicesPercent]
   );
   const prepaymentsTotal = prepayments.reduce((a, b) => a + b, 0);
   const amountDueEur = Math.max(0, calculations.grossTotal - prepaymentsTotal);
