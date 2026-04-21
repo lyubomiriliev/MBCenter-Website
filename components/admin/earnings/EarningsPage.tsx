@@ -120,7 +120,13 @@ export function EarningsPage() {
 
   // All-workers earnings log
   const [earningsLog, setEarningsLog] = useState<
-    { id: string; name: string; type: string; totalEarned: number }[]
+    {
+      id: string;
+      name: string;
+      type: string;
+      totalEarned: number;
+      totalHours: number;
+    }[]
   >([]);
 
   // Load app settings
@@ -162,7 +168,9 @@ export function EarningsPage() {
   const loadEarningsLog = useCallback(async () => {
     const { data } = await supabase
       .from("earnings_entries")
-      .select("worker_id, worker_name, worker_type, total, earnings")
+      .select(
+        "worker_id, worker_name, worker_type, total, earnings, repair_time",
+      )
       .eq("month", selectedMonth)
       .eq("year", selectedYear);
 
@@ -173,7 +181,13 @@ export function EarningsPage() {
 
     const map = new Map<
       string,
-      { id: string; name: string; type: string; totalEarned: number }
+      {
+        id: string;
+        name: string;
+        type: string;
+        totalEarned: number;
+        totalHours: number;
+      }
     >();
     for (const row of data as any[]) {
       const key = `${row.worker_type}:${row.worker_name}`;
@@ -182,9 +196,13 @@ export function EarningsPage() {
         name: row.worker_name,
         type: row.worker_type,
         totalEarned: 0,
+        totalHours: 0,
       };
       existing.totalEarned +=
         row.worker_type === "mechanic" ? row.total || 0 : row.earnings || 0;
+      if (row.worker_type === "mechanic") {
+        existing.totalHours += row.repair_time || 0;
+      }
       map.set(key, existing);
     }
     setEarningsLog(Array.from(map.values()));
@@ -542,7 +560,7 @@ export function EarningsPage() {
   const recRemaining = recTotalSalary - recCardVal - recFinesVal - recCashVal;
 
   return (
-    <div className="space-y-6 p-10">
+    <div className="space-y-6 p-4 sm:p-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -551,7 +569,7 @@ export function EarningsPage() {
           </h1>
         </div>
         {/* Month/Year Picker */}
-        <div className="flex items-center gap-2 bg-mb-anthracite border border-mb-border rounded-xl px-3 py-2">
+        <div className="flex items-center gap-2 bg-mb-anthracite border border-mb-border rounded-xl px-3 py-2 w-full sm:w-auto justify-between sm:justify-start">
           <button
             onClick={prevMonth}
             className="text-mb-silver hover:text-white p-1 transition-colors"
@@ -618,8 +636,8 @@ export function EarningsPage() {
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="overflow-hidden">
+            <div className="flex flex-row gap-3 overflow-x-auto pb-1 -mx-1 px-1">
               {earningsLog.map((w, i) => (
                 <button
                   key={i}
@@ -628,11 +646,11 @@ export function EarningsPage() {
                       `/${locale}/mb-admin/earnings/edit?id=${w.id}&type=${w.type}&month=${selectedMonth}&year=${selectedYear}`,
                     )
                   }
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-mb-black/60 border border-mb-border/50 hover:bg-mb-blue/10 hover:border-mb-blue/40 transition-all group"
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-mb-black/60 border border-mb-border/50 hover:bg-mb-blue/10 hover:border-mb-blue/40 transition-all group gap-8 whitespace-nowrap shrink-0"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${w.type === "mechanic" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400"}`}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 ${w.type === "mechanic" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400"}`}
                     >
                       {w.type === "mechanic"
                         ? isBg
@@ -646,7 +664,12 @@ export function EarningsPage() {
                       {w.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-4">
+                    {w.type === "mechanic" && w.totalHours > 0 && (
+                      <span className="text-xs text-mb-silver/70">
+                        {formatHours(w.totalHours)}
+                      </span>
+                    )}
                     <span className="text-sm font-semibold text-green-400">
                       {w.totalEarned.toFixed(2)} €
                     </span>

@@ -58,17 +58,12 @@ function formatBGN(value: number): string {
   return `${value.toFixed(2)} лв.`;
 }
 
-export function useOfferCalculations(
-  control: Control<OfferFormData>
+export function calculateOffer(
+  parts: any[],
+  serviceActions: any[],
+  discountPartsPercent: number,
+  discountServicesPercent: number,
 ): CalculationResult {
-  const parts = useWatch({ control, name: "parts" }) || [];
-  const serviceActions = useWatch({ control, name: "serviceActions" }) || [];
-  const discountPartsPercent =
-    useWatch({ control, name: "discountPartsPercent" }) || 0;
-  const discountServicesPercent =
-    useWatch({ control, name: "discountServicesPercent" }) || 0;
-
-  return useMemo(() => {
     const partsSubtotal = parts.reduce((sum: number, part: any) => {
       const qty = part.quantity || 1;
       const price = part.unitPrice || 0;
@@ -166,5 +161,20 @@ export function useOfferCalculations(
         grossTotalBGN: formatBGN(grossTotalBGN),
       },
     };
-  }, [parts, serviceActions, discountPartsPercent, discountServicesPercent]);
+}
+
+export function useOfferCalculations(
+  control: Control<OfferFormData>
+): CalculationResult {
+  const parts = useWatch({ control, name: "parts" }) || [];
+  const serviceActions = useWatch({ control, name: "serviceActions" }) || [];
+  const discountPartsPercent =
+    useWatch({ control, name: "discountPartsPercent" }) || 0;
+  const discountServicesPercent =
+    useWatch({ control, name: "discountServicesPercent" }) || 0;
+
+  return useMemo(
+    () => calculateOffer(parts, serviceActions, discountPartsPercent, discountServicesPercent),
+    [parts, serviceActions, discountPartsPercent, discountServicesPercent]
+  );
 }

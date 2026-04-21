@@ -70,6 +70,7 @@ export function CreateOfferFormV2({
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
+  const [summaryResetKey, setSummaryResetKey] = useState(0);
   const [offerPdfGenerating, setOfferPdfGenerating] = useState(false);
   const [serviceCardGenerating, setServiceCardGenerating] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
@@ -97,7 +98,9 @@ export function CreateOfferFormV2({
   // Dedicated state for the service card date — never overwritten by stale
   // React Query refetches. Initialized from the offer on load and only moves
   // forward when a card is actually generated.
-  const [serviceCardGeneratedAt, setServiceCardGeneratedAt] = useState<string | null>(null);
+  const [serviceCardGeneratedAt, setServiceCardGeneratedAt] = useState<
+    string | null
+  >(null);
   const [navModalOpen, setNavModalOpen] = useState(false);
   const [pendingNavUrl, setPendingNavUrl] = useState<string | null>(null);
   const [mechanicsList, setMechanicsList] = useState<Mechanic[]>([]);
@@ -107,7 +110,9 @@ export function CreateOfferFormV2({
   const [assystRemainingMileage, setAssystRemainingMileage] = useState("");
   const [assystServiceCode, setAssystServiceCode] = useState("");
   const [assystServiceDescription, setAssystServiceDescription] = useState("");
-  const [assystMileageUnit, setAssystMileageUnit] = useState<"km" | "miles">("km");
+  const [assystMileageUnit, setAssystMileageUnit] = useState<"km" | "miles">(
+    "km",
+  );
   const [assystSaving, setAssystSaving] = useState(false);
 
   // Earnings panel state
@@ -242,10 +247,16 @@ export function CreateOfferFormV2({
   useEffect(() => {
     if (!savedOffer) return;
     setAssystRemainingTime((savedOffer as any).assyst_remaining_time ?? "");
-    setAssystRemainingMileage((savedOffer as any).assyst_remaining_mileage ?? "");
+    setAssystRemainingMileage(
+      (savedOffer as any).assyst_remaining_mileage ?? "",
+    );
     setAssystServiceCode((savedOffer as any).assyst_service_code ?? "");
-    setAssystServiceDescription((savedOffer as any).assyst_service_description ?? "");
-    setAssystMileageUnit(((savedOffer as any).assyst_mileage_unit as "km" | "miles") ?? "km");
+    setAssystServiceDescription(
+      (savedOffer as any).assyst_service_description ?? "",
+    );
+    setAssystMileageUnit(
+      ((savedOffer as any).assyst_mileage_unit as "km" | "miles") ?? "km",
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedOffer?.id]);
 
@@ -262,6 +273,8 @@ export function CreateOfferFormV2({
     // Only reset the form on initial load - never on subsequent refetches
     // (refetches happen after autosave; resetting would wipe in-progress typing)
     if (formLoadedRef.current) return;
+    formLoadedRef.current = true;
+
     const savedPrepayments = (
       existingOffer as { prepayments_eur?: number[] | null }
     ).prepayments_eur;
@@ -276,73 +289,142 @@ export function CreateOfferFormV2({
       ? new Date(existingOffer.created_at).getFullYear()
       : new Date().getFullYear();
 
-    const formData: Partial<OfferFormData> = {
-      customerName: existingOffer.customer_name ?? "",
-      customerPhone: existingOffer.customer_phone ?? "",
-      clientEmail:
-        existingOffer.customer_email ?? existingOffer.client?.email ?? "",
-      clientId: existingOffer.client_id ?? undefined,
+    const partItems = (existingOffer.items ?? [])
+      .filter((item) => item.type === "part")
+      .sort((a, b) => a.sort_order - b.sort_order);
 
-      carModel: existingOffer.car_model_text ?? "",
-      carModelDetail: existingOffer.car_model_detail ?? "",
-      repairName: existingOffer.repair_name ?? "",
-      carYear:
-        existingOffer.car_year ?? existingOffer.car?.year ?? yearFallback,
-      vinText: existingOffer.vin_text ?? "",
-      carLicensePlate:
-        existingOffer.license_plate ?? existingOffer.car?.license_plate ?? "",
-      carMileage: existingOffer.mileage ?? existingOffer.car?.mileage ?? 0,
-      carMileageUnit: (existingOffer.mileage_unit as "km" | "miles") ?? "km",
-      carId: existingOffer.car_id ?? undefined,
+    const missingCostPartNumbers = Array.from(
+      new Set(
+        partItems
+          .filter((i) => (i.cost_price ?? null) === null && i.part_number)
+          .map((i) => i.part_number!.trim())
+          .filter((pn) => pn.length > 0),
+      ),
+    );
 
-      createdByName: existingOffer.created_by_name ?? "",
+    const buildAndReset = (costByPartNumber: Record<string, number>) => {
+      const formData: Partial<OfferFormData> = {
+        customerName: existingOffer.customer_name ?? "",
+        customerPhone: existingOffer.customer_phone ?? "",
+        clientEmail:
+          existingOffer.customer_email ?? existingOffer.client?.email ?? "",
+        clientId: existingOffer.client_id ?? undefined,
 
-      discountPercent: existingOffer.discount_percent ?? 0,
-      discountPartsPercent: existingOffer.discount_parts_percent ?? 0,
-      discountServicesPercent: existingOffer.discount_services_percent ?? 0,
-      notes: existingOffer.notes ?? "",
-      notesInternal: existingOffer.notes_internal ?? "",
-      notesService: existingOffer.notes_service ?? "",
+        carModel: existingOffer.car_model_text ?? "",
+        carModelDetail: existingOffer.car_model_detail ?? "",
+        repairName: existingOffer.repair_name ?? "",
+        carYear:
+          existingOffer.car_year ?? existingOffer.car?.year ?? yearFallback,
+        vinText: existingOffer.vin_text ?? "",
+        carLicensePlate:
+          existingOffer.license_plate ?? existingOffer.car?.license_plate ?? "",
+        carMileage: existingOffer.mileage ?? existingOffer.car?.mileage ?? 0,
+        carMileageUnit: (existingOffer.mileage_unit as "km" | "miles") ?? "km",
+        carId: existingOffer.car_id ?? undefined,
 
-      parts: (existingOffer.items ?? [])
-        .filter((item) => item.type === "part")
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((item) => ({
-          type: "part" as const,
-          description: item.description,
-          brand: item.brand ?? "",
-          partNumber: item.part_number ?? "",
-          unitPrice: item.unit_price,
-          quantity: item.quantity,
-          costPrice: item.cost_price ?? undefined,
-        })),
+        createdByName: existingOffer.created_by_name ?? "",
 
-      serviceActions: (existingOffer.service_actions ?? [])
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((action) => ({
-          actionName: action.action_name,
-          timeRequired: action.time_required_text ?? "",
-          pricePerHour: action.price_per_hour_eur_net,
-          isFixedPrice: action.is_fixed_price ?? false,
-          fixedPriceAmount: action.fixed_price_amount ?? undefined,
-        })),
+        discountPercent: existingOffer.discount_percent ?? 0,
+        discountPartsPercent: existingOffer.discount_parts_percent ?? 0,
+        discountServicesPercent: existingOffer.discount_services_percent ?? 0,
+        notes: existingOffer.notes ?? "",
+        notesInternal: existingOffer.notes_internal ?? "",
+        notesService: existingOffer.notes_service ?? "",
+
+        parts: partItems.map((item) => {
+          const fallbackCost = item.part_number
+            ? costByPartNumber[item.part_number.trim()]
+            : undefined;
+          return {
+            type: "part" as const,
+            description: item.description,
+            brand: item.brand ?? "",
+            partNumber: item.part_number ?? "",
+            unitPrice: item.unit_price,
+            quantity: item.quantity,
+            costPrice: item.cost_price ?? fallbackCost ?? undefined,
+          };
+        }),
+
+        serviceActions: (existingOffer.service_actions ?? [])
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((action) => ({
+            actionName: action.action_name,
+            timeRequired: action.time_required_text ?? "",
+            pricePerHour: action.price_per_hour_eur_net,
+            isFixedPrice: action.is_fixed_price ?? false,
+            fixedPriceAmount: action.fixed_price_amount ?? undefined,
+          })),
+      };
+
+      methods.reset({
+        ...defaultOfferFormValues,
+        ...formData,
+      } as OfferFormData);
+      setSummaryResetKey((k) => k + 1);
+      const name = existingOffer.created_by_name ?? "";
+      if (name) {
+        setTimeout(() => {
+          methods.setValue("createdByName", name, {
+            shouldValidate: true,
+            shouldDirty: false,
+          });
+        }, 0);
+      }
     };
 
-    methods.reset({
-      ...defaultOfferFormValues,
-      ...formData,
-    } as OfferFormData);
-    const name = existingOffer.created_by_name ?? "";
-    if (name) {
-      setTimeout(() => {
-        methods.setValue("createdByName", name, {
-          shouldValidate: true,
-          shouldDirty: false,
+    // Reset form immediately with whatever cost_price is already in the DB
+    // so the summary never shows 0 while the warehouse lookup is in flight.
+    buildAndReset({});
+
+    if (missingCostPartNumbers.length === 0) return;
+
+    // Kick off the warehouse lookup via a separate state-driven effect to
+    // avoid any cleanup/cancellation race with this effect.
+    setPendingWarehouseLookup(missingCostPartNumbers);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingOffer, isEditing]);
+
+  // Separate effect for the warehouse cost lookup so its async completion
+  // isn't cancelled by re-renders of the offer-load effect above.
+  const [pendingWarehouseLookup, setPendingWarehouseLookup] = useState<
+    string[] | null
+  >(null);
+  useEffect(() => {
+    if (!pendingWarehouseLookup || pendingWarehouseLookup.length === 0) return;
+    const partNumbers = pendingWarehouseLookup;
+    supabase
+      .from("warehouse_parts")
+      .select("part_number, cost_price")
+      .in("part_number", partNumbers)
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const costByPartNumber: Record<string, number> = {};
+        const rows = data as Array<{
+          part_number: string | null;
+          cost_price: number | null;
+        }>;
+        for (const row of rows) {
+          if (row.part_number && row.cost_price != null) {
+            costByPartNumber[row.part_number.trim()] = row.cost_price;
+          }
+        }
+        if (Object.keys(costByPartNumber).length === 0) return;
+        const currentParts = methods.getValues("parts");
+        currentParts.forEach((part, index) => {
+          if (part.costPrice != null) return;
+          const pn = part.partNumber?.trim();
+          if (!pn || costByPartNumber[pn] == null) return;
+          methods.setValue(`parts.${index}.costPrice`, costByPartNumber[pn], {
+            shouldDirty: false,
+            shouldValidate: false,
+            shouldTouch: false,
+          });
         });
-      }, 0);
-    }
-    formLoadedRef.current = true;
-  }, [existingOffer, isEditing, methods]);
+        setSummaryResetKey((k) => k + 1);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingWarehouseLookup]);
 
   // Keep changedAfterLastCardRef in sync whenever savedOffer updates.
   // This covers both the initial load via useOffer (existingOffer) and the
@@ -471,9 +553,12 @@ export function CreateOfferFormV2({
             (action.pricePerHour || 0);
         }
       });
-      const partsDiscount = partsTotal * ((data.discountPartsPercent || 0) / 100);
-      const servicesDiscount = serviceTotal * ((data.discountServicesPercent || 0) / 100);
-      const netTotal = partsTotal + serviceTotal - partsDiscount - servicesDiscount;
+      const partsDiscount =
+        partsTotal * ((data.discountPartsPercent || 0) / 100);
+      const servicesDiscount =
+        serviceTotal * ((data.discountServicesPercent || 0) / 100);
+      const netTotal =
+        partsTotal + serviceTotal - partsDiscount - servicesDiscount;
       const vat = 0;
 
       const updateData: UpdateOffer = {
@@ -767,7 +852,8 @@ export function CreateOfferFormV2({
       // - Re-generation with no PDF-relevant changes: keep the existing date.
       // - Re-generation after PDF-relevant changes were saved: write a new one.
       const existingTimestamp = savedOffer?.service_card_generated_at ?? null;
-      const needsNewTimestamp = !existingTimestamp || changedAfterLastCardRef.current;
+      const needsNewTimestamp =
+        !existingTimestamp || changedAfterLastCardRef.current;
       const generationTimestamp = needsNewTimestamp
         ? new Date().toISOString()
         : existingTimestamp;
@@ -779,8 +865,7 @@ export function CreateOfferFormV2({
       // Old service card numbers were copied from offer_number (10 random digits).
       // New ones are 8-digit zero-padded sequential numbers (e.g. 00020240).
       // If the stored number looks like an old offer number, regenerate it.
-      const isOldFormat = (n: string | null) =>
-        !!n && /^\d{10}$/.test(n);
+      const isOldFormat = (n: string | null) => !!n && /^\d{10}$/.test(n);
       let serviceCardNumber = savedOffer?.service_card_number ?? null;
       if (
         savedOffer &&
@@ -857,7 +942,9 @@ export function CreateOfferFormV2({
               .not("part_number", "is", null);
 
             if (offerItems && offerItems.length > 0) {
-              const partNumbers = offerItems.map((i: any) => i.part_number as string).filter(Boolean);
+              const partNumbers = offerItems
+                .map((i: any) => i.part_number as string)
+                .filter(Boolean);
               if (partNumbers.length > 0) {
                 const { data: whParts } = await supabase
                   .from("warehouse_parts")
@@ -865,13 +952,17 @@ export function CreateOfferFormV2({
                   .in("part_number", partNumbers);
 
                 if (whParts && whParts.length > 0) {
-                  for (const whPart of whParts as { id: string; part_number: string; quantity: number }[]) {
+                  for (const whPart of whParts as {
+                    id: string;
+                    part_number: string;
+                    quantity: number;
+                  }[]) {
                     const matchingItems = offerItems.filter(
-                      (i: any) => i.part_number === whPart.part_number
+                      (i: any) => i.part_number === whPart.part_number,
                     );
                     const totalDeduct = matchingItems.reduce(
                       (sum: number, i: any) => sum + (Number(i.quantity) || 0),
-                      0
+                      0,
                     );
                     const newQty = Math.max(0, whPart.quantity - totalDeduct);
                     await supabase
@@ -1138,9 +1229,12 @@ export function CreateOfferFormV2({
         }
       });
 
-      const partsDiscount = partsTotal * ((data.discountPartsPercent || 0) / 100);
-      const servicesDiscount = serviceTotal * ((data.discountServicesPercent || 0) / 100);
-      const netTotal = partsTotal + serviceTotal - partsDiscount - servicesDiscount;
+      const partsDiscount =
+        partsTotal * ((data.discountPartsPercent || 0) / 100);
+      const servicesDiscount =
+        serviceTotal * ((data.discountServicesPercent || 0) / 100);
+      const netTotal =
+        partsTotal + serviceTotal - partsDiscount - servicesDiscount;
       const vat = 0;
       const grossTotal = netTotal;
 
@@ -1593,148 +1687,147 @@ export function CreateOfferFormV2({
 
         {/* Car Data + ASSYST PLUS — merged card */}
         <Card className="bg-mb-anthracite border-mb-border">
-          <CardHeader>
-            <CardTitle className="text-lg">{t("carInfo")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-mb-silver text-sm">{t("carModel")}</span>
-                <p className="text-white">
-                  {[savedOffer.car_model_text, savedOffer.car_model_detail]
-                    .filter(Boolean)
-                    .join(" ") || "-"}
-                </p>
-              </div>
-              <div>
-                <span className="text-mb-silver text-sm">
-                  {t("carLicensePlate")}
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="text"
-                    value={licensePlateInput}
-                    onChange={(e) => setLicensePlateInput(e.target.value.toUpperCase())}
-                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-mb-blue/50 uppercase"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-3 shrink-0"
-                    disabled={licensePlateSaving}
-                    onClick={async () => {
-                      if (!savedOffer?.id) return;
-                      setLicensePlateSaving(true);
-                      try {
-                        await updateOfferMutation.mutateAsync({
-                          id: savedOffer.id,
-                          offer: {
-                            license_plate: licensePlateInput.trim() || null,
-                          },
-                        });
-                        queryClient.invalidateQueries({
-                          queryKey: ["offer", savedOffer.id],
-                        });
-                        showSuccess(locale === "bg" ? "Запазено." : "Saved.");
-                      } catch {
-                        showError(
-                          locale === "bg"
-                            ? "Грешка при запазване."
-                            : "Error saving.",
-                        );
-                      } finally {
-                        setLicensePlateSaving(false);
-                      }
-                    }}
-                  >
-                    {licensePlateSaving ? "…" : t("performedBySave")}
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <span className="text-mb-silver text-sm">{t("carVin")}</span>
-                <p className="text-white">
-                  {savedOffer.vin_text
-                    ? savedOffer.vin_text.toUpperCase()
-                    : "-"}
-                </p>
-              </div>
-              <div>
-                <span className="text-mb-silver text-sm">
-                  {t("carMileage")}
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="number"
-                    value={mileageInput}
-                    onChange={(e) => setMileageInput(e.target.value)}
-                    className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                    placeholder="0"
-                  />
-                  <div className="flex rounded-md overflow-hidden border border-mb-border text-sm shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setMileageUnitInput("km")}
-                      className={`px-3 py-2 font-medium transition-colors ${mileageUnitInput === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
-                    >
-                      км
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMileageUnitInput("miles")}
-                      className={`px-3 py-2 font-medium transition-colors ${mileageUnitInput === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
-                    >
-                      мили
-                    </button>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-mb-blue hover:bg-mb-blue/90 text-white px-3 shrink-0"
-                    disabled={mileageSaving}
-                    onClick={async () => {
-                      if (!savedOffer?.id) return;
-                      setMileageSaving(true);
-                      try {
-                        const val = mileageInput.trim()
-                          ? Number(mileageInput)
-                          : null;
-                        await updateOfferMutation.mutateAsync({
-                          id: savedOffer.id,
-                          offer: {
-                            mileage: val,
-                            mileage_unit: mileageUnitInput,
-                          } as any,
-                        });
-                        queryClient.invalidateQueries({
-                          queryKey: ["offer", savedOffer.id],
-                        });
-                        showSuccess(locale === "bg" ? "Запазено." : "Saved.");
-                      } catch {
-                        showError(
-                          locale === "bg"
-                            ? "Грешка при запазване."
-                            : "Error saving.",
-                        );
-                      } finally {
-                        setMileageSaving(false);
-                      }
-                    }}
-                  >
-                    {mileageSaving ? "…" : t("performedBySave")}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <CardContent className="pt-6">
+            {/* Mobile: flex-col stack. Desktop: two columns side-by-side */}
+            <div className="flex flex-col lg:flex-row lg:gap-6">
 
-            {/* ASSYST PLUS */}
-            <div className="border-t border-mb-border pt-4">
-              <h4 className="text-sm font-bold tracking-widest text-white uppercase mb-4">
-                ASSYST PLUS
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* ── Left column: Car Info ── */}
+              <div className="flex-1 lg:w-fit lg:flex-none min-w-0 flex flex-col gap-4">
+                <CardTitle className="text-lg">{t("carInfo")}</CardTitle>
+
+                {/* Model */}
+                <div>
+                  <span className="text-mb-silver text-sm">{t("carModel")}</span>
+                  <p className="text-white mt-0.5">
+                    {[savedOffer.car_model_text, savedOffer.car_model_detail]
+                      .filter(Boolean)
+                      .join(" ") || "-"}
+                  </p>
+                </div>
+
+                {/* License Plate */}
+                <div>
+                  <span className="text-mb-silver text-sm">{t("carLicensePlate")}</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={licensePlateInput}
+                      onChange={(e) =>
+                        setLicensePlateInput(e.target.value.toUpperCase())
+                      }
+                      className="flex-1 max-w-[160px] rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50 uppercase"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-mb-blue hover:bg-mb-blue/90 text-white px-3 shrink-0"
+                      disabled={licensePlateSaving}
+                      onClick={async () => {
+                        if (!savedOffer?.id) return;
+                        setLicensePlateSaving(true);
+                        try {
+                          await updateOfferMutation.mutateAsync({
+                            id: savedOffer.id,
+                            offer: {
+                              license_plate: licensePlateInput.trim() || null,
+                            },
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: ["offer", savedOffer.id],
+                          });
+                          showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                        } catch {
+                          showError(
+                            locale === "bg"
+                              ? "Грешка при запазване."
+                              : "Error saving.",
+                          );
+                        } finally {
+                          setLicensePlateSaving(false);
+                        }
+                      }}
+                    >
+                      {licensePlateSaving ? "…" : t("performedBySave")}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* VIN */}
+                <div>
+                  <span className="text-mb-silver text-sm">{t("carVin")}</span>
+                  <p className="text-white mt-0.5">
+                    {savedOffer.vin_text ? savedOffer.vin_text.toUpperCase() : "-"}
+                  </p>
+                </div>
+
+                {/* Mileage */}
+                <div>
+                  <span className="text-mb-silver text-sm">{t("carMileage")}</span>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <input
+                      type="number"
+                      value={mileageInput}
+                      onChange={(e) => setMileageInput(e.target.value)}
+                      className="rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                      placeholder="0"
+                    />
+                    <div className="flex rounded-md overflow-hidden border border-mb-border text-sm shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setMileageUnitInput("km")}
+                        className={`px-3 py-2 font-medium transition-colors ${mileageUnitInput === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      >
+                        км
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMileageUnitInput("miles")}
+                        className={`px-3 py-2 font-medium transition-colors ${mileageUnitInput === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      >
+                        мили
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-mb-blue hover:bg-mb-blue/90 text-white px-3 shrink-0"
+                      disabled={mileageSaving}
+                      onClick={async () => {
+                        if (!savedOffer?.id) return;
+                        setMileageSaving(true);
+                        try {
+                          const val = mileageInput.trim() ? Number(mileageInput) : null;
+                          await updateOfferMutation.mutateAsync({
+                            id: savedOffer.id,
+                            offer: { mileage: val, mileage_unit: mileageUnitInput } as any,
+                          });
+                          queryClient.invalidateQueries({ queryKey: ["offer", savedOffer.id] });
+                          showSuccess(locale === "bg" ? "Запазено." : "Saved.");
+                        } catch {
+                          showError(locale === "bg" ? "Грешка при запазване." : "Error saving.");
+                        } finally {
+                          setMileageSaving(false);
+                        }
+                      }}
+                    >
+                      {mileageSaving ? "…" : t("performedBySave")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider — horizontal on mobile, vertical on desktop */}
+              <div className="border-t border-mb-border my-4 lg:hidden" />
+              <div className="hidden lg:block w-px bg-mb-border shrink-0" />
+
+              {/* ── Right column: ASSYST PLUS ── */}
+              <div className="w-full lg:w-[320px] shrink-0 flex flex-col gap-4">
+                <h4 className="text-lg font-medium text-white tracking-widest uppercase lg:text-center">
+                  ASSYST PLUS
+                </h4>
+
                 {/* Remaining Time */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-mb-silver">
                     {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
                   </label>
@@ -1746,8 +1839,9 @@ export function CreateOfferFormV2({
                     className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                   />
                 </div>
+
                 {/* Remaining Mileage */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-mb-silver">
                     {locale === "bg"
                       ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
@@ -1761,71 +1855,66 @@ export function CreateOfferFormV2({
                       placeholder="+24"
                       className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
-                    <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0">
+                    <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0 w-[72px]">
                       <button
                         type="button"
                         onClick={() => setAssystMileageUnit("km")}
-                        className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                        className={`flex-1 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
                       >
                         км
                       </button>
                       <button
                         type="button"
                         onClick={() => setAssystMileageUnit("miles")}
-                        className={`px-2 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                        className={`flex-1 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
                       >
                         мили
                       </button>
                     </div>
                   </div>
                 </div>
-                {/* Service Code + Service Description + Save button */}
-                <div className="sm:col-span-2 flex items-end gap-3">
-                  <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-mb-silver">
-                        {locale === "bg" ? "Сервизен код" : "Service Code"}
-                      </label>
-                      <input
-                        type="text"
-                        value={assystServiceCode}
-                        onChange={(e) => setAssystServiceCode(e.target.value)}
-                        maxLength={100}
-                        placeholder="W0W"
-                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-medium text-mb-silver whitespace-nowrap">
-                        {locale === "bg" ? "Код на обслужване" : "Service Description"}
-                      </label>
-                      <input
-                        type="text"
-                        value={assystServiceDescription}
-                        onChange={(e) => setAssystServiceDescription(e.target.value)}
-                        maxLength={12}
-                        placeholder="B2"
-                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                      />
-                    </div>
-                  </div>
-                  <div className="shrink-0">
+
+                {/* Service Code */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-mb-silver">
+                    {locale === "bg" ? "Сервизен код" : "Service Code"}
+                  </label>
+                  <input
+                    type="text"
+                    value={assystServiceCode}
+                    onChange={(e) => setAssystServiceCode(e.target.value)}
+                    maxLength={100}
+                    placeholder="W0W"
+                    className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                  />
+                </div>
+
+                {/* Service Description + Save */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-mb-silver">
+                    {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={assystServiceDescription}
+                      onChange={(e) => setAssystServiceDescription(e.target.value)}
+                      maxLength={12}
+                      placeholder="B2"
+                      className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
                     <Button
                       type="button"
-                      size="sm"
-                      className="bg-mb-blue hover:bg-mb-blue/90 text-white w-full h-9"
+                      className="bg-mb-blue hover:bg-mb-blue/90 text-white shrink-0 h-9 w-[72px] text-sm"
                       disabled={assystSaving}
                       onClick={saveAssyst}
                     >
-                      {assystSaving
-                        ? "…"
-                        : locale === "bg"
-                          ? "Запази"
-                          : "Save"}
+                      {assystSaving ? "…" : locale === "bg" ? "Запази" : "Save"}
                     </Button>
                   </div>
                 </div>
               </div>
+
             </div>
           </CardContent>
         </Card>
@@ -2027,14 +2116,28 @@ export function CreateOfferFormV2({
             <CardContent className="pt-6">
               {/* Outer grid: left car fields | right assyst — shared row heights */}
               <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-x-6 gap-y-4">
-
                 {/* ── Title row ── */}
                 {/* Left title */}
                 <div className="order-1 xl:order-none">
                   <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                    <svg className="w-5 h-5 text-mb-blue shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                    <svg
+                      className="w-5 h-5 text-mb-blue shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                      />
                     </svg>
                     {t("carInfo")}
                   </h3>
@@ -2063,7 +2166,9 @@ export function CreateOfferFormV2({
                 <div className="order-6 xl:order-none grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label className="text-mb-silver text-xs">
-                      {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
+                      {locale === "bg"
+                        ? "Оставащо време (дни)"
+                        : "Remaining Time (days)"}
                     </Label>
                     <input
                       type="text"
@@ -2079,21 +2184,29 @@ export function CreateOfferFormV2({
                         ? `Оставащ пробег (${assystMileageUnit === "km" ? "км" : "мили"})`
                         : `Remaining Mileage (${assystMileageUnit})`}
                     </Label>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       <input
                         type="text"
                         value={assystRemainingMileage}
-                        onChange={(e) => setAssystRemainingMileage(e.target.value)}
+                        onChange={(e) =>
+                          setAssystRemainingMileage(e.target.value)
+                        }
                         placeholder="+24"
-                        className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                        className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                       />
-                      <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0">
-                        <button type="button" onClick={() => setAssystMileageUnit("km")}
-                          className={`px-1.5 h-9 font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
+                      <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0 w-[72px]">
+                        <button
+                          type="button"
+                          onClick={() => setAssystMileageUnit("km")}
+                          className={`flex-1 h-[34px] font-medium transition-colors ${assystMileageUnit === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                        >
                           км
                         </button>
-                        <button type="button" onClick={() => setAssystMileageUnit("miles")}
-                          className={`px-1.5 h-9 font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}>
+                        <button
+                          type="button"
+                          onClick={() => setAssystMileageUnit("miles")}
+                          className={`flex-1 h-[34px] font-medium transition-colors ${assystMileageUnit === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                        >
                           мили
                         </button>
                       </div>
@@ -2112,50 +2225,55 @@ export function CreateOfferFormV2({
                   />
                 </div>
                 {/* Right: Service Code + Service Description + Save */}
-                <div className="order-7 xl:order-none flex items-end gap-3">
-                  <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
-                    <div className="space-y-2">
-                      <Label className="text-mb-silver text-xs whitespace-nowrap">
-                        {locale === "bg" ? "Сервизен код" : "Service Code"}
-                      </Label>
-                      <input
-                        type="text"
-                        value={assystServiceCode}
-                        onChange={(e) => setAssystServiceCode(e.target.value)}
-                        maxLength={100}
-                        placeholder="W0W"
-                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-mb-silver text-xs whitespace-nowrap">
-                        {locale === "bg" ? "Код на обслужване" : "Service Description"}
-                      </Label>
+                <div className="order-7 xl:order-none grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-mb-silver text-xs whitespace-nowrap">
+                      {locale === "bg" ? "Сервизен код" : "Service Code"}
+                    </Label>
+                    <input
+                      type="text"
+                      value={assystServiceCode}
+                      onChange={(e) => setAssystServiceCode(e.target.value)}
+                      maxLength={100}
+                      placeholder="W0W"
+                      className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-mb-silver text-xs whitespace-nowrap">
+                      {locale === "bg"
+                        ? "Код на обслужване"
+                        : "Service Description"}
+                    </Label>
+                    <div className="flex gap-2">
                       <input
                         type="text"
                         value={assystServiceDescription}
-                        onChange={(e) => setAssystServiceDescription(e.target.value)}
+                        onChange={(e) =>
+                          setAssystServiceDescription(e.target.value)
+                        }
                         maxLength={12}
                         placeholder="B2"
-                        className="w-full h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
+                        className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                       />
+                      {isEditing && savedOffer && (
+                        <Button
+                          type="button"
+                          className="bg-mb-blue hover:bg-mb-blue/90 text-white h-9 w-[72px] text-sm shrink-0"
+                          disabled={assystSaving}
+                          onClick={saveAssyst}
+                        >
+                          {assystSaving
+                            ? locale === "bg"
+                              ? "Записване…"
+                              : "Saving…"
+                            : locale === "bg"
+                              ? "Запази"
+                              : "Save"}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  {isEditing && savedOffer && (
-                    <div className="shrink-0">
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="bg-mb-blue hover:bg-mb-blue/90 text-white h-9 px-4"
-                        disabled={assystSaving}
-                        onClick={saveAssyst}
-                      >
-                        {assystSaving
-                          ? locale === "bg" ? "Записване…" : "Saving…"
-                          : locale === "bg" ? "Запази" : "Save"}
-                      </Button>
-                    </div>
-                  )}
                 </div>
 
                 {/* ── Row 3: VIN + Рег.номер | Пробег + Save ── */}
@@ -2170,7 +2288,9 @@ export function CreateOfferFormV2({
                       maxLength={22}
                       onChange={(e) => {
                         const upper = e.target.value.toUpperCase();
-                        methods.setValue("vinText", upper, { shouldDirty: true });
+                        methods.setValue("vinText", upper, {
+                          shouldDirty: true,
+                        });
                       }}
                     />
                   </div>
@@ -2182,7 +2302,9 @@ export function CreateOfferFormV2({
                       className="bg-gray-100 text-gray-900 border-mb-border uppercase placeholder:text-gray-500"
                       onChange={(e) => {
                         const upper = e.target.value.toUpperCase();
-                        methods.setValue("carLicensePlate", upper, { shouldDirty: true });
+                        methods.setValue("carLicensePlate", upper, {
+                          shouldDirty: true,
+                        });
                       }}
                     />
                   </div>
@@ -2197,21 +2319,43 @@ export function CreateOfferFormV2({
                       type="number"
                       min="0"
                       {...methods.register("carMileage", {
-                        setValueAs: (v) => (v === "" || v === null || v === undefined || isNaN(Number(v)) ? 0 : Number(v)),
+                        setValueAs: (v) =>
+                          v === "" ||
+                          v === null ||
+                          v === undefined ||
+                          isNaN(Number(v))
+                            ? 0
+                            : Number(v),
                       })}
                       placeholder="0"
                       className="flex-1 bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
                     />
-                    <select
-                      {...methods.register("carMileageUnit")}
-                      className="w-16 h-9 rounded-md bg-gray-100 text-gray-900 border-mb-border px-1 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue"
-                    >
-                      <option value="km">км</option>
-                      <option value="miles">мили</option>
-                    </select>
+                    <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0 w-[72px]">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          methods.setValue("carMileageUnit", "km", {
+                            shouldDirty: true,
+                          })
+                        }
+                        className={`flex-1 h-[34px] font-medium transition-colors ${methods.watch("carMileageUnit") === "km" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      >
+                        км
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          methods.setValue("carMileageUnit", "miles", {
+                            shouldDirty: true,
+                          })
+                        }
+                        className={`flex-1 h-[34px] font-medium transition-colors ${methods.watch("carMileageUnit") === "miles" ? "bg-mb-blue text-white" : "bg-mb-anthracite text-gray-400 hover:text-white"}`}
+                      >
+                        мили
+                      </button>
+                    </div>
                   </div>
                 </div>
-
               </div>
             </CardContent>
           </Card>
@@ -2552,6 +2696,7 @@ export function CreateOfferFormV2({
           <div className="flex w-full flex-col lg:shrink-0 lg:w-[20rem] xl:w-[22rem] min-[2200px]:w-[28rem] min-[3000px]:w-[34rem]">
             <div className="w-full lg:sticky lg:top-8">
               <FloatingSummary
+                key={summaryResetKey}
                 prepayments={prepayments}
                 onRemovePrepayment={(i) =>
                   setPrepayments((p) => p.filter((_, j) => j !== i))
@@ -2905,16 +3050,15 @@ export function CreateOfferFormV2({
                           <span className="font-medium">
                             {t("offerCreatedAt")}:
                           </span>{" "}
-                          {new Date(metaOffer.updated_at ?? metaOffer.created_at).toLocaleDateString(
-                            "bg-BG",
-                            {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )}
+                          {new Date(
+                            metaOffer.updated_at ?? metaOffer.created_at,
+                          ).toLocaleDateString("bg-BG", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </div>
                         {serviceCardGeneratedAt && (
                           <div>
@@ -3088,19 +3232,27 @@ export function CreateOfferFormV2({
                 disabled={isDeleting}
                 onClick={async () => {
                   setIsDeleting(true);
-                  await supabase.from("offers").delete().eq("id", savedOffer.id);
+                  await supabase
+                    .from("offers")
+                    .delete()
+                    .eq("id", savedOffer.id);
                   setIsDeleting(false);
                   setDeleteModalOpen(false);
                   const basePath = pathname.includes("/mb-admin")
                     ? pathname.split("/mb-admin")[0] + "/mb-admin"
-                    : pathname.split("/mb-admin-mechanics")[0] + "/mb-admin-mechanics";
+                    : pathname.split("/mb-admin-mechanics")[0] +
+                      "/mb-admin-mechanics";
                   router.push(`${basePath}/offers`);
                 }}
                 className="bg-mb-blue hover:bg-mb-blue/90 text-white"
               >
                 {isDeleting
-                  ? locale === "bg" ? "Изтриване..." : "Deleting..."
-                  : locale === "bg" ? "Изтрий" : "Delete"}
+                  ? locale === "bg"
+                    ? "Изтриване..."
+                    : "Deleting..."
+                  : locale === "bg"
+                    ? "Изтрий"
+                    : "Delete"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3115,7 +3267,9 @@ export function CreateOfferFormV2({
           sourceOfferId={savedOffer.id}
           sourceOfferNumber={savedOffer.offer_number}
           onSuccess={(targetOfferNumber) => {
-            showSuccess(tWarehouse("transfer.success", { number: targetOfferNumber }));
+            showSuccess(
+              tWarehouse("transfer.success", { number: targetOfferNumber }),
+            );
           }}
         />
       )}

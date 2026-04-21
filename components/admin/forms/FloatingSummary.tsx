@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useFormContext } from "react-hook-form";
-import { useOfferCalculations } from "@/hooks/useOfferCalculations";
+import { useFormContext, useWatch } from "react-hook-form";
+import { calculateOffer } from "@/hooks/useOfferCalculations";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { OfferFormData } from "@/lib/schemas/offer";
@@ -20,10 +22,17 @@ export function FloatingSummary({
   onRemovePrepayment,
 }: FloatingSummaryProps) {
   const t = useTranslations("admin.form");
-  const { control, watch } = useFormContext<OfferFormData>();
-  const calculations = useOfferCalculations(control);
-  const discountPartsPercent = watch("discountPartsPercent") || 0;
-  const discountServicesPercent = watch("discountServicesPercent") || 0;
+  const { profile } = useSupabaseAuthContext();
+  const isAdmin = profile?.role === "admin";
+  const { control } = useFormContext<OfferFormData>();
+  const parts = useWatch({ control, name: "parts" }) || [];
+  const serviceActions = useWatch({ control, name: "serviceActions" }) || [];
+  const discountPartsPercent = useWatch({ control, name: "discountPartsPercent" }) || 0;
+  const discountServicesPercent = useWatch({ control, name: "discountServicesPercent" }) || 0;
+  const calculations = useMemo(
+    () => calculateOffer(parts, serviceActions, discountPartsPercent, discountServicesPercent),
+    [parts, serviceActions, discountPartsPercent, discountServicesPercent]
+  );
   const prepaymentsTotal = prepayments.reduce((a, b) => a + b, 0);
   const amountDueEur = Math.max(0, calculations.grossTotal - prepaymentsTotal);
   const amountDueBgn = amountDueEur * EUR_TO_BGN;
@@ -147,8 +156,8 @@ export function FloatingSummary({
             </div>
           </div>
 
-          {/* Delivery cost + profit rows for parts with known cost */}
-          {calculations.totalCost > 0 && (
+          {/* Delivery cost + profit rows for parts with known cost — admin only */}
+          {isAdmin && calculations.totalCost > 0 && (
             <>
               <div className="flex justify-between items-center text-sm pt-1 border-t border-mb-border/40">
                 <span className="text-mb-silver">Доставна цена на части</span>
