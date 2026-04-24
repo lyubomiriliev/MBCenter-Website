@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import { parseTimeToHours, formatHours } from "@/lib/utils";
+import { parseTimeToHours, formatHours, sumHours } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -264,10 +264,7 @@ export function EarningsEditPage({
   };
 
   // Computations
-  const mechanicTotalHours = entries.reduce(
-    (s, e) => s + (e.repair_time || 0),
-    0,
-  );
+  const mechanicTotalHours = sumHours(entries.map((e) => e.repair_time || 0));
   const mechanicTotal = entries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;
   const cardVal = parseFloat(mechanicCard) || 0;

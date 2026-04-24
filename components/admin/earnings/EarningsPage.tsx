@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
-import { parseTimeToHours, formatHours } from "@/lib/utils";
+import { parseTimeToHours, formatHours, sumHours } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -179,33 +179,41 @@ export function EarningsPage() {
       return;
     }
 
-    const map = new Map<
+    const grouped = new Map<
       string,
       {
         id: string;
         name: string;
         type: string;
         totalEarned: number;
-        totalHours: number;
+        repairTimes: number[];
       }
     >();
     for (const row of data as any[]) {
       const key = `${row.worker_type}:${row.worker_name}`;
-      const existing = map.get(key) || {
+      const existing = grouped.get(key) || {
         id: row.worker_id,
         name: row.worker_name,
         type: row.worker_type,
         totalEarned: 0,
-        totalHours: 0,
+        repairTimes: [] as number[],
       };
       existing.totalEarned +=
         row.worker_type === "mechanic" ? row.total || 0 : row.earnings || 0;
       if (row.worker_type === "mechanic") {
-        existing.totalHours += row.repair_time || 0;
+        existing.repairTimes.push(row.repair_time || 0);
       }
-      map.set(key, existing);
+      grouped.set(key, existing);
     }
-    setEarningsLog(Array.from(map.values()));
+    setEarningsLog(
+      Array.from(grouped.values()).map((w) => ({
+        id: w.id,
+        name: w.name,
+        type: w.type,
+        totalEarned: w.totalEarned,
+        totalHours: sumHours(w.repairTimes),
+      })),
+    );
   }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
@@ -537,9 +545,8 @@ export function EarningsPage() {
     : MONTH_NAMES_EN[selectedMonth - 1];
 
   // Computations
-  const mechanicTotalHours = mechanicEntries.reduce(
-    (s, e) => s + (e.repair_time || 0),
-    0,
+  const mechanicTotalHours = sumHours(
+    mechanicEntries.map((e) => e.repair_time || 0),
   );
   const mechanicTotal = mechanicEntries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;

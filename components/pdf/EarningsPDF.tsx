@@ -1,5 +1,5 @@
 import React from "react";
-import { formatHours } from "@/lib/utils";
+import { formatHours, sumHours } from "@/lib/utils";
 import {
   Document,
   Page,
@@ -198,7 +198,7 @@ export function MechanicEarningsPDF({
 }: MechanicEarningsPDFProps) {
   const styles = createStyles();
   const totalEarnings = entries.reduce((s, e) => s + e.total, 0);
-  const totalHours = entries.reduce((s, e) => s + e.repairTime, 0);
+  const totalHours = sumHours(entries.map((e) => e.repairTime));
   const net50 = totalEarnings * 0.5;
   const cardAmount = card || 0;
   const finesAmount = fines || 0;

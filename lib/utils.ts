@@ -36,7 +36,22 @@ export function parseTimeToHours(s: string): number {
 
 /** Format decimal hours as "Xч YYмин". Whole hours become "Xч 00мин". */
 export function formatHours(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
+  const totalMinutes = Math.round(hours * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
   return `${h}ч ${String(m).padStart(2, "0")}мин`;
+}
+
+/**
+ * Sum an array of decimal-hour values precisely.
+ * Each value is rounded to the nearest minute (integer) before summing, so
+ * floating-point noise from DB storage (e.g. 1h 20min stored as 1.3333...)
+ * cannot accumulate across many rows.
+ */
+export function sumHours(values: (number | null | undefined)[]): number {
+  const totalMinutes = values.reduce<number>(
+    (sum, v) => sum + Math.round((v || 0) * 60),
+    0,
+  );
+  return totalMinutes / 60;
 }

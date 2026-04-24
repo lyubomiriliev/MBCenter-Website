@@ -454,13 +454,13 @@ export function OffersTable({
           },
         }),
       columnHelper.accessor(
-        (row) => row.service_card_generated_at || row.created_at,
+        (row) => (row as any).last_edited_at || row.created_at,
         {
           id: "created_at",
           meta: { className: isMechanicView ? "" : "hidden sm:table-cell" },
           header: () => (
-            <button onClick={() => handleSort("created_at")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
-              {t("offers.columns.date")}<SortIcon col="created_at" />
+            <button onClick={() => handleSort("last_edited_at")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
+              {t("offers.columns.date")}<SortIcon col="last_edited_at" />
             </button>
           ),
           cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),

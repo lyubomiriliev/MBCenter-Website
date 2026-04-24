@@ -589,7 +589,7 @@ export function CreateOfferFormV2({
 
       const { error: offerErr } = await supabase
         .from("offers")
-        .update(updateData as never)
+        .update({ ...updateData, last_edited_at: new Date().toISOString() } as never)
         .eq("id", offerId);
       if (offerErr) throw new Error(offerErr.message);
 
