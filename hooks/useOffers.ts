@@ -456,7 +456,7 @@ export function useCloneOffer() {
 
       const { data: items } = await supabase
         .from("offer_items")
-        .select("type, description, brand, part_number, unit_price, quantity")
+        .select("type, description, brand, part_number, unit_price, quantity, total, cost_price")
         .eq("offer_id", sourceId)
         .order("sort_order");
 

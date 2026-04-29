@@ -585,61 +585,59 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
         )}
 
         {/* Service Actions Table */}
-        {offer.service_actions && offer.service_actions.length > 0 && (
-          <View>
-            <View style={styles.table}>
-              <View wrap={false} minPresenceAhead={60}>
-                <Text style={styles.sectionTitle}>Сервизни активности</Text>
-                <View style={styles.tableHeader}>
-                  <View style={styles.colSvc1}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>№</Text>
-                  </View>
-                  <View style={styles.colSvc2}>
-                    <Text style={[styles.colTextLeft, { color: "#fff" }]}>Сервизна дейност</Text>
-                  </View>
-                  <View style={styles.colSvc3}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Време за ремонт</Text>
-                  </View>
-                  <View style={styles.colSvc4}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Цена на час</Text>
-                  </View>
-                  <View style={styles.colSvc5}>
-                    <Text style={[styles.colTextCenter, { color: "#fff" }]}>Обща цена (с ДДС)</Text>
+        {offer.service_actions && offer.service_actions.length > 0 && (() => {
+          const sortedActions = [...offer.service_actions].sort((a, b) => a.sort_order - b.sort_order);
+          const forcePageBreak = sortedParts.length >= 18;
+          return (
+            <View minPresenceAhead={80} break={forcePageBreak}>
+              <View style={styles.table}>
+                <View wrap={false} minPresenceAhead={60}>
+                  <Text style={styles.sectionTitle}>Сервизни активности</Text>
+                  <View style={styles.tableHeader}>
+                    <View style={styles.colSvc1}>
+                      <Text style={[styles.colTextCenter, { color: "#fff" }]}>№</Text>
+                    </View>
+                    <View style={styles.colSvc2}>
+                      <Text style={[styles.colTextLeft, { color: "#fff" }]}>Сервизна дейност</Text>
+                    </View>
+                    <View style={styles.colSvc3}>
+                      <Text style={[styles.colTextCenter, { color: "#fff" }]}>Време за ремонт</Text>
+                    </View>
+                    <View style={styles.colSvc4}>
+                      <Text style={[styles.colTextCenter, { color: "#fff" }]}>Цена на час</Text>
+                    </View>
+                    <View style={styles.colSvc5}>
+                      <Text style={[styles.colTextCenter, { color: "#fff" }]}>Обща цена (с ДДС)</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-              {offer.service_actions
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map((action, index) => {
-                  const hourlyRateGross = action.price_per_hour_eur_net;
-                  const totalGross = action.total_eur_net;
-                  return (
-                    <View key={action.id} wrap={false} style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}>
-                      <View style={styles.colSvc1}>
-                        <Text style={styles.colTextCenter}>{index + 1}</Text>
-                      </View>
-                      <View style={styles.colSvc2}>
-                        <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>
-                      </View>
-                      <View style={styles.colSvc3}>
-                        <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price ? "-" : formatTimeDisplay(action.time_required_text)}
-                        </Text>
-                      </View>
-                      <View style={styles.colSvc4}>
-                        <Text style={styles.colTextCenter}>
-                          {action.is_fixed_price ? "-" : formatEur(hourlyRateGross)}
-                        </Text>
-                      </View>
-                      <View style={styles.colSvc5}>
-                        <Text style={styles.colTextCenter}>{formatEur(totalGross)}</Text>
-                      </View>
+                {sortedActions.map((action, index) => (
+                  <View key={action.id} wrap={false} style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}>
+                    <View style={styles.colSvc1}>
+                      <Text style={styles.colTextCenter}>{index + 1}</Text>
                     </View>
-                  );
-                })}
+                    <View style={styles.colSvc2}>
+                      <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>
+                    </View>
+                    <View style={styles.colSvc3}>
+                      <Text style={styles.colTextCenter}>
+                        {action.is_fixed_price ? "-" : formatTimeDisplay(action.time_required_text)}
+                      </Text>
+                    </View>
+                    <View style={styles.colSvc4}>
+                      <Text style={styles.colTextCenter}>
+                        {action.is_fixed_price ? "-" : formatEur(action.price_per_hour_eur_net)}
+                      </Text>
+                    </View>
+                    <View style={styles.colSvc5}>
+                      <Text style={styles.colTextCenter}>{formatEur(action.total_eur_net)}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          );
+        })()}
 
         {/* Summary */}
         <View style={styles.summarySection} wrap={false}>
