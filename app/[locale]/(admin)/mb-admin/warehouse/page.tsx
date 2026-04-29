@@ -74,7 +74,7 @@ export default function WarehousePage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "inStock" | "limited" | "outOfStock">("all");
   const [page, setPageState] = useState(1);
-  const [sortBy, setSortBy] = useState<WarehouseSortColumn>("created_at");
+  const [sortBy, setSortBy] = useState<WarehouseSortColumn>("updated_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Restore from sessionStorage on mount
@@ -568,9 +568,9 @@ export default function WarehousePage() {
                     </button>
                   </th>
                   <th className="text-center py-3 px-3 font-medium align-middle">
-                    <button onClick={() => handleSort("created_at")} className="flex items-center justify-center gap-1 mx-auto hover:text-mb-blue transition-colors uppercase tracking-wider">
+                    <button onClick={() => handleSort("updated_at")} className="flex items-center justify-center gap-1 mx-auto hover:text-mb-blue transition-colors uppercase tracking-wider">
                       {t("columns.date")}
-                      <SortIconWh col="created_at" sortBy={sortBy} sortDir={sortDir} />
+                      <SortIconWh col="updated_at" sortBy={sortBy} sortDir={sortDir} />
                     </button>
                   </th>
                   <th className="text-right py-3 px-3 font-medium align-middle">

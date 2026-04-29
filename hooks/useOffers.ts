@@ -320,11 +320,15 @@ export function useUpdateOffer() {
       id: string;
       offer: UpdateOffer;
       items?: Omit<InsertOfferItem, "offer_id">[];
+      skipLastEdited?: boolean;
     }) => {
       // Update offer
+      const payload = data.skipLastEdited
+        ? { ...data.offer }
+        : { ...data.offer, last_edited_at: new Date().toISOString() };
       const offerRes = await supabase
         .from("offers")
-        .update({ ...data.offer, last_edited_at: new Date().toISOString() } as never)
+        .update(payload as never)
         .eq("id", data.id)
         .select()
         .single();

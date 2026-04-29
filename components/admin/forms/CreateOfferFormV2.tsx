@@ -587,9 +587,18 @@ export function CreateOfferFormV2({
           prepaymentsRef.current.length > 0 ? prepaymentsRef.current : null,
       };
 
+      const NOTES_ONLY_FIELDS = new Set(["notes", "notesInternal", "notesService"]);
+      const onlyNotesDirty =
+        Object.keys(dirtyFieldsSnapshot).length > 0 &&
+        Object.keys(dirtyFieldsSnapshot).every((f) => NOTES_ONLY_FIELDS.has(f));
+
       const { error: offerErr } = await supabase
         .from("offers")
-        .update({ ...updateData, last_edited_at: new Date().toISOString() } as never)
+        .update(
+          onlyNotesDirty
+            ? (updateData as never)
+            : ({ ...updateData, last_edited_at: new Date().toISOString() } as never),
+        )
         .eq("id", offerId);
       if (offerErr) throw new Error(offerErr.message);
 
@@ -2061,6 +2070,7 @@ export function CreateOfferFormV2({
                       offer: {
                         notes: notesFromServiceInput.trim() || null,
                       } as any,
+                      skipLastEdited: true,
                     });
                     queryClient.invalidateQueries({
                       queryKey: ["offer", savedOffer.id],

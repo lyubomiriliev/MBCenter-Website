@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
 import type { WarehousePart, WarehousePartInsert, WarehousePartUpdate } from "@/types/database";
-export type WarehouseSortColumn = "created_at" | "quantity" | "sale_price";
+export type WarehouseSortColumn = "updated_at" | "created_at" | "quantity" | "sale_price";
 
 interface WarehouseFilters {
   search?: string;
@@ -14,7 +14,7 @@ interface WarehouseFilters {
 }
 
 export function useWarehouseParts(filters: WarehouseFilters = {}) {
-  const { search = "", page = 1, pageSize = 50, sortBy = "created_at", sortDir = "desc" } = filters;
+  const { search = "", page = 1, pageSize = 50, sortBy = "updated_at", sortDir = "desc" } = filters;
 
   return useQuery({
     queryKey: ["warehouse_parts", { search, page, pageSize, sortBy, sortDir }],
@@ -81,18 +81,8 @@ export function useUpdateWarehousePart() {
       if (error) throw error;
       return result as WarehousePart;
     },
-    onSuccess: (updated) => {
-      // Patch the part in-place in every cached page so the list order stays stable.
-      queryClient.setQueriesData<{ parts: WarehousePart[]; totalCount: number; totalPages: number }>(
-        { queryKey: ["warehouse_parts"] },
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            parts: old.parts.map((p) => (p.id === updated.id ? updated : p)),
-          };
-        },
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["warehouse_parts"] });
     },
   });
 }
