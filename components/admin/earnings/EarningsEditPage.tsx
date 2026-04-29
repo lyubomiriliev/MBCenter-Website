@@ -365,7 +365,7 @@ export function EarningsEditPage({
   };
 
   return (
-    <div className="space-y-6 p-10 max-w-5xl">
+    <div className="space-y-6 p-10 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -433,7 +433,7 @@ export function EarningsEditPage({
                     <col style={{ width: "75px" }} />
                     <col style={{ width: "90px" }} />
                     <col style={{ width: "100px" }} />
-                    <col style={{ width: "32px" }} />
+                    <col style={{ width: "56px" }} />
                   </colgroup>
                   <thead>
                     <tr className="border-b border-mb-border text-mb-silver text-xs uppercase">
@@ -687,7 +687,7 @@ export function EarningsEditPage({
                             {formatDate(e.entry_date)}
                           </td>
                           <td className="py-1.5">
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <div className="flex gap-1">
                               <button
                                 onClick={() => startEdit(e)}
                                 className="text-mb-blue hover:text-blue-300 p-0.5"
@@ -744,7 +744,7 @@ export function EarningsEditPage({
                         <span className="text-mb-silver text-xs uppercase tracking-wide">
                           {isBg ? "Общо часове" : "Total Hours"}
                         </span>
-                        <span className="text-mb-blue text-lg font-bold">
+                        <span className="text-mb-blue text-lg font-bold whitespace-nowrap">
                           {formatHours(mechanicTotalHours)}
                         </span>
                       </div>

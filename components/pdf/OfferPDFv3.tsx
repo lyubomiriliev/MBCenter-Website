@@ -587,7 +587,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
         {/* Service Actions Table */}
         {offer.service_actions && offer.service_actions.length > 0 && (() => {
           const sortedActions = [...offer.service_actions].sort((a, b) => a.sort_order - b.sort_order);
-          const forcePageBreak = sortedParts.length >= 18;
+          const forcePageBreak = sortedParts.length >= 18 && sortedParts.length <= 22;
           return (
             <View minPresenceAhead={80} break={forcePageBreak}>
               <View style={styles.table}>

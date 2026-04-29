@@ -623,7 +623,7 @@ export function EarningsPage() {
       {earningsLog.length > 0 && (
         <Card className="bg-gradient-to-r from-mb-anthracite to-mb-black border-mb-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
               <svg
                 className="w-4 h-4 text-mb-blue"
                 fill="none"
@@ -638,13 +638,13 @@ export function EarningsPage() {
                 />
               </svg>
               {isBg ? "Обобщение на заработките" : "Earnings Summary"}
-              <span className="text-mb-silver font-normal text-xs">
+              <span className="text-mb-silver font-normal text-sm">
                 - {monthLabel} {selectedYear}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-hidden">
-            <div className="flex flex-row gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+            <div className="flex flex-row gap-4 overflow-x-auto pb-1 -mx-1 px-1">
               {earningsLog.map((w, i) => (
                 <button
                   key={i}
@@ -653,35 +653,28 @@ export function EarningsPage() {
                       `/${locale}/mb-admin/earnings/edit?id=${w.id}&type=${w.type}&month=${selectedMonth}&year=${selectedYear}`,
                     )
                   }
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-mb-black/60 border border-mb-border/50 hover:bg-mb-blue/10 hover:border-mb-blue/40 transition-all group gap-8 whitespace-nowrap shrink-0"
+                  className="flex flex-col rounded-xl bg-mb-black/60 border border-mb-border/50 hover:bg-mb-blue/10 hover:border-mb-blue/40 transition-all group shrink-0 overflow-hidden min-w-[300px]"
                 >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 ${w.type === "mechanic" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400"}`}
-                    >
-                      {w.type === "mechanic"
-                        ? isBg
-                          ? "МЕХАНИК"
-                          : "MECHANIC"
-                        : isBg
-                          ? "ПРИЕМЧИК"
-                          : "RECEPTIONIST"}
-                    </span>
-                    <span className="text-sm text-white group-hover:text-mb-blue transition-colors">
-                      {w.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {w.type === "mechanic" && w.totalHours > 0 && (
-                      <span className="text-xs text-mb-silver/70">
-                        {formatHours(w.totalHours)}
+                  {/* Worker name header */}
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-mb-border/40">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase shrink-0 ${w.type === "mechanic" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400"}`}
+                      >
+                        {w.type === "mechanic"
+                          ? isBg
+                            ? "МЕХАНИК"
+                            : "MECHANIC"
+                          : isBg
+                            ? "ПРИЕМЧИК"
+                            : "RECEPTIONIST"}
                       </span>
-                    )}
-                    <span className="text-sm font-semibold text-green-400">
-                      {w.totalEarned.toFixed(2)} €
-                    </span>
+                      <span className="text-base font-semibold text-white group-hover:text-mb-blue transition-colors">
+                        {w.name}
+                      </span>
+                    </div>
                     <svg
-                      className="w-4 h-4 text-mb-silver/40 group-hover:text-mb-blue transition-colors"
+                      className="w-4 h-4 text-mb-silver/40 group-hover:text-mb-blue transition-colors ml-2"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -693,6 +686,37 @@ export function EarningsPage() {
                         d="M9 5l7 7-7 7"
                       />
                     </svg>
+                  </div>
+                  {/* Stats boxes */}
+                  <div className="flex divide-x divide-mb-border/40">
+                    {w.type === "mechanic" && (
+                      <div className="flex flex-col items-center px-6 py-3 gap-1 flex-1">
+                        <span className="text-mb-silver text-[11px] uppercase tracking-wide">
+                          {isBg ? "Часове" : "Hours"}
+                        </span>
+                        <span className="text-mb-blue whitespace-nowrap text-base font-bold">
+                          {formatHours(w.totalHours)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1">
+                      <span className="text-mb-silver text-[11px] uppercase tracking-wide">
+                        {isBg ? "Заработено" : "Earned"}
+                      </span>
+                      <span className="text-white text-base whitespace-nowrap font-bold">
+                        {w.totalEarned.toFixed(2)} €
+                      </span>
+                    </div>
+                    {w.type === "mechanic" && (
+                      <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1 bg-green-500/5">
+                        <span className="text-mb-silver text-[11px] uppercase tracking-wide whitespace-nowrap">
+                          {isBg ? "Нето 50%" : "Net 50%"}
+                        </span>
+                        <span className="text-green-400 text-base font-bold whitespace-nowrap">
+                          {(w.totalEarned * 0.5).toFixed(2)} €
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </button>
               ))}
