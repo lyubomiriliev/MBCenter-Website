@@ -588,7 +588,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
         {offer.service_actions && offer.service_actions.length > 0 && (
           <View>
             <View style={styles.table}>
-              <View wrap={false}>
+              <View wrap={false} minPresenceAhead={60}>
                 <Text style={styles.sectionTitle}>Сервизни активности</Text>
                 <View style={styles.tableHeader}>
                   <View style={styles.colSvc1}>
@@ -607,47 +607,16 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                     <Text style={[styles.colTextCenter, { color: "#fff" }]}>Обща цена (с ДДС)</Text>
                   </View>
                 </View>
-                {offer.service_actions
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .slice(0, 1)
-                  .map((action) => {
-                    const hourlyRateGross = action.price_per_hour_eur_net;
-                    const totalGross = action.total_eur_net;
-                    return (
-                      <View key={action.id} style={styles.tableRow}>
-                        <View style={styles.colSvc1}>
-                          <Text style={styles.colTextCenter}>1</Text>
-                        </View>
-                        <View style={styles.colSvc2}>
-                          <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>
-                        </View>
-                        <View style={styles.colSvc3}>
-                          <Text style={styles.colTextCenter}>
-                            {action.is_fixed_price ? "-" : formatTimeDisplay(action.time_required_text)}
-                          </Text>
-                        </View>
-                        <View style={styles.colSvc4}>
-                          <Text style={styles.colTextCenter}>
-                            {action.is_fixed_price ? "-" : formatEur(hourlyRateGross)}
-                          </Text>
-                        </View>
-                        <View style={styles.colSvc5}>
-                          <Text style={styles.colTextCenter}>{formatEur(totalGross)}</Text>
-                        </View>
-                      </View>
-                    );
-                  })}
               </View>
               {offer.service_actions
                 .sort((a, b) => a.sort_order - b.sort_order)
-                .slice(1)
                 .map((action, index) => {
                   const hourlyRateGross = action.price_per_hour_eur_net;
                   const totalGross = action.total_eur_net;
                   return (
-                    <View key={action.id} wrap={false} style={[styles.tableRow, (index + 1) % 2 === 1 ? styles.tableRowAlt : {}]}>
+                    <View key={action.id} wrap={false} style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}>
                       <View style={styles.colSvc1}>
-                        <Text style={styles.colTextCenter}>{index + 2}</Text>
+                        <Text style={styles.colTextCenter}>{index + 1}</Text>
                       </View>
                       <View style={styles.colSvc2}>
                         <Text style={styles.colTextLeft}>{action.action_name || "-"}</Text>

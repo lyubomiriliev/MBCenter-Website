@@ -1024,6 +1024,8 @@ export function CreateOfferFormV2({
         .from("offers")
         .insert({
           offer_number: newOfferNumber,
+          client_id: savedOffer.client_id,
+          car_id: savedOffer.car_id,
           customer_name: savedOffer.customer_name,
           customer_phone: savedOffer.customer_phone,
           customer_email: savedOffer.customer_email,
@@ -1049,6 +1051,7 @@ export function CreateOfferFormV2({
           notes_internal: savedOffer.notes_internal,
           notes_service: savedOffer.notes_service,
           prepayments_eur: savedOffer.prepayments_eur,
+          last_edited_at: new Date().toISOString(),
         } as never)
         .select()
         .single();

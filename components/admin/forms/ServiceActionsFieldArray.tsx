@@ -280,7 +280,7 @@ function AddEditServiceActionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md px-6">
+      <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-md flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-white">
             {editIndex !== null
@@ -288,7 +288,7 @@ function AddEditServiceActionModal({
               : t("addServiceAction")}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-2">
+        <div className="flex flex-col gap-4 py-2 overflow-y-auto min-h-0 flex-1">
           {/* Rate Type Toggle */}
           <div className="space-y-2">
             <Label className="text-gray-200">{t("rateType")}</Label>
@@ -331,9 +331,9 @@ function AddEditServiceActionModal({
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-between bg-gray-100 text-gray-900 border-mb-border h-10 font-normal"
+                          className="w-full min-w-0 justify-between bg-gray-100 text-gray-900 border-mb-border h-10 font-normal overflow-hidden"
                         >
-                          <span className="truncate">
+                          <span className="truncate min-w-0 block">
                             {selectedActivityId
                               ? (() => {
                                   const act = fixedActivities.find(
@@ -365,9 +365,11 @@ function AddEditServiceActionModal({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
+                        className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
                         align="start"
+                        collisionPadding={16}
                         style={{ zIndex: 9999 }}
+                        onWheel={(e) => e.stopPropagation()}
                       >
                         {fixedActivities.map((act) => (
                           <div
@@ -528,6 +530,22 @@ function AddEditServiceActionModal({
                 </DialogContent>
               </Dialog>
 
+              {/* Free-text name input for fixed price (like hourly mode) */}
+              <div className="space-y-2">
+                <Label className="text-gray-200">
+                  {t("serviceActionName")} (свободен текст)
+                </Label>
+                <Input
+                  value={actionName}
+                  onChange={(e) => {
+                    setActionName(e.target.value);
+                    setSelectedActivityId("");
+                  }}
+                  placeholder={t("serviceActionName")}
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                />
+              </div>
+
               {/* Fixed Price Amount - editable when activity selected */}
               <div className="space-y-2">
                 <Label className="text-gray-200">
@@ -565,9 +583,9 @@ function AddEditServiceActionModal({
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-between bg-gray-100 text-gray-900 border-mb-border h-10 font-normal"
+                          className="w-full min-w-0 justify-between bg-gray-100 text-gray-900 border-mb-border h-10 font-normal overflow-hidden"
                         >
-                          <span className="truncate text-gray-500 text-sm">
+                          <span className="truncate min-w-0 block text-gray-500 text-sm">
                             {selectedHourlyId
                               ? hourlyActivities.find((a) => a.id === selectedHourlyId)?.name ?? "Избери предефинирана дейност..."
                               : "Избери предефинирана дейност..."}
@@ -578,9 +596,11 @@ function AddEditServiceActionModal({
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-[var(--radix-popover-trigger-width)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
+                        className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] max-h-60 overflow-y-auto p-1 bg-white border-gray-200 text-gray-900"
                         align="start"
+                        collisionPadding={16}
                         style={{ zIndex: 9999 }}
+                        onWheel={(e) => e.stopPropagation()}
                       >
                         {hourlyActivities.map((act) => (
                           <div

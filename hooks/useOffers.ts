@@ -447,6 +447,7 @@ export function useCloneOffer() {
           ...sourceObj,
           offer_number: offerNumber,
           status: "draft",
+          last_edited_at: new Date().toISOString(),
         } as never)
         .select()
         .single();
