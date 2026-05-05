@@ -73,7 +73,7 @@ export function useUpdateWarehousePart() {
     mutationFn: async ({ id, ...data }: { id: string } & WarehousePartUpdate) => {
       const { data: result, error } = await supabase
         .from("warehouse_parts")
-        .update(data as never)
+        .update({ ...data, updated_at: new Date().toISOString() } as never)
         .eq("id", id)
         .select()
         .single();
@@ -110,9 +110,10 @@ export function useUpsertWarehouseParts() {
 
   return useMutation({
     mutationFn: async (rows: WarehousePartInsert[]) => {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("warehouse_parts")
-        .upsert(rows as never, { onConflict: "part_number" })
+        .upsert(rows.map((r) => ({ ...r, updated_at: now })) as never, { onConflict: "part_number" })
         .select();
 
       if (error) throw error;

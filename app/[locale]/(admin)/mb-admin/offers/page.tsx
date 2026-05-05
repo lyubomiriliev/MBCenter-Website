@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { AdminHeader } from "@/components/admin/AdminHeader";
@@ -241,7 +241,9 @@ export default function OffersPage() {
       />
       <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         <OfferFilters onFiltersChange={setFilters} />
-        <OffersTable filters={filters} />
+        <Suspense>
+          <OffersTable filters={filters} />
+        </Suspense>
       </div>
     </div>
   );

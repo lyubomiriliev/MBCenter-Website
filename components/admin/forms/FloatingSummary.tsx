@@ -27,11 +27,24 @@ export function FloatingSummary({
   const { control } = useFormContext<OfferFormData>();
   const rawParts = useWatch({ control, name: "parts" });
   const rawServiceActions = useWatch({ control, name: "serviceActions" });
-  const discountPartsPercent = useWatch({ control, name: "discountPartsPercent" }) || 0;
-  const discountServicesPercent = useWatch({ control, name: "discountServicesPercent" }) || 0;
+  const discountPartsPercent =
+    useWatch({ control, name: "discountPartsPercent" }) || 0;
+  const discountServicesPercent =
+    useWatch({ control, name: "discountServicesPercent" }) || 0;
   const calculations = useMemo(
-    () => calculateOffer(rawParts || [], rawServiceActions || [], discountPartsPercent, discountServicesPercent),
-    [rawParts, rawServiceActions, discountPartsPercent, discountServicesPercent]
+    () =>
+      calculateOffer(
+        rawParts || [],
+        rawServiceActions || [],
+        discountPartsPercent,
+        discountServicesPercent,
+      ),
+    [
+      rawParts,
+      rawServiceActions,
+      discountPartsPercent,
+      discountServicesPercent,
+    ],
   );
   const prepaymentsTotal = prepayments.reduce((a, b) => a + b, 0);
   const amountDueEur = Math.max(0, calculations.grossTotal - prepaymentsTotal);
@@ -162,8 +175,12 @@ export function FloatingSummary({
               <div className="flex justify-between items-center text-sm pt-1 border-t border-mb-border/40">
                 <span className="text-mb-silver">Доставна цена на части</span>
                 <div className="text-right">
-                  <div className="text-white">{calculations.totalCost.toFixed(2)} €</div>
-                  <div className="text-xs text-mb-silver">{(calculations.totalCost * EUR_TO_BGN).toFixed(2)} лв.</div>
+                  <div className="text-white">
+                    {calculations.totalCost.toFixed(2)} €
+                  </div>
+                  <div className="text-xs text-mb-silver">
+                    {(calculations.totalCost * EUR_TO_BGN).toFixed(2)} лв.
+                  </div>
                 </div>
               </div>
               <div className="flex justify-between items-center text-sm">
@@ -176,8 +193,15 @@ export function FloatingSummary({
                   )}
                 </span>
                 <div className="text-right">
-                  <div className={calculations.totalProfit >= 0 ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
-                    {calculations.totalProfit >= 0 ? "+" : ""}{calculations.totalProfit.toFixed(2)} €
+                  <div
+                    className={
+                      calculations.totalProfit >= 0
+                        ? "text-green-400 font-medium"
+                        : "text-red-400 font-medium"
+                    }
+                  >
+                    {calculations.totalProfit >= 0 ? "+" : ""}
+                    {calculations.totalProfit.toFixed(2)} €
                   </div>
                   <div className="text-xs text-mb-silver">
                     {(calculations.totalProfit * EUR_TO_BGN).toFixed(2)} лв.

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -31,7 +31,9 @@ export default function MechanicsOffersPage() {
       />
       <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         <OfferFilters onFiltersChange={setFilters} />
-        <OffersTable isMechanicView filters={filters} />
+        <Suspense>
+          <OffersTable isMechanicView filters={filters} />
+        </Suspense>
       </div>
     </div>
   );

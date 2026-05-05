@@ -67,18 +67,28 @@ function EditOfferContent() {
               {offerNumber && (
                 <span className="text-mb-blue">
                   <span className="text-mb-silver text-sm font-normal">Оферта</span>{" "}
-                  <span className="font-semibold">№{offerNumber}</span>
+                  <span className="font-semibold">№<button
+                    type="button"
+                    title="Копирай номера"
+                    onClick={() => navigator.clipboard.writeText(offerNumber)}
+                    className="hover:opacity-70 transition-opacity cursor-copy"
+                  >{offerNumber}</button></span>
                 </span>
               )}
               {serviceCardNumber && (
                 <span className="text-green-400">
                   <span className="text-mb-silver text-sm font-normal">Сервизна карта</span>{" "}
-                  <span className="font-semibold">№{serviceCardNumber}</span>
+                  <span className="font-semibold">№<button
+                    type="button"
+                    title="Копирай номера"
+                    onClick={() => navigator.clipboard.writeText(serviceCardNumber)}
+                    className="hover:opacity-70 transition-opacity cursor-copy"
+                  >{serviceCardNumber}</button></span>
                 </span>
               )}
             </span>
           }
-          subtitle={`ID: ${offerId}`}
+          subtitle=""
         />
         <div className="flex max-w-[2560px] min-[3000px]:mx-auto flex-1 min-w-0 min-h-0 overflow-hidden">
           <CreateOfferFormV2 offerId={offerId} />

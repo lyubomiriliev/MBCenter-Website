@@ -204,6 +204,7 @@ export function useOffer(id: string | undefined) {
           total_gross,
           created_at,
           updated_at,
+          last_edited_at,
           service_card_number,
           service_card_generated_at,
           assyst_remaining_time,
@@ -269,9 +270,10 @@ export function useCreateOffer() {
       const offerNumber = await generateOfferNumber();
 
       // Insert offer
-      const offerPayload: InsertOffer = {
+      const offerPayload = {
         ...data.offer,
         offer_number: offerNumber,
+        last_edited_at: new Date().toISOString(),
       };
 
       const offerRes = await supabase

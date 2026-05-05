@@ -71,9 +71,9 @@ function AddEditServiceActionModal({
   const [actionName, setActionName] = useState("");
   const [timeInput, setTimeInput] = useState("1");
   const [pricePerHour, setPricePerHour] = useState(65);
-  const [priceInput, setPriceInput] = useState("65");
+  const [priceInput, setPriceInput] = useState("");
   const [fixedPriceAmount, setFixedPriceAmount] = useState(0);
-  const [fixedPriceInput, setFixedPriceInput] = useState("0");
+  const [fixedPriceInput, setFixedPriceInput] = useState("");
   const [error, setError] = useState("");
   const { data: fixedActivities = [] } = useFixedActivities();
   const addActivityMut = useAddFixedActivity();
@@ -88,7 +88,7 @@ function AddEditServiceActionModal({
   const [addNewModalOpen, setAddNewModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<FixedActivityItem | null>(null);
   const [newActivityName, setNewActivityName] = useState("");
-  const [newActivityPrice, setNewActivityPrice] = useState("0");
+  const [newActivityPrice, setNewActivityPrice] = useState("");
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [activityPopoverOpen, setActivityPopoverOpen] = useState(false);
 
@@ -109,7 +109,7 @@ function AddEditServiceActionModal({
       setPriceInput(price.toString());
       setIsFixedPrice(vals.isFixedPrice ?? false);
       setFixedPriceAmount(vals.fixedPriceAmount ?? 0);
-      setFixedPriceInput((vals.fixedPriceAmount ?? 0).toString());
+      setFixedPriceInput(vals.fixedPriceAmount != null && vals.fixedPriceAmount !== 0 ? vals.fixedPriceAmount.toString() : "");
       const match = activities.find(
         (a) =>
           a.name === vals.actionName &&
@@ -121,16 +121,16 @@ function AddEditServiceActionModal({
       setActionName("");
       setTimeInput("1");
       setPricePerHour(65);
-      setPriceInput("65");
+      setPriceInput("");
       setIsFixedPrice(false);
       setFixedPriceAmount(0);
-      setFixedPriceInput("0");
+      setFixedPriceInput("");
       setSelectedActivityId("");
     }
     setError("");
     setAddNewModalOpen(false);
     setNewActivityName("");
-    setNewActivityPrice("0");
+    setNewActivityPrice("");
     setSelectedHourlyId("");
     setAddHourlyModalOpen(false);
     setEditingHourly(null);
@@ -209,7 +209,7 @@ function AddEditServiceActionModal({
         setSelectedActivityId(item.id);
       }
       setNewActivityName("");
-      setNewActivityPrice("0");
+      setNewActivityPrice("");
       setAddNewModalOpen(false);
     }
   };
@@ -231,7 +231,7 @@ function AddEditServiceActionModal({
       setSelectedActivityId("");
       setActionName("");
       setFixedPriceAmount(0);
-      setFixedPriceInput("0");
+      setFixedPriceInput("");
     }
   };
 
@@ -449,7 +449,7 @@ function AddEditServiceActionModal({
                       const lastPrice = fixedActivities.length > 0
                         ? fixedActivities[fixedActivities.length - 1].price_eur
                         : 0;
-                      setNewActivityPrice(lastPrice > 0 ? lastPrice.toString() : "0");
+                      setNewActivityPrice(lastPrice > 0 ? lastPrice.toString() : "");
                       setAddNewModalOpen(true);
                     }}
                     className="border-mb-border text-sm"
@@ -466,7 +466,7 @@ function AddEditServiceActionModal({
                   if (!v) {
                     setEditingActivity(null);
                     setNewActivityName("");
-                    setNewActivityPrice("0");
+                    setNewActivityPrice("");
                   }
                   setAddNewModalOpen(v);
                 }}

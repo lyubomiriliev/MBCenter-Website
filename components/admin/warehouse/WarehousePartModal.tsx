@@ -35,9 +35,9 @@ export function WarehousePartModal({
   const [manufacturer, setManufacturer] = useState("MERCEDES");
   const [quantity, setQuantity] = useState(0);
   const [costPrice, setCostPrice] = useState(0);
-  const [costPriceInput, setCostPriceInput] = useState("0");
+  const [costPriceInput, setCostPriceInput] = useState("");
   const [salePrice, setSalePrice] = useState(0);
-  const [salePriceInput, setSalePriceInput] = useState("0");
+  const [salePriceInput, setSalePriceInput] = useState("");
   const [replacedBy, setReplacedBy] = useState("");
   const [error, setError] = useState("");
 
@@ -48,9 +48,9 @@ export function WarehousePartModal({
       setManufacturer(vals.manufacturer);
       setQuantity(vals.quantity);
       setCostPrice(vals.cost_price);
-      setCostPriceInput(vals.cost_price.toString());
+      setCostPriceInput(vals.cost_price !== 0 ? vals.cost_price.toString() : "");
       setSalePrice(vals.sale_price);
-      setSalePriceInput(vals.sale_price.toString());
+      setSalePriceInput(vals.sale_price !== 0 ? vals.sale_price.toString() : "");
       setReplacedBy(vals.replaced_by ?? "");
     } else {
       setName("");
@@ -58,9 +58,9 @@ export function WarehousePartModal({
       setManufacturer("MERCEDES");
       setQuantity(0);
       setCostPrice(0);
-      setCostPriceInput("0");
+      setCostPriceInput("");
       setSalePrice(0);
-      setSalePriceInput("0");
+      setSalePriceInput("");
       setReplacedBy("");
     }
     setError("");
@@ -228,7 +228,7 @@ export function WarehousePartModal({
                 onChange={(e) =>
                   handlePriceChange(e.target.value, setCostPriceInput, setCostPrice)
                 }
-                onBlur={() => setCostPriceInput(costPrice.toString())}
+                onBlur={() => { if (costPriceInput !== "" && costPrice !== 0) setCostPriceInput(costPrice.toString()); }}
                 placeholder="0.00"
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
@@ -245,7 +245,7 @@ export function WarehousePartModal({
                 onChange={(e) =>
                   handlePriceChange(e.target.value, setSalePriceInput, setSalePrice)
                 }
-                onBlur={() => setSalePriceInput(salePrice.toString())}
+                onBlur={() => { if (salePriceInput !== "" && salePrice !== 0) setSalePriceInput(salePrice.toString()); }}
                 placeholder="0.00"
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />

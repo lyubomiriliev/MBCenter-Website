@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -135,13 +135,31 @@ export function OffersTable({
     return { sortBy: "last_edited_at", sortDir: "desc" };
   }
 
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const [sortBy, setSortBy] = useState<OfferSortColumn>(
     () => loadSort().sortBy,
   );
   const [sortDir, setSortDir] = useState<"asc" | "desc">(
     () => loadSort().sortDir,
   );
-  const [page, setPage] = useState(1);
+
+  const page = Math.max(1, Number(searchParams.get("page") || 1));
+
+  const setPage = useCallback(
+    (value: number | ((prev: number) => number)) => {
+      const nextPage = typeof value === "function" ? value(page) : value;
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextPage <= 1) {
+        params.delete("page");
+      } else {
+        params.set("page", String(nextPage));
+      }
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [page, pathname, router, searchParams],
+  );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   useEffect(() => {
@@ -153,6 +171,44 @@ export function OffersTable({
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, [columnsKey]);
+
+  const LAST_VIEWED_KEY = isMechanicView
+    ? "mb_last_viewed_offer_mechanic"
+    : "mb_last_viewed_offer_admin";
+
+  const [lastViewedOfferId, setLastViewedOfferId] = useState<string | null>(
+    () => {
+      try {
+        return sessionStorage.getItem(LAST_VIEWED_KEY);
+      } catch {
+        return null;
+      }
+    },
+  );
+
+  const handleOfferClick = useCallback(
+    (offerId: string) => {
+      try {
+        sessionStorage.setItem(LAST_VIEWED_KEY, offerId);
+      } catch {}
+      setLastViewedOfferId(offerId);
+    },
+    [LAST_VIEWED_KEY],
+  );
+
+  const prevFiltersRef = useRef(filters);
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (
+      prev?.status !== filters?.status ||
+      prev?.search !== filters?.search ||
+      prev?.dateFrom !== filters?.dateFrom ||
+      prev?.dateTo !== filters?.dateTo
+    ) {
+      prevFiltersRef.current = filters;
+      setPage(1);
+    }
+  }, [filters, setPage]);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<OfferWithRelations | null>(
     null,
@@ -165,7 +221,10 @@ export function OffersTable({
   const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
-  const [transferSourceOffer, setTransferSourceOffer] = useState<{ id: string; offer_number: string } | null>(null);
+  const [transferSourceOffer, setTransferSourceOffer] = useState<{
+    id: string;
+    offer_number: string;
+  } | null>(null);
   const [pageSize, setPageSize] = useState(17);
 
   useEffect(() => {
@@ -196,52 +255,89 @@ export function OffersTable({
   const deleteOffer = useDeleteOffer();
   const cloneOffer = useCloneOffer();
 
-  const handleSort = useCallback((col: OfferSortColumn) => {
-    const newDir =
-      sortBy === col ? (sortDir === "desc" ? "asc" : "desc") : "desc";
-    const newCol = col;
-    setSortBy(newCol);
-    setSortDir(newDir);
-    setPage(1);
-    try {
-      localStorage.setItem(
-        SORT_STORAGE_KEY,
-        JSON.stringify({ sortBy: newCol, sortDir: newDir }),
-      );
-    } catch {}
-  }, [sortBy, sortDir, SORT_STORAGE_KEY]);
+  const handleSort = useCallback(
+    (col: OfferSortColumn) => {
+      const newDir =
+        sortBy === col ? (sortDir === "desc" ? "asc" : "desc") : "desc";
+      const newCol = col;
+      setSortBy(newCol);
+      setSortDir(newDir);
+      setPage(1);
+      try {
+        localStorage.setItem(
+          SORT_STORAGE_KEY,
+          JSON.stringify({ sortBy: newCol, sortDir: newDir }),
+        );
+      } catch {}
+    },
+    [sortBy, sortDir, SORT_STORAGE_KEY],
+  );
 
-  const SortIcon = useCallback(({ col }: { col: OfferSortColumn }) => {
-    if (sortBy !== col) {
-      return (
-        <svg className="w-4 h-4 ml-1.5 opacity-30 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+  const SortIcon = useCallback(
+    ({ col }: { col: OfferSortColumn }) => {
+      if (sortBy !== col) {
+        return (
+          <svg
+            className="w-4 h-4 ml-1.5 opacity-30 inline-block"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"
+            />
+          </svg>
+        );
+      }
+      return sortDir === "desc" ? (
+        <svg
+          className="w-4 h-4 ml-1.5 inline-block"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      ) : (
+        <svg
+          className="w-4 h-4 ml-1.5 inline-block"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 15l7-7 7 7"
+          />
         </svg>
       );
-    }
-    return sortDir === "desc" ? (
-      <svg className="w-4 h-4 ml-1.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    ) : (
-      <svg className="w-4 h-4 ml-1.5 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    );
-  }, [sortBy, sortDir]);
+    },
+    [sortBy, sortDir],
+  );
 
   const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const prefetchOffer = useCallback((offerId: string) => {
-    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
-    prefetchTimerRef.current = setTimeout(async () => {
-      await queryClient.prefetchQuery({
-        queryKey: ["offer", offerId],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from("offers")
-            .select(
-              `
+  const prefetchOffer = useCallback(
+    (offerId: string) => {
+      if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+      prefetchTimerRef.current = setTimeout(async () => {
+        await queryClient.prefetchQuery({
+          queryKey: ["offer", offerId],
+          queryFn: async () => {
+            const { data, error } = await supabase
+              .from("offers")
+              .select(
+                `
               id, offer_number, customer_name, customer_phone, customer_email,
               client_id, car_model_text, car_model_detail, repair_name, car_year, vin_text,
               license_plate, mileage, mileage_unit, car_id, created_by_name, discount_percent,
@@ -257,29 +353,34 @@ export function OffersTable({
               items:offer_items(id, offer_id, type, description, brand, part_number, unit_price, quantity, total, sort_order),
               service_actions(id, offer_id, action_name, time_required_text, price_per_hour_eur_net, total_eur_net, is_fixed_price, fixed_price_amount, sort_order)
             `,
-            )
-            .eq("id", offerId)
-            .order("sort_order", {
-              referencedTable: "offer_items",
-              ascending: true,
-            })
-            .order("sort_order", {
-              referencedTable: "service_actions",
-              ascending: true,
-            })
-            .single();
+              )
+              .eq("id", offerId)
+              .order("sort_order", {
+                referencedTable: "offer_items",
+                ascending: true,
+              })
+              .order("sort_order", {
+                referencedTable: "service_actions",
+                ascending: true,
+              })
+              .single();
 
-          if (error) throw error;
-          return data as OfferWithRelations;
-        },
-        staleTime: 60 * 1000,
-      });
-    }, 150);
-  }, [queryClient]);
+            if (error) throw error;
+            return data as OfferWithRelations;
+          },
+          staleTime: 60 * 1000,
+        });
+      }, 150);
+    },
+    [queryClient],
+  );
 
-  const handleClone = useCallback((offer: OfferWithRelations) => {
-    cloneOffer.mutate(offer.id);
-  }, [cloneOffer]);
+  const handleClone = useCallback(
+    (offer: OfferWithRelations) => {
+      cloneOffer.mutate(offer.id);
+    },
+    [cloneOffer],
+  );
 
   const handleDelete = async (offerId: string) => {
     deleteOffer.mutate(offerId, {
@@ -334,14 +435,19 @@ export function OffersTable({
         {
           id: "offer_number",
           header: () => (
-            <button onClick={() => handleSort("offer_number")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
-              {t("offers.columns.offerNumber")}<SortIcon col="offer_number" />
+            <button
+              onClick={() => handleSort("offer_number")}
+              className="flex items-center hover:text-mb-blue hover:underline transition-colors"
+            >
+              {t("offers.columns.offerNumber")}
+              <SortIcon col="offer_number" />
             </button>
           ),
           cell: (info) => (
             <Link
               href={`${basePath}/offers/edit?id=${info.row.original.id}`}
               className="text-mb-blue hover:underline font-medium"
+              onClick={() => handleOfferClick(info.row.original.id)}
             >
               {info.getValue()}
             </Link>
@@ -351,8 +457,12 @@ export function OffersTable({
       columnHelper.accessor((row) => row.customer_name || row.client?.name, {
         id: "client",
         header: () => (
-          <button onClick={() => handleSort("customer_name")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
-            {t("offers.columns.client")}<SortIcon col="customer_name" />
+          <button
+            onClick={() => handleSort("customer_name")}
+            className="flex items-center hover:text-mb-blue hover:underline transition-colors"
+          >
+            {t("offers.columns.client")}
+            <SortIcon col="customer_name" />
           </button>
         ),
         cell: (info) => info.getValue() || "-",
@@ -412,8 +522,12 @@ export function OffersTable({
       ),
       columnHelper.accessor("status", {
         header: () => (
-          <button onClick={() => handleSort("status")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
-            {t("offers.columns.status")}<SortIcon col="status" />
+          <button
+            onClick={() => handleSort("status")}
+            className="flex items-center hover:text-mb-blue hover:underline transition-colors"
+          >
+            {t("offers.columns.status")}
+            <SortIcon col="status" />
           </button>
         ),
         cell: (info) =>
@@ -436,8 +550,12 @@ export function OffersTable({
         columnHelper.accessor("total_gross", {
           meta: { className: "hidden sm:table-cell" },
           header: () => (
-            <button onClick={() => handleSort("total_gross")} className="flex items-center w-full justify-center hover:text-white transition-colors">
-              {t("offers.columns.total")}<SortIcon col="total_gross" />
+            <button
+              onClick={() => handleSort("total_gross")}
+              className="flex items-center w-full justify-center hover:text-white transition-colors"
+            >
+              {t("offers.columns.total")}
+              <SortIcon col="total_gross" />
             </button>
           ),
           cell: (info) => {
@@ -454,13 +572,17 @@ export function OffersTable({
           },
         }),
       columnHelper.accessor(
-        (row) => (row as any).last_edited_at || row.created_at,
+        (row) => (row as any).service_card_generated_at || row.created_at,
         {
           id: "created_at",
           meta: { className: isMechanicView ? "" : "hidden sm:table-cell" },
           header: () => (
-            <button onClick={() => handleSort("last_edited_at")} className="flex items-center hover:text-mb-blue hover:underline transition-colors">
-              {t("offers.columns.date")}<SortIcon col="last_edited_at" />
+            <button
+              onClick={() => handleSort("last_edited_at")}
+              className="flex items-center hover:text-mb-blue hover:underline transition-colors"
+            >
+              {t("offers.columns.date")}
+              <SortIcon col="last_edited_at" />
             </button>
           ),
           cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
@@ -548,11 +670,12 @@ export function OffersTable({
                   {t("warehouse.transfer.title")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() =>
+                  onClick={() => {
+                    handleOfferClick(info.row.original.id);
                     router.push(
                       `${basePath}/offers/edit?id=${info.row.original.id}`,
-                    )
-                  }
+                    );
+                  }}
                   className="cursor-pointer text-white hover:bg-mb-black hover:text-white focus:bg-mb-black focus:text-white"
                 >
                   <svg
@@ -604,6 +727,7 @@ export function OffersTable({
       router,
       handleClone,
       handleSort,
+      handleOfferClick,
       setDeletingOfferId,
       setEditingOffer,
       setSelectedStatus,
@@ -692,7 +816,11 @@ export function OffersTable({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="border-mb-border hover:bg-mb-anthracite/50"
+                  className={`border-mb-border hover:bg-mb-anthracite/50 ${
+                    row.original.id === lastViewedOfferId
+                      ? "bg-mb-blue/[0.15]"
+                      : ""
+                  }`}
                   onMouseEnter={() => prefetchOffer(row.original.id)}
                 >
                   {row.getVisibleCells().map((cell) => (
@@ -740,38 +868,42 @@ export function OffersTable({
             >
               {t("offers.previous")}
             </Button>
-            
+
             <div className="flex items-center gap-1 mx-2 sm:mx-4">
-               {Array.from({ length: data.totalPages }).map((_, i) => {
-                 const pageNum = i + 1;
-                 if (
-                   pageNum === 1 || 
-                   pageNum === data.totalPages || 
-                   (pageNum >= page - 1 && pageNum <= page + 1)
-                 ) {
-                   return (
-                     <Button
-                       key={pageNum}
-                       variant={page === pageNum ? "default" : "outline"}
-                       size="sm"
-                       className={`w-8 h-8 sm:w-9 sm:h-9 p-0 ${
-                         page === pageNum 
-                           ? "bg-mb-blue font-bold text-white shadow-md shadow-mb-blue/20 hover:bg-mb-blue" 
-                           : "border-mb-border text-black hover:text-black hover:bg-gray-100 font-medium"
-                       }`}
-                       onClick={() => setPage(pageNum)}
-                     >
-                       {pageNum}
-                     </Button>
-                   );
-                 } else if (
-                   (pageNum === page - 2 && page > 3) ||
-                   (pageNum === page + 2 && page < data.totalPages - 2)
-                 ) {
-                   return <span key={pageNum} className="text-mb-silver px-1">...</span>;
-                 }
-                 return null;
-               })}
+              {Array.from({ length: data.totalPages }).map((_, i) => {
+                const pageNum = i + 1;
+                if (
+                  pageNum === 1 ||
+                  pageNum === data.totalPages ||
+                  (pageNum >= page - 1 && pageNum <= page + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? "default" : "outline"}
+                      size="sm"
+                      className={`w-8 h-8 sm:w-9 sm:h-9 p-0 ${
+                        page === pageNum
+                          ? "bg-mb-blue font-bold text-white shadow-md shadow-mb-blue/20 hover:bg-mb-blue"
+                          : "border-mb-border text-black hover:text-black hover:bg-gray-100 font-medium"
+                      }`}
+                      onClick={() => setPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                } else if (
+                  (pageNum === page - 2 && page > 3) ||
+                  (pageNum === page + 2 && page < data.totalPages - 2)
+                ) {
+                  return (
+                    <span key={pageNum} className="text-mb-silver px-1">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
             </div>
 
             <Button

@@ -75,7 +75,7 @@ function AddEditPartModal({
   const [partNumber, setPartNumber] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
-  const [priceInput, setPriceInput] = useState("0");
+  const [priceInput, setPriceInput] = useState("");
   // warehouseCostPrice holds the cost_price from the selected warehouse record;
   // it persists even when the user edits the sale price, so margin/profit stay live.
   const [warehouseCostPrice, setWarehouseCostPrice] = useState<number | null>(null);
@@ -84,7 +84,7 @@ function AddEditPartModal({
   // "Добави в склада" state
   const [whExistsState, setWhExistsState] = useState<"unknown" | "exists" | "notExists">("unknown");
   const [showDeliveryPrompt, setShowDeliveryPrompt] = useState(false);
-  const [deliveryPriceInput, setDeliveryPriceInput] = useState("0");
+  const [deliveryPriceInput, setDeliveryPriceInput] = useState("");
   const [deliveryPrice, setDeliveryPrice] = useState(0);
   const [addingToWarehouse, setAddingToWarehouse] = useState(false);
   const [warehouseSuccess, setWarehouseSuccess] = useState(false);
@@ -109,7 +109,7 @@ function AddEditPartModal({
       setPartNumber(vals.partNumber ?? "");
       setQuantity(vals.quantity ?? 1);
       setUnitPrice(vals.unitPrice ?? 0);
-      setPriceInput((vals.unitPrice ?? 0).toString());
+      setPriceInput(vals.unitPrice != null && vals.unitPrice !== 0 ? vals.unitPrice.toString() : "");
       setWarehouseCostPrice(vals.costPrice ?? null);
     } else {
       setDescription("");
@@ -117,7 +117,7 @@ function AddEditPartModal({
       setPartNumber("");
       setQuantity(1);
       setUnitPrice(0);
-      setPriceInput("0");
+      setPriceInput("");
       setWarehouseCostPrice(null);
     }
     setError("");

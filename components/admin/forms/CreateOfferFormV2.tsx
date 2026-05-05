@@ -129,6 +129,25 @@ export function CreateOfferFormV2({
   const [receptionistRepairTotal, setReceptionistRepairTotal] = useState("");
   const [receptionistEarningsSaving, setReceptionistEarningsSaving] =
     useState(false);
+  const [mechanicEarningsLog, setMechanicEarningsLog] = useState<
+    | {
+        created_at: string;
+        worker_name: string;
+        repair_time: number;
+      }
+    | null
+    | undefined
+  >(undefined);
+  const [receptionistEarningsLog, setReceptionistEarningsLog] = useState<
+    | {
+        created_at: string;
+        worker_name: string;
+        turnover_pct: number;
+        repair_total: number;
+      }
+    | null
+    | undefined
+  >(undefined);
 
   // Global defaults
   const [defaultMechRate, setDefaultMechRate] = useState("");
@@ -219,6 +238,35 @@ export function CreateOfferFormV2({
         if (data) setReceptionistsList(data as Receptionist[]);
       });
   }, [isMechanicView]);
+
+  const loadEarningsLogs = async (offerId: string) => {
+    const { data } = await supabase
+      .from("earnings_entries")
+      .select(
+        "worker_type, worker_name, repair_time, turnover_pct, repair_total, created_at",
+      )
+      .eq("offer_id", offerId)
+      .order("created_at", { ascending: false });
+    const entries = (data ?? []) as Array<{
+      worker_type: string;
+      worker_name: string;
+      repair_time: number;
+      turnover_pct: number;
+      repair_total: number;
+      created_at: string;
+    }>;
+    const mechEntry = entries.find((e) => e.worker_type === "mechanic") ?? null;
+    const recEntry =
+      entries.find((e) => e.worker_type === "receptionist") ?? null;
+    setMechanicEarningsLog(mechEntry);
+    setReceptionistEarningsLog(recEntry);
+  };
+
+  useEffect(() => {
+    if (isMechanicView || !savedOffer?.id) return;
+    loadEarningsLogs(savedOffer.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOffer?.id, isMechanicView]);
 
   useEffect(() => {
     if (savedOffer) setNotesFromServiceInput(savedOffer.notes ?? "");
@@ -382,7 +430,7 @@ export function CreateOfferFormV2({
     // Kick off the warehouse lookup via a separate state-driven effect to
     // avoid any cleanup/cancellation race with this effect.
     setPendingWarehouseLookup(missingCostPartNumbers);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingOffer, isEditing]);
 
   // Separate effect for the warehouse cost lookup so its async completion
@@ -423,7 +471,7 @@ export function CreateOfferFormV2({
         });
         setSummaryResetKey((k) => k + 1);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingWarehouseLookup]);
 
   // Keep changedAfterLastCardRef in sync whenever savedOffer updates.
@@ -587,7 +635,11 @@ export function CreateOfferFormV2({
           prepaymentsRef.current.length > 0 ? prepaymentsRef.current : null,
       };
 
-      const NOTES_ONLY_FIELDS = new Set(["notes", "notesInternal", "notesService"]);
+      const NOTES_ONLY_FIELDS = new Set([
+        "notes",
+        "notesInternal",
+        "notesService",
+      ]);
       const onlyNotesDirty =
         Object.keys(dirtyFieldsSnapshot).length > 0 &&
         Object.keys(dirtyFieldsSnapshot).every((f) => NOTES_ONLY_FIELDS.has(f));
@@ -597,7 +649,10 @@ export function CreateOfferFormV2({
         .update(
           onlyNotesDirty
             ? (updateData as never)
-            : ({ ...updateData, last_edited_at: new Date().toISOString() } as never),
+            : ({
+                ...updateData,
+                last_edited_at: new Date().toISOString(),
+              } as never),
         )
         .eq("id", offerId);
       if (offerErr) throw new Error(offerErr.message);
@@ -957,7 +1012,7 @@ export function CreateOfferFormV2({
               if (partNumbers.length > 0) {
                 const { data: whParts } = await supabase
                   .from("warehouse_parts")
-                  .select("id, part_number, quantity")
+                  .select("id, part_number, quantity, updated_at")
                   .in("part_number", partNumbers);
 
                 if (whParts && whParts.length > 0) {
@@ -965,6 +1020,7 @@ export function CreateOfferFormV2({
                     id: string;
                     part_number: string;
                     quantity: number;
+                    updated_at: string;
                   }[]) {
                     const matchingItems = offerItems.filter(
                       (i: any) => i.part_number === whPart.part_number,
@@ -976,7 +1032,7 @@ export function CreateOfferFormV2({
                     const newQty = Math.max(0, whPart.quantity - totalDeduct);
                     await supabase
                       .from("warehouse_parts")
-                      .update({ quantity: newQty } as never)
+                      .update({ quantity: newQty, updated_at: whPart.updated_at } as never)
                       .eq("id", whPart.id);
                   }
                 }
@@ -1135,6 +1191,7 @@ export function CreateOfferFormV2({
         offer_number: savedOffer?.offer_number || null,
       } as never);
       if (error) throw error;
+      if (savedOffer?.id) await loadEarningsLogs(savedOffer.id);
       showSuccess(
         locale === "bg" ? "Заработката е записана" : "Earnings saved",
       );
@@ -1179,6 +1236,7 @@ export function CreateOfferFormV2({
         offer_number: savedOffer?.offer_number || null,
       } as never);
       if (error) throw error;
+      if (savedOffer?.id) await loadEarningsLogs(savedOffer.id);
       showSuccess(
         locale === "bg" ? "Заработката е записана" : "Earnings saved",
       );
@@ -1256,7 +1314,7 @@ export function CreateOfferFormV2({
         // UPDATE existing offer
         console.log("Updating existing offer:", offerId);
 
-        const updateData: UpdateOffer = {
+        const updateData = {
           customer_name: data.customerName,
           customer_phone: data.customerPhone || null,
           customer_email: data.clientEmail || null,
@@ -1279,7 +1337,7 @@ export function CreateOfferFormV2({
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
           prepayments_eur: prepayments.length > 0 ? prepayments : null,
-          updated_at: new Date().toISOString(),
+          last_edited_at: new Date().toISOString(),
         };
 
         const offerRes = await supabase
@@ -1702,14 +1760,15 @@ export function CreateOfferFormV2({
           <CardContent className="pt-6">
             {/* Mobile: flex-col stack. Desktop: two columns side-by-side */}
             <div className="flex flex-col lg:flex-row lg:gap-6">
-
               {/* ── Left column: Car Info ── */}
               <div className="flex-1 lg:w-fit lg:flex-none min-w-0 flex flex-col gap-4">
                 <CardTitle className="text-lg">{t("carInfo")}</CardTitle>
 
                 {/* Model */}
                 <div>
-                  <span className="text-mb-silver text-sm">{t("carModel")}</span>
+                  <span className="text-mb-silver text-sm">
+                    {t("carModel")}
+                  </span>
                   <p className="text-white mt-0.5">
                     {[savedOffer.car_model_text, savedOffer.car_model_detail]
                       .filter(Boolean)
@@ -1719,7 +1778,9 @@ export function CreateOfferFormV2({
 
                 {/* License Plate */}
                 <div>
-                  <span className="text-mb-silver text-sm">{t("carLicensePlate")}</span>
+                  <span className="text-mb-silver text-sm">
+                    {t("carLicensePlate")}
+                  </span>
                   <div className="flex items-center gap-2 mt-1">
                     <input
                       type="text"
@@ -1768,13 +1829,17 @@ export function CreateOfferFormV2({
                 <div>
                   <span className="text-mb-silver text-sm">{t("carVin")}</span>
                   <p className="text-white mt-0.5">
-                    {savedOffer.vin_text ? savedOffer.vin_text.toUpperCase() : "-"}
+                    {savedOffer.vin_text
+                      ? savedOffer.vin_text.toUpperCase()
+                      : "-"}
                   </p>
                 </div>
 
                 {/* Mileage */}
                 <div>
-                  <span className="text-mb-silver text-sm">{t("carMileage")}</span>
+                  <span className="text-mb-silver text-sm">
+                    {t("carMileage")}
+                  </span>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <input
                       type="number"
@@ -1808,15 +1873,26 @@ export function CreateOfferFormV2({
                         if (!savedOffer?.id) return;
                         setMileageSaving(true);
                         try {
-                          const val = mileageInput.trim() ? Number(mileageInput) : null;
+                          const val = mileageInput.trim()
+                            ? Number(mileageInput)
+                            : null;
                           await updateOfferMutation.mutateAsync({
                             id: savedOffer.id,
-                            offer: { mileage: val, mileage_unit: mileageUnitInput } as any,
+                            offer: {
+                              mileage: val,
+                              mileage_unit: mileageUnitInput,
+                            } as any,
                           });
-                          queryClient.invalidateQueries({ queryKey: ["offer", savedOffer.id] });
+                          queryClient.invalidateQueries({
+                            queryKey: ["offer", savedOffer.id],
+                          });
                           showSuccess(locale === "bg" ? "Запазено." : "Saved.");
                         } catch {
-                          showError(locale === "bg" ? "Грешка при запазване." : "Error saving.");
+                          showError(
+                            locale === "bg"
+                              ? "Грешка при запазване."
+                              : "Error saving.",
+                          );
                         } finally {
                           setMileageSaving(false);
                         }
@@ -1841,7 +1917,9 @@ export function CreateOfferFormV2({
                 {/* Remaining Time */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-mb-silver">
-                    {locale === "bg" ? "Оставащо време (дни)" : "Remaining Time (days)"}
+                    {locale === "bg"
+                      ? "Оставащо време (дни)"
+                      : "Remaining Time (days)"}
                   </label>
                   <input
                     type="text"
@@ -1863,7 +1941,9 @@ export function CreateOfferFormV2({
                     <input
                       type="text"
                       value={assystRemainingMileage}
-                      onChange={(e) => setAssystRemainingMileage(e.target.value)}
+                      onChange={(e) =>
+                        setAssystRemainingMileage(e.target.value)
+                      }
                       placeholder="+24"
                       className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
                     />
@@ -1904,13 +1984,17 @@ export function CreateOfferFormV2({
                 {/* Service Description + Save */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-mb-silver">
-                    {locale === "bg" ? "Код на обслужване" : "Service Description"}
+                    {locale === "bg"
+                      ? "Код на обслужване"
+                      : "Service Description"}
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={assystServiceDescription}
-                      onChange={(e) => setAssystServiceDescription(e.target.value)}
+                      onChange={(e) =>
+                        setAssystServiceDescription(e.target.value)
+                      }
                       maxLength={12}
                       placeholder="B2"
                       className="flex-1 min-w-0 h-9 rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-mb-blue/50"
@@ -1926,7 +2010,6 @@ export function CreateOfferFormV2({
                   </div>
                 </div>
               </div>
-
             </div>
           </CardContent>
         </Card>
@@ -2391,73 +2474,70 @@ export function CreateOfferFormV2({
 
           {/* Additional Info */}
           <Card className="bg-mb-anthracite border-mb-border">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-mb-blue"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                {t("additionalInfo")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Discounts - side by side, compact */}
-              <div className="flex flex-wrap gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="discountPartsPercent">
-                    {t("discountParts")}
-                  </Label>
-                  <div className="relative w-32">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.5"
-                      {...methods.register("discountPartsPercent", {
-                        valueAsNumber: true,
-                      })}
-                      className="bg-gray-100 text-gray-900 border-mb-border pr-8 placeholder:text-gray-500"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver">
-                      %
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discountServicesPercent">
-                    {t("discountServices")}
-                  </Label>
-                  <div className="relative w-32">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.5"
-                      {...methods.register("discountServicesPercent", {
-                        valueAsNumber: true,
-                      })}
-                      className="bg-gray-100 text-gray-900 border-mb-border pr-8 placeholder:text-gray-500"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver">
-                      %
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Notes + Earnings in a responsive two-column layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Notes stacked vertically */}
+            <CardContent className="pt-6">
+              {/* Notes+Discounts (left) + Earnings (right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:items-stretch">
+                {/* Left column: title + discounts + notes stacked */}
                 <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-mb-blue shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    {t("additionalInfo")}
+                  </h3>
+                  {/* Discounts - equal width side by side */}
+                  <div className="grid grid-cols-2 gap-4 items-end">
+                    <div className="space-y-2">
+                      <Label htmlFor="discountPartsPercent" className="block min-h-[2.5rem]">
+                        {t("discountParts")}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          {...methods.register("discountPartsPercent", {
+                            valueAsNumber: true,
+                          })}
+                          className="bg-gray-100 text-gray-900 border-mb-border pr-8 placeholder:text-gray-500"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver">
+                          %
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discountServicesPercent" className="block min-h-[2.5rem]">
+                        {t("discountServices")}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          {...methods.register("discountServicesPercent", {
+                            valueAsNumber: true,
+                          })}
+                          className="bg-gray-100 text-gray-900 border-mb-border pr-8 placeholder:text-gray-500"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mb-silver">
+                          %
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="notesInternal">{t("notesInternal")}</Label>
                     <Textarea
@@ -2486,7 +2566,7 @@ export function CreateOfferFormV2({
 
                 {/* Earnings panel - admin view only, hidden from reception */}
                 {!isMechanicView && !isReceptionRole && (
-                  <div className="space-y-3 border border-mb-border rounded-lg p-4 mt-7">
+                  <div className="flex flex-col gap-3 border border-mb-border rounded-lg p-4 h-full">
                     <h3 className="font-semibold text-sm text-mb-silver uppercase tracking-wide flex items-center gap-2">
                       <svg
                         className="w-4 h-4 text-mb-blue"
@@ -2504,34 +2584,37 @@ export function CreateOfferFormV2({
                       {locale === "bg" ? "Заработки" : "Earnings"}
                     </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-4">
                       {/* Mechanic */}
-                      <div className="space-y-2 pb-3 sm:pb-0 sm:border-b-0 border-b border-mb-border/50 sm:pr-4 sm:border-r">
-                        <p className="text-sm text-mb-silver font-medium">
-                          {locale === "bg" ? "Механик" : "Mechanic"}
-                        </p>
-                        <select
-                          value={mechanicEarningsWorker}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setMechanicEarningsWorker(val);
-                            if (val) setMechanicHourlyRate(defaultMechRate);
-                            else setMechanicHourlyRate("");
-                          }}
-                          className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
-                        >
-                          <option value="">
-                            {locale === "bg" ? "- Избери -" : "- Select -"}
-                          </option>
-                          {mechanicsList.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2 pb-4 border-b border-mb-border/50">
+                        {/* Row 1: Механик, Ставка, Часове — equal thirds */}
+                        <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-sm text-mb-silver font-medium">
+                              {locale === "bg" ? "Механик" : "Mechanic"}
+                            </Label>
+                            <select
+                              value={mechanicEarningsWorker}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setMechanicEarningsWorker(val);
+                                if (val) setMechanicHourlyRate(defaultMechRate);
+                                else setMechanicHourlyRate("");
+                              }}
+                              className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
+                            >
+                              <option value="">
+                                {locale === "bg" ? "- Избери -" : "- Select -"}
+                              </option>
+                              {mechanicsList.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-sm">
                               {locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}
                             </Label>
                             <Input
@@ -2547,10 +2630,10 @@ export function CreateOfferFormV2({
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-sm">
                               {locale === "bg"
-                                ? "Часове пр.1:30"
-                                : "Hours ex.1:30"}
+                                ? "Часове (пр. 1:30)"
+                                : "Hours (ex. 1:30)"}
                             </Label>
                             <Input
                               type="text"
@@ -2564,6 +2647,89 @@ export function CreateOfferFormV2({
                             />
                           </div>
                         </div>
+                        {/* Row 2: Save button (left half) + earnings log (right half) */}
+                        <div className="grid grid-cols-2 gap-2 items-start">
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={
+                              !mechanicEarningsWorker || mechanicEarningsSaving
+                            }
+                            onClick={saveMechanicEarnings}
+                            className="w-full bg-mb-blue hover:bg-mb-blue/90 text-sm"
+                          >
+                            {mechanicEarningsSaving
+                              ? locale === "bg"
+                                ? "Записване…"
+                                : "Saving…"
+                              : locale === "bg"
+                                ? "Запиши"
+                                : "Save"}
+                          </Button>
+                          {mechanicEarningsLog !== undefined && (
+                            <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
+                              {mechanicEarningsLog ? (
+                                <>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg"
+                                        ? "Добавена на"
+                                        : "Added on"}
+                                      :
+                                    </span>
+                                    <span className="text-white">
+                                      {new Date(
+                                        mechanicEarningsLog.created_at,
+                                      ).toLocaleDateString("bg-BG", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })}{" "}
+                                      г.,{" "}
+                                      {new Date(
+                                        mechanicEarningsLog.created_at,
+                                      ).toLocaleTimeString("bg-BG", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Механик" : "Mechanic"}:
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      {mechanicEarningsLog.worker_name}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Часове" : "Hours"}:
+                                    </span>
+                                    <span className="text-mb-blue font-semibold">
+                                      {Math.floor(
+                                        mechanicEarningsLog.repair_time,
+                                      )}
+                                      :
+                                      {String(
+                                        Math.round(
+                                          (mechanicEarningsLog.repair_time % 1) *
+                                            60,
+                                        ),
+                                      ).padStart(2, "0")}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-mb-silver/70 italic text-center py-0.5">
+                                  {locale === "bg"
+                                    ? "Няма добавена заработка за механик."
+                                    : "No mechanic earning has been added."}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         {mechanicHourlyRate && mechanicRepairTime && (
                           <p className="text-sm text-mb-silver">
                             {locale === "bg" ? "Общо" : "Total"}:{" "}
@@ -2576,52 +2742,38 @@ export function CreateOfferFormV2({
                             </span>
                           </p>
                         )}
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={
-                            !mechanicEarningsWorker || mechanicEarningsSaving
-                          }
-                          onClick={saveMechanicEarnings}
-                          className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
-                        >
-                          {mechanicEarningsSaving
-                            ? locale === "bg"
-                              ? "Записване…"
-                              : "Saving…"
-                            : locale === "bg"
-                              ? "Запиши"
-                              : "Save"}
-                        </Button>
                       </div>
 
                       {/* Receptionist */}
-                      <div className="space-y-2">
-                        <p className="text-sm text-mb-silver font-medium">
-                          {locale === "bg" ? "Приемчик" : "Receptionist"}
-                        </p>
-                        <select
-                          value={receptionistEarningsWorker}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setReceptionistEarningsWorker(val);
-                            if (val) setReceptionistTurnoverPct(defaultRecPct);
-                            else setReceptionistTurnoverPct("");
-                          }}
-                          className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm"
-                        >
-                          <option value="">
-                            {locale === "bg" ? "- Избери -" : "- Select -"}
-                          </option>
-                          {receptionistsList.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
+                        {/* Row 1: Приемчик, % от оборота, Сума ремонт — equal thirds */}
+                        <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-sm text-mb-silver font-medium">
+                              {locale === "bg" ? "Приемчик" : "Receptionist"}
+                            </Label>
+                            <select
+                              value={receptionistEarningsWorker}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setReceptionistEarningsWorker(val);
+                                if (val) setReceptionistTurnoverPct(defaultRecPct);
+                                else setReceptionistTurnoverPct("");
+                              }}
+                              className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
+                            >
+                              <option value="">
+                                {locale === "bg" ? "- Избери -" : "- Select -"}
+                              </option>
+                              {receptionistsList.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-sm">
                               % {locale === "bg" ? "от оборота" : "of turnover"}
                             </Label>
                             <div className="relative">
@@ -2637,13 +2789,13 @@ export function CreateOfferFormV2({
                                 placeholder="0"
                                 className="bg-gray-100 text-gray-900 border-mb-border pr-6 text-sm"
                               />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-xs">
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-mb-silver text-sm">
                                 %
                               </span>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">
+                            <Label className="text-sm">
                               {locale === "bg"
                                 ? "Сума ремонт (€)"
                                 : "Repair total (€)"}
@@ -2677,6 +2829,8 @@ export function CreateOfferFormV2({
                             </span>
                           </p>
                         )}
+                        {/* Row 2: Save button (left half) + earnings log (right half) */}
+                        <div className="grid grid-cols-2 gap-2 items-start">
                         <Button
                           type="button"
                           size="sm"
@@ -2685,7 +2839,7 @@ export function CreateOfferFormV2({
                             receptionistEarningsSaving
                           }
                           onClick={saveReceptionistEarnings}
-                          className="w-full bg-mb-blue hover:bg-mb-blue/90 text-xs h-8"
+                          className="w-full bg-mb-blue hover:bg-mb-blue/90 text-sm"
                         >
                           {receptionistEarningsSaving
                             ? locale === "bg"
@@ -2695,6 +2849,79 @@ export function CreateOfferFormV2({
                               ? "Запиши"
                               : "Save"}
                         </Button>
+                          {receptionistEarningsLog !== undefined && (
+                            <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
+                              {receptionistEarningsLog ? (
+                                <>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg"
+                                        ? "Добавена на"
+                                        : "Added on"}
+                                      :
+                                    </span>
+                                    <span className="text-white">
+                                      {new Date(
+                                        receptionistEarningsLog.created_at,
+                                      ).toLocaleDateString("bg-BG", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })}{" "}
+                                      г.,{" "}
+                                      {new Date(
+                                        receptionistEarningsLog.created_at,
+                                      ).toLocaleTimeString("bg-BG", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg"
+                                        ? "Приемчик"
+                                        : "Receptionist"}
+                                      :
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      {receptionistEarningsLog.worker_name}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Процент" : "Percentage"}
+                                      :
+                                    </span>
+                                    <span className="text-mb-blue font-semibold">
+                                      {receptionistEarningsLog.turnover_pct}%
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg"
+                                        ? "Сума ремонт"
+                                        : "Repair amount"}
+                                      :
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      €
+                                      {receptionistEarningsLog.repair_total.toFixed(
+                                        2,
+                                      )}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-mb-silver/70 italic text-center py-0.5">
+                                  {locale === "bg"
+                                    ? "Няма добавена заработка за приемчик."
+                                    : "No receptionist earning has been added."}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3064,7 +3291,7 @@ export function CreateOfferFormV2({
                             {t("offerCreatedAt")}:
                           </span>{" "}
                           {new Date(
-                            metaOffer.updated_at ?? metaOffer.created_at,
+                            (metaOffer as any).last_edited_at ?? metaOffer.updated_at ?? metaOffer.created_at,
                           ).toLocaleDateString("bg-BG", {
                             year: "numeric",
                             month: "2-digit",
