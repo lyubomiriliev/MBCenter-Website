@@ -870,6 +870,7 @@ export function CreateOfferFormV2({
         prepayments_eur: prepayments.length > 0 ? prepayments : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        last_edited_at: null,
         client_id: null,
         car_id: null,
         created_by: null,
@@ -1435,6 +1436,7 @@ export function CreateOfferFormV2({
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
           prepayments_eur: prepayments.length > 0 ? prepayments : null,
+          last_edited_at: new Date().toISOString(),
         };
 
         const offerRes = await supabase
@@ -2584,35 +2586,34 @@ export function CreateOfferFormV2({
                       {locale === "bg" ? "Заработки" : "Earnings"}
                     </h3>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Mechanic */}
-                      <div className="flex flex-col gap-2 pb-4 border-b border-mb-border/50">
-                        {/* Row 1: Механик, Ставка, Часове — equal thirds */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-sm text-mb-silver font-medium">
-                              {locale === "bg" ? "Механик" : "Mechanic"}
-                            </Label>
-                            <select
-                              value={mechanicEarningsWorker}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setMechanicEarningsWorker(val);
-                                if (val) setMechanicHourlyRate(defaultMechRate);
-                                else setMechanicHourlyRate("");
-                              }}
-                              className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
-                            >
-                              <option value="">
-                                {locale === "bg" ? "- Избери -" : "- Select -"}
+                      <div className="flex flex-col gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm text-mb-silver font-medium">
+                            {locale === "bg" ? "Механик" : "Mechanic"}
+                          </Label>
+                          <select
+                            value={mechanicEarningsWorker}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMechanicEarningsWorker(val);
+                              if (val) setMechanicHourlyRate(defaultMechRate);
+                              else setMechanicHourlyRate("");
+                            }}
+                            className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
+                          >
+                            <option value="">
+                              {locale === "bg" ? "- Избери -" : "- Select -"}
+                            </option>
+                            {mechanicsList.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
                               </option>
-                              {mechanicsList.map((m) => (
-                                <option key={m.id} value={m.id}>
-                                  {m.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-sm">
                               {locale === "bg" ? "Ставка (€/ч)" : "Rate (€/h)"}
@@ -2647,89 +2648,6 @@ export function CreateOfferFormV2({
                             />
                           </div>
                         </div>
-                        {/* Row 2: Save button (left half) + earnings log (right half) */}
-                        <div className="grid grid-cols-2 gap-2 items-start">
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={
-                              !mechanicEarningsWorker || mechanicEarningsSaving
-                            }
-                            onClick={saveMechanicEarnings}
-                            className="w-full bg-mb-blue hover:bg-mb-blue/90 text-sm"
-                          >
-                            {mechanicEarningsSaving
-                              ? locale === "bg"
-                                ? "Записване…"
-                                : "Saving…"
-                              : locale === "bg"
-                                ? "Запиши"
-                                : "Save"}
-                          </Button>
-                          {mechanicEarningsLog !== undefined && (
-                            <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
-                              {mechanicEarningsLog ? (
-                                <>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg"
-                                        ? "Добавена на"
-                                        : "Added on"}
-                                      :
-                                    </span>
-                                    <span className="text-white">
-                                      {new Date(
-                                        mechanicEarningsLog.created_at,
-                                      ).toLocaleDateString("bg-BG", {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                      })}{" "}
-                                      г.,{" "}
-                                      {new Date(
-                                        mechanicEarningsLog.created_at,
-                                      ).toLocaleTimeString("bg-BG", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg" ? "Механик" : "Mechanic"}:
-                                    </span>
-                                    <span className="text-white font-medium">
-                                      {mechanicEarningsLog.worker_name}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg" ? "Часове" : "Hours"}:
-                                    </span>
-                                    <span className="text-mb-blue font-semibold">
-                                      {Math.floor(
-                                        mechanicEarningsLog.repair_time,
-                                      )}
-                                      :
-                                      {String(
-                                        Math.round(
-                                          (mechanicEarningsLog.repair_time % 1) *
-                                            60,
-                                        ),
-                                      ).padStart(2, "0")}
-                                    </span>
-                                  </div>
-                                </>
-                              ) : (
-                                <p className="text-mb-silver/70 italic text-center py-0.5">
-                                  {locale === "bg"
-                                    ? "Няма добавена заработка за механик."
-                                    : "No mechanic earning has been added."}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
                         {mechanicHourlyRate && mechanicRepairTime && (
                           <p className="text-sm text-mb-silver">
                             {locale === "bg" ? "Общо" : "Total"}:{" "}
@@ -2742,36 +2660,115 @@ export function CreateOfferFormV2({
                             </span>
                           </p>
                         )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={
+                            !mechanicEarningsWorker || mechanicEarningsSaving
+                          }
+                          onClick={saveMechanicEarnings}
+                          className="w-full bg-mb-blue hover:bg-mb-blue/90 text-sm"
+                        >
+                          {mechanicEarningsSaving
+                            ? locale === "bg"
+                              ? "Записване…"
+                              : "Saving…"
+                            : locale === "bg"
+                              ? "Запиши"
+                              : "Save"}
+                        </Button>
+                        {mechanicEarningsLog !== undefined && (
+                          <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
+                            {mechanicEarningsLog ? (
+                              <>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg"
+                                      ? "Добавена на"
+                                      : "Added on"}
+                                    :
+                                  </span>
+                                  <span className="text-white">
+                                    {new Date(
+                                      mechanicEarningsLog.created_at,
+                                    ).toLocaleDateString("bg-BG", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    })}{" "}
+                                    г.,{" "}
+                                    {new Date(
+                                      mechanicEarningsLog.created_at,
+                                    ).toLocaleTimeString("bg-BG", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg" ? "Механик" : "Mechanic"}:
+                                  </span>
+                                  <span className="text-white font-medium">
+                                    {mechanicEarningsLog.worker_name}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg" ? "Часове" : "Hours"}:
+                                  </span>
+                                  <span className="text-mb-blue font-semibold">
+                                    {Math.floor(
+                                      mechanicEarningsLog.repair_time,
+                                    )}
+                                    :
+                                    {String(
+                                      Math.round(
+                                        (mechanicEarningsLog.repair_time % 1) *
+                                          60,
+                                      ),
+                                    ).padStart(2, "0")}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-mb-silver/70 italic text-center py-0.5">
+                                {locale === "bg"
+                                  ? "Няма добавена заработка за механик."
+                                  : "No mechanic earning has been added."}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Receptionist */}
                       <div className="flex flex-col gap-2">
-                        {/* Row 1: Приемчик, % от оборота, Сума ремонт — equal thirds */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-sm text-mb-silver font-medium">
-                              {locale === "bg" ? "Приемчик" : "Receptionist"}
-                            </Label>
-                            <select
-                              value={receptionistEarningsWorker}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setReceptionistEarningsWorker(val);
-                                if (val) setReceptionistTurnoverPct(defaultRecPct);
-                                else setReceptionistTurnoverPct("");
-                              }}
-                              className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
-                            >
-                              <option value="">
-                                {locale === "bg" ? "- Избери -" : "- Select -"}
+                        <div className="space-y-1">
+                          <Label className="text-sm text-mb-silver font-medium">
+                            {locale === "bg" ? "Приемчик" : "Receptionist"}
+                          </Label>
+                          <select
+                            value={receptionistEarningsWorker}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setReceptionistEarningsWorker(val);
+                              if (val) setReceptionistTurnoverPct(defaultRecPct);
+                              else setReceptionistTurnoverPct("");
+                            }}
+                            className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
+                          >
+                            <option value="">
+                              {locale === "bg" ? "- Избери -" : "- Select -"}
+                            </option>
+                            {receptionistsList.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name}
                               </option>
-                              {receptionistsList.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                  {r.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-sm">
                               % {locale === "bg" ? "от оборота" : "of turnover"}
@@ -2829,8 +2826,6 @@ export function CreateOfferFormV2({
                             </span>
                           </p>
                         )}
-                        {/* Row 2: Save button (left half) + earnings log (right half) */}
-                        <div className="grid grid-cols-2 gap-2 items-start">
                         <Button
                           type="button"
                           size="sm"
@@ -2849,79 +2844,78 @@ export function CreateOfferFormV2({
                               ? "Запиши"
                               : "Save"}
                         </Button>
-                          {receptionistEarningsLog !== undefined && (
-                            <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
-                              {receptionistEarningsLog ? (
-                                <>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg"
-                                        ? "Добавена на"
-                                        : "Added on"}
-                                      :
-                                    </span>
-                                    <span className="text-white">
-                                      {new Date(
-                                        receptionistEarningsLog.created_at,
-                                      ).toLocaleDateString("bg-BG", {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                      })}{" "}
-                                      г.,{" "}
-                                      {new Date(
-                                        receptionistEarningsLog.created_at,
-                                      ).toLocaleTimeString("bg-BG", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg"
-                                        ? "Приемчик"
-                                        : "Receptionist"}
-                                      :
-                                    </span>
-                                    <span className="text-white font-medium">
-                                      {receptionistEarningsLog.worker_name}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg" ? "Процент" : "Percentage"}
-                                      :
-                                    </span>
-                                    <span className="text-mb-blue font-semibold">
-                                      {receptionistEarningsLog.turnover_pct}%
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                    <span className="text-mb-silver">
-                                      {locale === "bg"
-                                        ? "Сума ремонт"
-                                        : "Repair amount"}
-                                      :
-                                    </span>
-                                    <span className="text-white font-medium">
-                                      €
-                                      {receptionistEarningsLog.repair_total.toFixed(
-                                        2,
-                                      )}
-                                    </span>
-                                  </div>
-                                </>
-                              ) : (
-                                <p className="text-mb-silver/70 italic text-center py-0.5">
-                                  {locale === "bg"
-                                    ? "Няма добавена заработка за приемчик."
-                                    : "No receptionist earning has been added."}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                        {receptionistEarningsLog !== undefined && (
+                          <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
+                            {receptionistEarningsLog ? (
+                              <>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg"
+                                      ? "Добавена на"
+                                      : "Added on"}
+                                    :
+                                  </span>
+                                  <span className="text-white">
+                                    {new Date(
+                                      receptionistEarningsLog.created_at,
+                                    ).toLocaleDateString("bg-BG", {
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    })}{" "}
+                                    г.,{" "}
+                                    {new Date(
+                                      receptionistEarningsLog.created_at,
+                                    ).toLocaleTimeString("bg-BG", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg"
+                                      ? "Приемчик"
+                                      : "Receptionist"}
+                                    :
+                                  </span>
+                                  <span className="text-white font-medium">
+                                    {receptionistEarningsLog.worker_name}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg" ? "Процент" : "Percentage"}
+                                    :
+                                  </span>
+                                  <span className="text-mb-blue font-semibold">
+                                    {receptionistEarningsLog.turnover_pct}%
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                  <span className="text-mb-silver">
+                                    {locale === "bg"
+                                      ? "Сума ремонт"
+                                      : "Repair amount"}
+                                    :
+                                  </span>
+                                  <span className="text-white font-medium">
+                                    €
+                                    {receptionistEarningsLog.repair_total.toFixed(
+                                      2,
+                                    )}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-mb-silver/70 italic text-center py-0.5">
+                                {locale === "bg"
+                                  ? "Няма добавена заработка за приемчик."
+                                  : "No receptionist earning has been added."}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -270,7 +270,7 @@ export function OffersTable({
         );
       } catch {}
     },
-    [sortBy, sortDir, SORT_STORAGE_KEY],
+    [sortBy, sortDir, SORT_STORAGE_KEY, setPage],
   );
 
   const SortIcon = useCallback(

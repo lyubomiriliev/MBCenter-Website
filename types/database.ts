@@ -135,6 +135,7 @@ export interface Database {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          last_edited_at: string | null;
           assyst_remaining_time: string | null;
           assyst_remaining_mileage: string | null;
           assyst_service_code: string | null;
@@ -176,6 +177,7 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          last_edited_at?: string | null;
           assyst_remaining_time?: string | null;
           assyst_remaining_mileage?: string | null;
           assyst_service_code?: string | null;
@@ -217,6 +219,7 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          last_edited_at?: string | null;
           assyst_remaining_time?: string | null;
           assyst_remaining_mileage?: string | null;
           assyst_service_code?: string | null;
