@@ -421,13 +421,14 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
         sum + (item.total ?? item.unit_price * (item.quantity ?? 0)),
       0,
     );
+  // Prices are stored gross (VAT-inclusive). VAT = gross / 6, net = gross * 5/6.
   const partsDiscountAmount =
     partsGrossBeforeDiscount * (discountPartsPercent / 100);
   const partsGross = partsGrossBeforeDiscount - partsDiscountAmount;
-  const partsNet = partsGross / 1.2;
-  const partsVat = partsGross - partsNet;
+  // Display pre-discount so client sees full price, then explicit discount row below
+  const partsNetDisplay = partsGrossBeforeDiscount * (5 / 6);
+  const partsVatDisplay = partsGrossBeforeDiscount / 6;
 
-  // Calculate service actions total - input prices already include VAT (gross)
   const serviceGrossBeforeDiscount = (offer.service_actions || []).reduce(
     (sum, action) => sum + action.total_eur_net,
     0,
@@ -435,13 +436,14 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
   const serviceDiscountAmount =
     serviceGrossBeforeDiscount * (discountServicesPercent / 100);
   const serviceGross = serviceGrossBeforeDiscount - serviceDiscountAmount;
-  const serviceNet = serviceGross / 1.2;
-  const serviceVat = serviceGross - serviceNet;
+  // Display pre-discount so client sees full price, then explicit discount row below
+  const serviceNetDisplay = serviceGrossBeforeDiscount * (5 / 6);
+  const serviceVatDisplay = serviceGrossBeforeDiscount / 6;
 
-  // Grand total
+  // Grand total uses post-discount gross; derive net/VAT from that
   const totalGross = partsGross + serviceGross;
-  const totalNet = partsNet + serviceNet;
-  const totalVat = partsVat + serviceVat;
+  const totalNet = totalGross * (5 / 6);
+  const totalVat = totalGross / 6;
 
   const parts = (offer.items || []).filter((item) => item.type === "part");
   const sortedParts = [...parts].sort((a, b) => a.sort_order - b.sort_order);
@@ -668,7 +670,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                   </View>
                   <View style={styles.summaryCol2}>
                     <Text style={styles.colTextRight}>
-                      {formatEur(partsNet)}
+                      {formatEur(partsNetDisplay)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol3}>
@@ -676,12 +678,12 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                   </View>
                   <View style={styles.summaryCol4}>
                     <Text style={styles.colTextRight}>
-                      {formatEur(partsVat)}
+                      {formatEur(partsVatDisplay)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol5}>
                     <Text style={styles.colTextRight}>
-                      {formatEur(partsGross)}
+                      {formatEur(partsGrossBeforeDiscount)}
                     </Text>
                   </View>
                 </View>
@@ -693,7 +695,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 </View>
                 <View style={styles.summaryCol2}>
                   <Text style={styles.colTextRight}>
-                    {formatEur(serviceNet)}
+                    {formatEur(serviceNetDisplay)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol3}>
@@ -701,12 +703,12 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 </View>
                 <View style={styles.summaryCol4}>
                   <Text style={styles.colTextRight}>
-                    {formatEur(serviceVat)}
+                    {formatEur(serviceVatDisplay)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol5}>
                   <Text style={styles.colTextRight}>
-                    {formatEur(serviceGross)}
+                    {formatEur(serviceGrossBeforeDiscount)}
                   </Text>
                 </View>
               </View>
@@ -721,7 +723,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 </View>
                 <View style={styles.summaryCol2}>
                   <Text style={styles.colTextRight}>
-                    -{formatEur(partsDiscountAmount / 1.2)}
+                    -{formatEur(partsDiscountAmount * (5 / 6))}
                   </Text>
                 </View>
                 <View style={styles.summaryCol3}>
@@ -729,8 +731,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 </View>
                 <View style={styles.summaryCol4}>
                   <Text style={styles.colTextRight}>
-                    -
-                    {formatEur(partsDiscountAmount - partsDiscountAmount / 1.2)}
+                    -{formatEur(partsDiscountAmount / 6)}
                   </Text>
                 </View>
                 <View style={styles.summaryCol5}>
@@ -751,7 +752,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                   </View>
                   <View style={styles.summaryCol2}>
                     <Text style={styles.colTextRight}>
-                      -{formatEur(serviceDiscountAmount / 1.2)}
+                      -{formatEur(serviceDiscountAmount * (5 / 6))}
                     </Text>
                   </View>
                   <View style={styles.summaryCol3}>
@@ -759,10 +760,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                   </View>
                   <View style={styles.summaryCol4}>
                     <Text style={styles.colTextRight}>
-                      -
-                      {formatEur(
-                        serviceDiscountAmount - serviceDiscountAmount / 1.2,
-                      )}
+                      -{formatEur(serviceDiscountAmount / 6)}
                     </Text>
                   </View>
                   <View style={styles.summaryCol5}>
