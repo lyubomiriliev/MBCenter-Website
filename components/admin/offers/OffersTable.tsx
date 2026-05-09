@@ -572,7 +572,7 @@ export function OffersTable({
           },
         }),
       columnHelper.accessor(
-        (row) => (row as any).service_card_generated_at || row.created_at,
+        (row) => (row as any).service_card_generated_at || (row as any).last_edited_at || row.created_at,
         {
           id: "created_at",
           meta: { className: isMechanicView ? "" : "hidden sm:table-cell" },

@@ -129,25 +129,21 @@ export function CreateOfferFormV2({
   const [receptionistRepairTotal, setReceptionistRepairTotal] = useState("");
   const [receptionistEarningsSaving, setReceptionistEarningsSaving] =
     useState(false);
-  const [mechanicEarningsLog, setMechanicEarningsLog] = useState<
-    | {
-        created_at: string;
-        worker_name: string;
-        repair_time: number;
-      }
-    | null
-    | undefined
-  >(undefined);
-  const [receptionistEarningsLog, setReceptionistEarningsLog] = useState<
-    | {
-        created_at: string;
-        worker_name: string;
-        turnover_pct: number;
-        repair_total: number;
-      }
-    | null
-    | undefined
-  >(undefined);
+  const [mechanicEarningsLogs, setMechanicEarningsLogs] = useState<
+    Array<{
+      created_at: string;
+      worker_name: string;
+      repair_time: number;
+    }>
+  >([]);
+  const [receptionistEarningsLogs, setReceptionistEarningsLogs] = useState<
+    Array<{
+      created_at: string;
+      worker_name: string;
+      turnover_pct: number;
+      repair_total: number;
+    }>
+  >([]);
 
   // Global defaults
   const [defaultMechRate, setDefaultMechRate] = useState("");
@@ -255,11 +251,8 @@ export function CreateOfferFormV2({
       repair_total: number;
       created_at: string;
     }>;
-    const mechEntry = entries.find((e) => e.worker_type === "mechanic") ?? null;
-    const recEntry =
-      entries.find((e) => e.worker_type === "receptionist") ?? null;
-    setMechanicEarningsLog(mechEntry);
-    setReceptionistEarningsLog(recEntry);
+    setMechanicEarningsLogs(entries.filter((e) => e.worker_type === "mechanic"));
+    setReceptionistEarningsLogs(entries.filter((e) => e.worker_type === "receptionist"));
   };
 
   useEffect(() => {
@@ -1176,7 +1169,7 @@ export function CreateOfferFormV2({
       const vehicle = formValues.carModel || "";
       const repairName = formValues.repairName || "";
       const now = new Date();
-      const { error } = await supabase.from("earnings_entries").insert({
+      const mechPayload = {
         worker_id: mechanicEarningsWorker,
         worker_type: "mechanic",
         worker_name: workerName,
@@ -1190,7 +1183,27 @@ export function CreateOfferFormV2({
         year: now.getFullYear(),
         offer_id: savedOffer?.id || null,
         offer_number: savedOffer?.offer_number || null,
-      } as never);
+        created_at: now.toISOString(),
+      };
+      let error;
+      if (savedOffer?.id) {
+        const { data: existing } = await supabase
+          .from("earnings_entries")
+          .select("id")
+          .eq("offer_id", savedOffer.id)
+          .eq("worker_id", mechanicEarningsWorker)
+          .maybeSingle();
+        if (existing) {
+          ({ error } = await supabase
+            .from("earnings_entries")
+            .update(mechPayload as never)
+            .eq("id", (existing as any).id));
+        } else {
+          ({ error } = await supabase.from("earnings_entries").insert(mechPayload as never));
+        }
+      } else {
+        ({ error } = await supabase.from("earnings_entries").insert(mechPayload as never));
+      }
       if (error) throw error;
       if (savedOffer?.id) await loadEarningsLogs(savedOffer.id);
       showSuccess(
@@ -1221,7 +1234,7 @@ export function CreateOfferFormV2({
       const vehicle = formValues.carModel || "";
       const repairName = formValues.repairName || "";
       const now = new Date();
-      const { error } = await supabase.from("earnings_entries").insert({
+      const recPayload = {
         worker_id: receptionistEarningsWorker,
         worker_type: "receptionist",
         worker_name: workerName,
@@ -1235,7 +1248,27 @@ export function CreateOfferFormV2({
         year: now.getFullYear(),
         offer_id: savedOffer?.id || null,
         offer_number: savedOffer?.offer_number || null,
-      } as never);
+        created_at: now.toISOString(),
+      };
+      let error;
+      if (savedOffer?.id) {
+        const { data: existing } = await supabase
+          .from("earnings_entries")
+          .select("id")
+          .eq("offer_id", savedOffer.id)
+          .eq("worker_id", receptionistEarningsWorker)
+          .maybeSingle();
+        if (existing) {
+          ({ error } = await supabase
+            .from("earnings_entries")
+            .update(recPayload as never)
+            .eq("id", (existing as any).id));
+        } else {
+          ({ error } = await supabase.from("earnings_entries").insert(recPayload as never));
+        }
+      } else {
+        ({ error } = await supabase.from("earnings_entries").insert(recPayload as never));
+      }
       if (error) throw error;
       if (savedOffer?.id) await loadEarningsLogs(savedOffer.id);
       showSuccess(
@@ -2677,60 +2710,38 @@ export function CreateOfferFormV2({
                               ? "Запиши"
                               : "Save"}
                         </Button>
-                        {mechanicEarningsLog !== undefined && (
-                          <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
-                            {mechanicEarningsLog ? (
-                              <>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg"
-                                      ? "Добавена на"
-                                      : "Added on"}
-                                    :
-                                  </span>
-                                  <span className="text-white">
-                                    {new Date(
-                                      mechanicEarningsLog.created_at,
-                                    ).toLocaleDateString("bg-BG", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    })}{" "}
-                                    г.,{" "}
-                                    {new Date(
-                                      mechanicEarningsLog.created_at,
-                                    ).toLocaleTimeString("bg-BG", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
+                        <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-2">
+                            {mechanicEarningsLogs.length > 0 ? (
+                              mechanicEarningsLogs.map((log, i) => (
+                                <div key={i} className={i > 0 ? "border-t border-mb-border/40 pt-2 space-y-1" : "space-y-1"}>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Механик" : "Mechanic"}:
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      {log.worker_name}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Часове" : "Hours"}:
+                                    </span>
+                                    <span className="text-mb-blue font-semibold">
+                                      {Math.floor(log.repair_time)}:
+                                      {String(Math.round((log.repair_time % 1) * 60)).padStart(2, "0")}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Добавена на" : "Added on"}:
+                                    </span>
+                                    <span className="text-mb-silver/70 text-xs">
+                                      {new Date(log.created_at).toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" })}{" "}
+                                      {new Date(log.created_at).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg" ? "Механик" : "Mechanic"}:
-                                  </span>
-                                  <span className="text-white font-medium">
-                                    {mechanicEarningsLog.worker_name}
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg" ? "Часове" : "Hours"}:
-                                  </span>
-                                  <span className="text-mb-blue font-semibold">
-                                    {Math.floor(
-                                      mechanicEarningsLog.repair_time,
-                                    )}
-                                    :
-                                    {String(
-                                      Math.round(
-                                        (mechanicEarningsLog.repair_time % 1) *
-                                          60,
-                                      ),
-                                    ).padStart(2, "0")}
-                                  </span>
-                                </div>
-                              </>
+                              ))
                             ) : (
                               <p className="text-mb-silver/70 italic text-center py-0.5">
                                 {locale === "bg"
@@ -2739,7 +2750,6 @@ export function CreateOfferFormV2({
                               </p>
                             )}
                           </div>
-                        )}
                       </div>
 
                       {/* Receptionist */}
@@ -2844,69 +2854,45 @@ export function CreateOfferFormV2({
                               ? "Запиши"
                               : "Save"}
                         </Button>
-                        {receptionistEarningsLog !== undefined && (
-                          <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-1">
-                            {receptionistEarningsLog ? (
-                              <>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg"
-                                      ? "Добавена на"
-                                      : "Added on"}
-                                    :
-                                  </span>
-                                  <span className="text-white">
-                                    {new Date(
-                                      receptionistEarningsLog.created_at,
-                                    ).toLocaleDateString("bg-BG", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    })}{" "}
-                                    г.,{" "}
-                                    {new Date(
-                                      receptionistEarningsLog.created_at,
-                                    ).toLocaleTimeString("bg-BG", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
+                        <div className="rounded-lg border border-mb-border/60 bg-white/[0.03] px-3 py-2 text-sm space-y-2">
+                            {receptionistEarningsLogs.length > 0 ? (
+                              receptionistEarningsLogs.map((log, i) => (
+                                <div key={i} className={i > 0 ? "border-t border-mb-border/40 pt-2 space-y-1" : "space-y-1"}>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Приемчик" : "Receptionist"}:
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      {log.worker_name}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Процент" : "Percentage"}:
+                                    </span>
+                                    <span className="text-mb-blue font-semibold">
+                                      {log.turnover_pct}%
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Сума ремонт" : "Repair amount"}:
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      €{log.repair_total.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                                    <span className="text-mb-silver">
+                                      {locale === "bg" ? "Добавена на" : "Added on"}:
+                                    </span>
+                                    <span className="text-mb-silver/70 text-xs">
+                                      {new Date(log.created_at).toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" })}{" "}
+                                      {new Date(log.created_at).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg"
-                                      ? "Приемчик"
-                                      : "Receptionist"}
-                                    :
-                                  </span>
-                                  <span className="text-white font-medium">
-                                    {receptionistEarningsLog.worker_name}
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg" ? "Процент" : "Percentage"}
-                                    :
-                                  </span>
-                                  <span className="text-mb-blue font-semibold">
-                                    {receptionistEarningsLog.turnover_pct}%
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                                  <span className="text-mb-silver">
-                                    {locale === "bg"
-                                      ? "Сума ремонт"
-                                      : "Repair amount"}
-                                    :
-                                  </span>
-                                  <span className="text-white font-medium">
-                                    €
-                                    {receptionistEarningsLog.repair_total.toFixed(
-                                      2,
-                                    )}
-                                  </span>
-                                </div>
-                              </>
+                              ))
                             ) : (
                               <p className="text-mb-silver/70 italic text-center py-0.5">
                                 {locale === "bg"
@@ -2915,7 +2901,6 @@ export function CreateOfferFormV2({
                               </p>
                             )}
                           </div>
-                        )}
                       </div>
                     </div>
                   </div>

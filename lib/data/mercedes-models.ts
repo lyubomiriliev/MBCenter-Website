@@ -13,8 +13,10 @@ export const MERCEDES_CLASSES = [
   'B-Class',
   'C-Class',
   'CLA',
+  'CLE',
   'CLK',
   'CLC',
+  'CL-Class',
   'CLS',
   'E-Class',
   'EQA',
@@ -29,6 +31,7 @@ export const MERCEDES_CLASSES = [
   'GLK',
   'GLE',
   'GLS',
+  'R-Class',
   'S-Class',
   'SL',
   'SLC/SLK',
@@ -40,6 +43,7 @@ export const MERCEDES_CLASSES = [
   'T-Class',
   'Sprinter',
   'Vito',
+  'X-Class',
 ] as const;
 
 export type MercedesClass = typeof MERCEDES_CLASSES[number];
@@ -80,7 +84,13 @@ export const MERCEDES_MODELS: MercedesModel[] = [
 
   // CLA
   { id: 'c117', name: 'CLA (C117)', class: 'CLA', years: generateYears(2013, 2019) },
+  { id: 'x117', name: 'CLA Shooting Brake (X117)', class: 'CLA', years: generateYears(2015, 2019) },
   { id: 'c118', name: 'CLA (C118)', class: 'CLA', years: generateYears(2019, 2026) },
+  { id: 'x118', name: 'CLA Shooting Brake (X118)', class: 'CLA', years: generateYears(2019, 2026) },
+
+  // CLE
+  { id: 'c236', name: 'CLE Coupe (C236)', class: 'CLE', years: generateYears(2023, 2026) },
+  { id: 'a236', name: 'CLE Cabriolet (A236)', class: 'CLE', years: generateYears(2024, 2026) },
 
   // CLK
   { id: 'c208', name: 'CLK Coupe (C208)', class: 'CLK', years: generateYears(1999, 2002) },
@@ -91,9 +101,14 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   // CLC
   { id: 'cl203', name: 'CLC (CL203)', class: 'CLC', years: generateYears(2008, 2011) },
 
+  // CL-Class
+  { id: 'c215', name: 'CL-Class (C215)', class: 'CL-Class', years: generateYears(1999, 2006) },
+  { id: 'c216', name: 'CL-Class (C216)', class: 'CL-Class', years: generateYears(2006, 2014) },
+
   // CLS
   { id: 'c219', name: 'CLS (C219)', class: 'CLS', years: generateYears(2004, 2010) },
   { id: 'c218', name: 'CLS (C218)', class: 'CLS', years: generateYears(2010, 2018) },
+  { id: 'x218', name: 'CLS Shooting Brake (X218)', class: 'CLS', years: generateYears(2012, 2018) },
   { id: 'c257', name: 'CLS (C257)', class: 'CLS', years: generateYears(2018, 2024) },
 
   // E-Class
@@ -107,10 +122,12 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 's212', name: 'E-Class Estate (S212)', class: 'E-Class', years: generateYears(2009, 2016) },
   { id: 'w213', name: 'E-Class (W213)', class: 'E-Class', years: generateYears(2016, 2023) },
   { id: 's213', name: 'E-Class Estate (S213)', class: 'E-Class', years: generateYears(2016, 2023) },
+  { id: 's213at', name: 'E-Class All-Terrain (S213)', class: 'E-Class', years: generateYears(2017, 2023) },
   { id: 'c238', name: 'E-Class Coupe (C238)', class: 'E-Class', years: generateYears(2017, 2023) },
   { id: 'a238', name: 'E-Class Cabrio (A238)', class: 'E-Class', years: generateYears(2017, 2023) },
   { id: 'w214', name: 'E-Class (W214)', class: 'E-Class', years: generateYears(2023, 2026) },
   { id: 's214', name: 'E-Class Estate (S214)', class: 'E-Class', years: generateYears(2023, 2026) },
+  { id: 'x214', name: 'E-Class All-Terrain (X214)', class: 'E-Class', years: generateYears(2024, 2026) },
 
   // EQ Electric Models
   { id: 'h243', name: 'EQA (H243)', class: 'EQA', years: generateYears(2021, 2026) },
@@ -145,6 +162,7 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'w163', name: 'ML-Class (W163)', class: 'GLE', years: generateYears(1999, 2005) },
   { id: 'w164', name: 'ML-Class (W164)', class: 'GLE', years: generateYears(2005, 2011) },
   { id: 'w166', name: 'ML/GLE (W166)', class: 'GLE', years: generateYears(2011, 2019) },
+  { id: 'c292', name: 'GLE Coupe (C292)', class: 'GLE', years: generateYears(2015, 2019) },
   { id: 'v167', name: 'GLE (V167)', class: 'GLE', years: generateYears(2019, 2026) },
   { id: 'c167', name: 'GLE Coupe (C167)', class: 'GLE', years: generateYears(2019, 2026) },
 
@@ -152,6 +170,10 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'x164', name: 'GL-Class (X164)', class: 'GLS', years: generateYears(2006, 2012) },
   { id: 'x166', name: 'GL/GLS (X166)', class: 'GLS', years: generateYears(2012, 2019) },
   { id: 'x167', name: 'GLS (X167)', class: 'GLS', years: generateYears(2019, 2026) },
+
+  // R-Class
+  { id: 'w251', name: 'R-Class (W251)', class: 'R-Class', years: generateYears(2006, 2013) },
+  { id: 'v251', name: 'R-Class LWB (V251)', class: 'R-Class', years: generateYears(2006, 2013) },
 
   // S-Class
   { id: 'w220', name: 'S-Class (W220)', class: 'S-Class', years: generateYears(1999, 2005) },
@@ -187,6 +209,7 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'z223', name: 'Maybach S-Class (Z223)', class: 'Maybach', years: generateYears(2020, 2026) },
   { id: 'x167m', name: 'Maybach GLS (X167)', class: 'Maybach', years: generateYears(2020, 2026) },
   { id: 'z296m', name: 'Maybach EQS SUV', class: 'Maybach', years: generateYears(2023, 2026) },
+  { id: 'v297m', name: 'Maybach EQS Sedan', class: 'Maybach', years: generateYears(2023, 2026) },
 
   // V-Class
   { id: 'w639', name: 'Viano (W639)', class: 'V-Class', years: generateYears(2003, 2014) },
@@ -213,6 +236,9 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   // T-Class
   { id: 'w420t', name: 'T-Class (W420)', class: 'T-Class', years: generateYears(2022, 2026) },
   { id: 'et420', name: 'EQT', class: 'T-Class', years: generateYears(2022, 2026) },
+
+  // X-Class
+  { id: 'w470', name: 'X-Class (W470)', class: 'X-Class', years: generateYears(2017, 2020) },
 ];
 
 // Helper function to get models by class
@@ -229,12 +255,9 @@ export function getModelsForYear(year: number): MercedesModel[] {
 export function searchModels(query: string): MercedesModel[] {
   const lowerQuery = query.toLowerCase();
   return MERCEDES_MODELS.filter(
-    model => 
+    model =>
       model.name.toLowerCase().includes(lowerQuery) ||
       model.class.toLowerCase().includes(lowerQuery) ||
       model.id.toLowerCase().includes(lowerQuery)
   );
 }
-
-
-
