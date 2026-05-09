@@ -120,6 +120,8 @@ export function CreateOfferFormV2({
     [],
   );
   const [mechanicEarningsWorker, setMechanicEarningsWorker] = useState("");
+  const [splitMechanic1, setSplitMechanic1] = useState("");
+  const [splitMechanic2, setSplitMechanic2] = useState("");
   const [mechanicHourlyRate, setMechanicHourlyRate] = useState("");
   const [mechanicRepairTime, setMechanicRepairTime] = useState("");
   const [mechanicEarningsSaving, setMechanicEarningsSaving] = useState(false);
@@ -1158,53 +1160,69 @@ export function CreateOfferFormV2({
 
   const saveMechanicEarnings = async () => {
     if (!mechanicEarningsWorker) return;
+    const selectedWorker = mechanicsList.find((m) => m.id === mechanicEarningsWorker);
+    const isSplit = selectedWorker?.name === "50:50";
+    if (isSplit && (!splitMechanic1 || !splitMechanic2)) return;
     setMechanicEarningsSaving(true);
     try {
-      const worker = mechanicsList.find((m) => m.id === mechanicEarningsWorker);
-      const workerName = worker?.name || mechanicEarningsWorker;
       const hourlyRate = parseFloat(mechanicHourlyRate) || 0;
       const repairTime = parseTimeToHours(mechanicRepairTime);
-      const total = hourlyRate * repairTime;
       const formValues = methods.getValues();
       const vehicle = formValues.carModel || "";
       const repairName = formValues.repairName || "";
       const now = new Date();
-      const mechPayload = {
-        worker_id: mechanicEarningsWorker,
-        worker_type: "mechanic",
-        worker_name: workerName,
-        vehicle: vehicle || null,
-        repair_name: repairName || null,
-        repair_time: repairTime,
-        hourly_rate: hourlyRate,
-        total,
-        entry_date: now.toISOString().slice(0, 10),
-        month: now.getMonth() + 1,
-        year: now.getFullYear(),
-        offer_id: savedOffer?.id || null,
-        offer_number: savedOffer?.offer_number || null,
-        created_at: now.toISOString(),
-      };
-      let error;
-      if (savedOffer?.id) {
-        const { data: existing } = await supabase
-          .from("earnings_entries")
-          .select("id")
-          .eq("offer_id", savedOffer.id)
-          .eq("worker_id", mechanicEarningsWorker)
-          .maybeSingle();
-        if (existing) {
-          ({ error } = await supabase
+
+      const upsertEntry = async (workerId: string, workerName: string, time: number) => {
+        const payload = {
+          worker_id: workerId,
+          worker_type: "mechanic",
+          worker_name: workerName,
+          vehicle: vehicle || null,
+          repair_name: repairName || null,
+          repair_time: time,
+          hourly_rate: hourlyRate,
+          total: hourlyRate * time,
+          entry_date: now.toISOString().slice(0, 10),
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+          offer_id: savedOffer?.id || null,
+          offer_number: savedOffer?.offer_number || null,
+          created_at: now.toISOString(),
+        };
+        if (savedOffer?.id) {
+          const { data: existing } = await supabase
             .from("earnings_entries")
-            .update(mechPayload as never)
-            .eq("id", (existing as any).id));
+            .select("id")
+            .eq("offer_id", savedOffer.id)
+            .eq("worker_id", workerId)
+            .maybeSingle();
+          if (existing) {
+            const { error } = await supabase
+              .from("earnings_entries")
+              .update(payload as never)
+              .eq("id", (existing as any).id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.from("earnings_entries").insert(payload as never);
+            if (error) throw error;
+          }
         } else {
-          ({ error } = await supabase.from("earnings_entries").insert(mechPayload as never));
+          const { error } = await supabase.from("earnings_entries").insert(payload as never);
+          if (error) throw error;
         }
+      };
+
+      if (isSplit) {
+        const halfTime = repairTime / 2;
+        const m1 = mechanicsList.find((m) => m.id === splitMechanic1);
+        const m2 = mechanicsList.find((m) => m.id === splitMechanic2);
+        await upsertEntry(splitMechanic1, m1?.name || splitMechanic1, halfTime);
+        await upsertEntry(splitMechanic2, m2?.name || splitMechanic2, halfTime);
       } else {
-        ({ error } = await supabase.from("earnings_entries").insert(mechPayload as never));
+        const workerName = selectedWorker?.name || mechanicEarningsWorker;
+        await upsertEntry(mechanicEarningsWorker, workerName, repairTime);
       }
-      if (error) throw error;
+
       if (savedOffer?.id) await loadEarningsLogs(savedOffer.id);
       showSuccess(
         locale === "bg" ? "Заработката е записана" : "Earnings saved",
@@ -2631,6 +2649,8 @@ export function CreateOfferFormV2({
                             onChange={(e) => {
                               const val = e.target.value;
                               setMechanicEarningsWorker(val);
+                              setSplitMechanic1("");
+                              setSplitMechanic2("");
                               if (val) setMechanicHourlyRate(defaultMechRate);
                               else setMechanicHourlyRate("");
                             }}
@@ -2645,6 +2665,41 @@ export function CreateOfferFormV2({
                               </option>
                             ))}
                           </select>
+                          {mechanicsList.find((m) => m.id === mechanicEarningsWorker)?.name === "50:50" && (
+                            <div className="flex flex-col gap-1.5 mt-1">
+                              <p className="text-xs text-mb-silver">
+                                {locale === "bg" ? "Избери двамата механици за разделяне:" : "Select the two mechanics to split between:"}
+                              </p>
+                              <select
+                                value={splitMechanic1}
+                                onChange={(e) => setSplitMechanic1(e.target.value)}
+                                className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
+                              >
+                                <option value="">{locale === "bg" ? "- Механик 1 -" : "- Mechanic 1 -"}</option>
+                                {mechanicsList
+                                  .filter((m) => m.name !== "50:50")
+                                  .map((m) => (
+                                    <option key={m.id} value={m.id} disabled={m.id === splitMechanic2}>
+                                      {m.name}
+                                    </option>
+                                  ))}
+                              </select>
+                              <select
+                                value={splitMechanic2}
+                                onChange={(e) => setSplitMechanic2(e.target.value)}
+                                className="w-full rounded-md border border-mb-border bg-gray-100 text-gray-900 px-3 py-2 text-sm h-10"
+                              >
+                                <option value="">{locale === "bg" ? "- Механик 2 -" : "- Mechanic 2 -"}</option>
+                                {mechanicsList
+                                  .filter((m) => m.name !== "50:50")
+                                  .map((m) => (
+                                    <option key={m.id} value={m.id} disabled={m.id === splitMechanic1}>
+                                      {m.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
@@ -2697,7 +2752,8 @@ export function CreateOfferFormV2({
                           type="button"
                           size="sm"
                           disabled={
-                            !mechanicEarningsWorker || mechanicEarningsSaving
+                            !mechanicEarningsWorker || mechanicEarningsSaving ||
+                            (mechanicsList.find((m) => m.id === mechanicEarningsWorker)?.name === "50:50" && (!splitMechanic1 || !splitMechanic2))
                           }
                           onClick={saveMechanicEarnings}
                           className="w-full bg-mb-blue hover:bg-mb-blue/90 text-sm"
