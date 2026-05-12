@@ -511,6 +511,7 @@ export interface Database {
           month: number;
           year: number;
           card_amount: number;
+          advance_amount: number;
           fines_amount: number;
           bonus_amount: number;
           fixed_salary: number;
@@ -525,6 +526,7 @@ export interface Database {
           month: number;
           year: number;
           card_amount?: number;
+          advance_amount?: number;
           fines_amount?: number;
           bonus_amount?: number;
           fixed_salary?: number;
@@ -539,6 +541,7 @@ export interface Database {
           month?: number;
           year?: number;
           card_amount?: number;
+          advance_amount?: number;
           fines_amount?: number;
           bonus_amount?: number;
           fixed_salary?: number;

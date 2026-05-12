@@ -81,11 +81,12 @@ export function EarningsEditPage({
 
   // Monthly summary fields
   const [mechanicCard, setMechanicCard] = useState("");
+  const [mechanicAdvance, setMechanicAdvance] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
   const [mechanicBonus, setMechanicBonus] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
-  const [receptionistCash, setReceptionistCash] = useState("");
+  const [receptionistAdvance, setReceptionistAdvance] = useState("");
   const [receptionistFines, setReceptionistFines] = useState("");
 
   const [pdfGenerating, setPdfGenerating] = useState(false);
@@ -134,23 +135,25 @@ export function EarningsEditPage({
     if (sumData) {
       if (workerType === "mechanic") {
         setMechanicCard(sumData.card_amount?.toString() || "");
+        setMechanicAdvance(sumData.advance_amount?.toString() || "");
         setMechanicFines(sumData.fines_amount?.toString() || "");
         setMechanicBonus(sumData.bonus_amount?.toString() || "");
       } else {
         setReceptionistFixed(sumData.fixed_salary?.toString() || "");
         setReceptionistCard(sumData.card_amount?.toString() || "");
-        setReceptionistCash(sumData.cash_amount?.toString() || "");
+        setReceptionistAdvance(sumData.advance_amount?.toString() || "");
         setReceptionistFines(sumData.fines_amount?.toString() || "");
       }
     } else {
       if (workerType === "mechanic") {
         setMechanicCard("");
+        setMechanicAdvance("");
         setMechanicFines("");
         setMechanicBonus("");
       } else {
         setReceptionistFixed("");
         setReceptionistCard("");
-        setReceptionistCash("");
+        setReceptionistAdvance("");
         setReceptionistFines("");
       }
     }
@@ -268,17 +271,18 @@ export function EarningsEditPage({
   const mechanicTotal = entries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;
   const cardVal = parseFloat(mechanicCard) || 0;
+  const advanceVal = parseFloat(mechanicAdvance) || 0;
   const finesVal = parseFloat(mechanicFines) || 0;
   const bonusVal = parseFloat(mechanicBonus) || 0;
-  const mechanicCash = mechanicNet - cardVal - finesVal + bonusVal;
+  const mechanicCash = mechanicNet - cardVal - advanceVal - finesVal + bonusVal;
 
   const receptionistTotal = entries.reduce((s, e) => s + (e.earnings || 0), 0);
   const recFixedVal = parseFloat(receptionistFixed) || 0;
   const recCardVal = parseFloat(receptionistCard) || 0;
-  const recCashVal = parseFloat(receptionistCash) || 0;
+  const recAdvanceVal = parseFloat(receptionistAdvance) || 0;
   const recFinesVal = parseFloat(receptionistFines) || 0;
   const recTotalSalary = receptionistTotal + recFixedVal;
-  const recRemaining = recTotalSalary - recCardVal - recFinesVal - recCashVal;
+  const recCash = recTotalSalary - recCardVal - recAdvanceVal - recFinesVal;
 
   const monthLabel = isBg
     ? MONTH_NAMES_BG[month - 1]
@@ -316,6 +320,7 @@ export function EarningsEditPage({
             year={year.toString()}
             entries={pdfEntries}
             card={cardVal}
+            advance={advanceVal}
             fines={finesVal}
             bonus={bonusVal}
           />
@@ -338,7 +343,8 @@ export function EarningsEditPage({
             entries={pdfEntries}
             fixedSalary={recFixedVal}
             card={recCardVal}
-            cash={recCashVal}
+            advance={recAdvanceVal}
+            cash={recCash}
             fines={recFinesVal}
           />
         );
@@ -771,7 +777,7 @@ export function EarningsEditPage({
                     <p className="text-xs text-mb-silver uppercase tracking-wide">
                       {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                     </p>
-                    <div className="grid grid-cols-3 gap-3 max-w-xl">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
                       <div className="space-y-1">
                         <Label className="text-xs">
                           {isBg ? "Карта (€)" : "Card (€)"}
@@ -785,6 +791,25 @@ export function EarningsEditPage({
                             setMechanicCard(e.target.value);
                             saveMonthlySummary({
                               card_amount: parseFloat(e.target.value) || 0,
+                            });
+                          }}
+                          className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {isBg ? "Аванс (€)" : "Advance (€)"}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={mechanicAdvance}
+                          onChange={(e) => {
+                            setMechanicAdvance(e.target.value);
+                            saveMonthlySummary({
+                              advance_amount: parseFloat(e.target.value) || 0,
                             });
                           }}
                           className="bg-gray-100 text-gray-900 border-mb-border text-sm"
@@ -843,22 +868,40 @@ export function EarningsEditPage({
                 </>
               ) : (
                 <>
-                  <div className="border-t border-mb-border pt-3 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-mb-silver">
-                        {isBg ? "Заработка общо (%)" : "Total Earnings (%)"}
-                      </span>
-                      <span className="text-mb-silver">
-                        {receptionistTotal.toFixed(2)} €
-                      </span>
+                  <div className="border-t border-mb-border pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl">
+                      <div className="rounded-lg border border-mb-border bg-mb-black/40 px-4 py-3 flex flex-col items-center gap-1">
+                        <span className="text-mb-silver text-xs uppercase tracking-wide">
+                          {isBg ? "Заработка (%)" : "Earnings (%)"}
+                        </span>
+                        <span className="text-mb-blue text-lg font-bold whitespace-nowrap">
+                          {receptionistTotal.toFixed(2)} €
+                        </span>
+                      </div>
+                      <div className="rounded-lg border border-mb-border bg-mb-black/40 px-4 py-3 flex flex-col items-center gap-1">
+                        <span className="text-mb-silver text-xs uppercase tracking-wide">
+                          {isBg ? "Твърдо" : "Fixed"}
+                        </span>
+                        <span className="text-white text-lg font-bold">
+                          {recFixedVal.toFixed(2)} €
+                        </span>
+                      </div>
+                      <div className="rounded-lg border border-green-500/40 bg-green-500/5 px-4 py-3 flex flex-col items-center gap-1">
+                        <span className="text-mb-silver text-xs uppercase tracking-wide">
+                          {isBg ? "Обща заплата" : "Total Salary"}
+                        </span>
+                        <span className="text-green-400 text-xl font-bold">
+                          {recTotalSalary.toFixed(2)} €
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="border-t border-mb-border pt-3 space-y-3">
                     <p className="text-xs text-mb-silver uppercase tracking-wide">
-                      {isBg ? "Месечно обобщение" : "Monthly Summary"}
+                      {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                     </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
                       <div className="space-y-1">
                         <Label className="text-xs">
                           {isBg ? "Твърдо (€)" : "Fixed Salary (€)"}
@@ -899,17 +942,17 @@ export function EarningsEditPage({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          {isBg ? "В Брой (€)" : "Cash (€)"}
+                          {isBg ? "Аванс (€)" : "Advance (€)"}
                         </Label>
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={receptionistCash}
+                          value={receptionistAdvance}
                           onChange={(e) => {
-                            setReceptionistCash(e.target.value);
+                            setReceptionistAdvance(e.target.value);
                             saveMonthlySummary({
-                              cash_amount: parseFloat(e.target.value) || 0,
+                              advance_amount: parseFloat(e.target.value) || 0,
                             });
                           }}
                           className="bg-gray-100 text-gray-900 border-mb-border text-sm"
@@ -937,20 +980,12 @@ export function EarningsEditPage({
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2">
+                    <div className="flex justify-between items-center pt-2 max-w-xl">
                       <span className="text-mb-silver text-sm">
-                        {isBg ? "Обща заплата" : "Total Salary"}
-                      </span>
-                      <span className="text-green-400 text-lg font-bold">
-                        {recTotalSalary.toFixed(2)} €
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-white text-sm font-semibold">
-                        {isBg ? "Остатък" : "Remaining"}
+                        {isBg ? "В БРОЙ" : "Cash"}
                       </span>
                       <span className="text-white text-xl font-bold">
-                        {recRemaining.toFixed(2)} €
+                        {recCash.toFixed(2)} €
                       </span>
                     </div>
                   </div>

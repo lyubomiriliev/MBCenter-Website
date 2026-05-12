@@ -104,6 +104,7 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   // CL-Class
   { id: 'c215', name: 'CL-Class (C215)', class: 'CL-Class', years: generateYears(1999, 2006) },
   { id: 'c216', name: 'CL-Class (C216)', class: 'CL-Class', years: generateYears(2006, 2014) },
+  { id: '216', name: '216', class: 'CL-Class', years: generateYears(2006, 2014) },
 
   // CLS
   { id: 'c219', name: 'CLS (C219)', class: 'CLS', years: generateYears(2004, 2010) },
@@ -163,6 +164,7 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'w164', name: 'ML-Class (W164)', class: 'GLE', years: generateYears(2005, 2011) },
   { id: 'w166', name: 'ML/GLE (W166)', class: 'GLE', years: generateYears(2011, 2019) },
   { id: 'c292', name: 'GLE Coupe (C292)', class: 'GLE', years: generateYears(2015, 2019) },
+  { id: '292', name: '292', class: 'GLE', years: generateYears(2015, 2019) },
   { id: 'v167', name: 'GLE (V167)', class: 'GLE', years: generateYears(2019, 2026) },
   { id: 'c167', name: 'GLE Coupe (C167)', class: 'GLE', years: generateYears(2019, 2026) },
 

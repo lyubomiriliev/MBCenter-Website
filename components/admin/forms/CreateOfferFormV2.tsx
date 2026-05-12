@@ -3326,7 +3326,7 @@ export function CreateOfferFormV2({
                             {t("offerCreatedAt")}:
                           </span>{" "}
                           {new Date(
-                            (metaOffer as any).last_edited_at ?? metaOffer.updated_at ?? metaOffer.created_at,
+                            (metaOffer as any).last_edited_at ?? metaOffer.created_at,
                           ).toLocaleDateString("bg-BG", {
                             year: "numeric",
                             month: "2-digit",

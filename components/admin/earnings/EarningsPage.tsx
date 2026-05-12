@@ -110,11 +110,12 @@ export function EarningsPage() {
 
   // Monthly summary fields for active worker
   const [mechanicCard, setMechanicCard] = useState("");
+  const [mechanicAdvance, setMechanicAdvance] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
   const [mechanicBonus, setMechanicBonus] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
-  const [receptionistCash, setReceptionistCash] = useState("");
+  const [receptionistAdvance, setReceptionistAdvance] = useState("");
   const [receptionistFines, setReceptionistFines] = useState("");
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
@@ -233,13 +234,14 @@ export function EarningsPage() {
         if (type === "mechanic") {
           setMechanicEntries([]);
           setMechanicCard("");
+          setMechanicAdvance("");
           setMechanicFines("");
           setMechanicBonus("");
         } else {
           setReceptionistEntries([]);
           setReceptionistFixed("");
           setReceptionistCard("");
-          setReceptionistCash("");
+          setReceptionistAdvance("");
           setReceptionistFines("");
         }
         return;
@@ -276,10 +278,12 @@ export function EarningsPage() {
       if (type === "mechanic") {
         if (sumData) {
           setMechanicCard(sumData.card_amount?.toString() || "");
+          setMechanicAdvance(sumData.advance_amount?.toString() || "");
           setMechanicFines(sumData.fines_amount?.toString() || "");
           setMechanicBonus(sumData.bonus_amount?.toString() || "");
         } else {
           setMechanicCard("");
+          setMechanicAdvance("");
           setMechanicFines("");
           setMechanicBonus("");
         }
@@ -287,12 +291,12 @@ export function EarningsPage() {
         if (sumData) {
           setReceptionistFixed(sumData.fixed_salary?.toString() || "");
           setReceptionistCard(sumData.card_amount?.toString() || "");
-          setReceptionistCash(sumData.cash_amount?.toString() || "");
+          setReceptionistAdvance(sumData.advance_amount?.toString() || "");
           setReceptionistFines(sumData.fines_amount?.toString() || "");
         } else {
           setReceptionistFixed("");
           setReceptionistCard("");
-          setReceptionistCash("");
+          setReceptionistAdvance("");
           setReceptionistFines("");
         }
       }
@@ -462,6 +466,7 @@ export function EarningsPage() {
             year={selectedYear.toString()}
             entries={pdfEntries}
             card={parseFloat(mechanicCard) || 0}
+            advance={parseFloat(mechanicAdvance) || 0}
             fines={parseFloat(mechanicFines) || 0}
             bonus={parseFloat(mechanicBonus) || 0}
           />
@@ -484,8 +489,9 @@ export function EarningsPage() {
             entries={pdfEntries}
             fixedSalary={parseFloat(receptionistFixed) || 0}
             card={parseFloat(receptionistCard) || 0}
-            cash={parseFloat(receptionistCash) || 0}
+            advance={parseFloat(receptionistAdvance) || 0}
             fines={parseFloat(receptionistFines) || 0}
+            cash={recCash}
           />
         );
         filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${selectedYear}.pdf`;
@@ -551,9 +557,10 @@ export function EarningsPage() {
   const mechanicTotal = mechanicEntries.reduce((s, e) => s + (e.total || 0), 0);
   const mechanicNet = mechanicTotal * 0.5;
   const mechCardVal = parseFloat(mechanicCard) || 0;
+  const mechAdvanceVal = parseFloat(mechanicAdvance) || 0;
   const mechFinesVal = parseFloat(mechanicFines) || 0;
   const mechBonusVal = parseFloat(mechanicBonus) || 0;
-  const mechanicCash = mechanicNet - mechCardVal - mechFinesVal + mechBonusVal;
+  const mechanicCash = mechanicNet - mechCardVal - mechAdvanceVal - mechFinesVal + mechBonusVal;
 
   const receptionistTotal = receptionistEntries.reduce(
     (s, e) => s + (e.earnings || 0),
@@ -561,10 +568,10 @@ export function EarningsPage() {
   );
   const recFixedVal = parseFloat(receptionistFixed) || 0;
   const recCardVal = parseFloat(receptionistCard) || 0;
-  const recCashVal = parseFloat(receptionistCash) || 0;
+  const recAdvanceVal = parseFloat(receptionistAdvance) || 0;
   const recFinesVal = parseFloat(receptionistFines) || 0;
   const recTotalSalary = receptionistTotal + recFixedVal;
-  const recRemaining = recTotalSalary - recCardVal - recFinesVal - recCashVal;
+  const recCash = recTotalSalary - recCardVal - recAdvanceVal - recFinesVal;
 
   return (
     <div className="space-y-6 p-4 sm:p-10">
@@ -924,7 +931,7 @@ export function EarningsPage() {
                         <p className="text-xs text-mb-silver uppercase tracking-wide">
                           {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                         </p>
-                        <div className="grid grid-cols-3 gap-3 max-w-xl">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
                           <div className="space-y-1">
                             <Label className="text-xs">
                               {isBg ? "Карта (€)" : "Card (€)"}
@@ -941,6 +948,30 @@ export function EarningsPage() {
                                   "mechanic",
                                   {
                                     card_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
+                                );
+                              }}
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {isBg ? "Аванс (€)" : "Advance (€)"}
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={mechanicAdvance}
+                              onChange={(e) => {
+                                setMechanicAdvance(e.target.value);
+                                saveMonthlySummary(
+                                  selectedMechanic,
+                                  "mechanic",
+                                  {
+                                    advance_amount:
                                       parseFloat(e.target.value) || 0,
                                   },
                                 );
@@ -1215,13 +1246,21 @@ export function EarningsPage() {
                             {receptionistTotal.toFixed(2)} €
                           </span>
                         </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-mb-silver">
+                            {isBg ? "Обща заплата" : "Total Salary"}
+                          </span>
+                          <span className="text-green-400 font-semibold">
+                            {recTotalSalary.toFixed(2)} €
+                          </span>
+                        </div>
                       </div>
 
                       <div className="border-t border-mb-border mt-3 pt-3 space-y-3">
                         <p className="text-xs text-mb-silver uppercase tracking-wide">
-                          {isBg ? "Месечно обобщение" : "Monthly Summary"}
+                          {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                         </p>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
                           <div className="space-y-1">
                             <Label className="text-xs">
                               {isBg
@@ -1274,20 +1313,20 @@ export function EarningsPage() {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">
-                              {isBg ? "Кеш (€)" : "Cash (€)"}
+                              {isBg ? "Аванс (€)" : "Advance (€)"}
                             </Label>
                             <Input
                               type="number"
                               min="0"
                               step="0.01"
-                              value={receptionistCash}
+                              value={receptionistAdvance}
                               onChange={(e) => {
-                                setReceptionistCash(e.target.value);
+                                setReceptionistAdvance(e.target.value);
                                 saveMonthlySummary(
                                   selectedReceptionist,
                                   "receptionist",
                                   {
-                                    cash_amount:
+                                    advance_amount:
                                       parseFloat(e.target.value) || 0,
                                   },
                                 );
@@ -1322,20 +1361,12 @@ export function EarningsPage() {
                           </div>
                         </div>
 
-                        <div className="flex justify-between text-sm font-semibold pt-1">
+                        <div className="flex justify-between text-sm pt-1 max-w-xl">
                           <span className="text-mb-silver">
-                            {isBg ? "Обща заплата" : "Total Salary"}
+                            {isBg ? "В БРОЙ" : "Cash"}
                           </span>
-                          <span className="text-green-400">
-                            {recTotalSalary.toFixed(2)} €
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm font-bold pt-1">
-                          <span className="text-white">
-                            {isBg ? "Остатък" : "Remaining"}
-                          </span>
-                          <span className="text-white">
-                            {recRemaining.toFixed(2)} €
+                          <span className="text-white font-bold">
+                            {recCash.toFixed(2)} €
                           </span>
                         </div>
                       </div>

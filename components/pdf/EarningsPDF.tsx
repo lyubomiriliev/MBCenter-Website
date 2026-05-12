@@ -37,6 +37,7 @@ interface MechanicEarningsPDFProps {
   year: string;
   entries: MechanicEarningEntry[];
   card?: number;
+  advance?: number;
   fines?: number;
   bonus?: number;
 }
@@ -48,6 +49,7 @@ interface ReceptionistEarningsPDFProps {
   entries: ReceptionistEarningEntry[];
   fixedSalary?: number;
   card?: number;
+  advance?: number;
   cash?: number;
   fines?: number;
 }
@@ -193,6 +195,7 @@ export function MechanicEarningsPDF({
   year,
   entries,
   card,
+  advance,
   fines,
   bonus,
 }: MechanicEarningsPDFProps) {
@@ -201,9 +204,10 @@ export function MechanicEarningsPDF({
   const totalHours = sumHours(entries.map((e) => e.repairTime));
   const net50 = totalEarnings * 0.5;
   const cardAmount = card || 0;
+  const advanceAmount = advance || 0;
   const finesAmount = fines || 0;
   const bonusAmount = bonus || 0;
-  const cashAmount = net50 - cardAmount - finesAmount + bonusAmount;
+  const cashAmount = net50 - cardAmount - advanceAmount - finesAmount + bonusAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -261,6 +265,12 @@ export function MechanicEarningsPDF({
               <Text style={styles.summaryValue}>-{cardAmount.toFixed(2)} €</Text>
             </View>
           )}
+          {advanceAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Аванс</Text>
+              <Text style={styles.summaryValue}>-{advanceAmount.toFixed(2)} €</Text>
+            </View>
+          )}
           {bonusAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryBold}>Бонус (€)</Text>
@@ -304,6 +314,7 @@ export function ReceptionistEarningsPDF({
   entries,
   fixedSalary,
   card,
+  advance,
   cash,
   fines,
 }: ReceptionistEarningsPDFProps) {
@@ -311,10 +322,11 @@ export function ReceptionistEarningsPDF({
   const totalEarnings = entries.reduce((s, e) => s + e.earnings, 0);
   const fixedAmount = fixedSalary || 0;
   const cardAmount = card || 0;
+  const advanceAmount = advance || 0;
   const cashAmount = cash || 0;
   const finesAmount = fines || 0;
   const totalSalary = totalEarnings + fixedAmount;
-  const remaining = totalSalary - cardAmount - finesAmount - cashAmount;
+  const remaining = totalSalary - cardAmount - advanceAmount - finesAmount - cashAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -370,20 +382,20 @@ export function ReceptionistEarningsPDF({
             <Text style={styles.summaryLabel}>Карта</Text>
             <Text style={styles.summaryValue}>-{cardAmount.toFixed(2)} €</Text>
           </View>
+          {advanceAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Аванс</Text>
+              <Text style={styles.summaryValue}>-{advanceAmount.toFixed(2)} €</Text>
+            </View>
+          )}
           {finesAmount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Глоби</Text>
               <Text style={styles.summaryValue}>-{finesAmount.toFixed(2)} €</Text>
             </View>
           )}
-          {cashAmount > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>В Брой</Text>
-              <Text style={styles.summaryValue}>-{cashAmount.toFixed(2)} €</Text>
-            </View>
-          )}
           <View style={styles.summaryRowHighlight}>
-            <Text style={styles.summaryBold}>Остатък</Text>
+            <Text style={styles.summaryBold}>В БРОЙ</Text>
             <Text style={styles.summaryValueBold}>{remaining.toFixed(2)} €</Text>
           </View>
         </View>

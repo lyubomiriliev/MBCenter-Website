@@ -438,6 +438,7 @@ export function CheckInspectionForm({
       router.push(checksPath);
     } catch (err) {
       console.error("Create inspection failed:", err);
+      setToast({ type: "error", message: "Грешка при запазване! Данните не са изгубени." });
     } finally {
       setGenerating(false);
     }
@@ -510,6 +511,7 @@ export function CheckInspectionForm({
       }
     } catch (err) {
       console.error("PDF generation failed:", err);
+      setToast({ type: "error", message: "Грешка при генериране! Данните не са изгубени." });
     } finally {
       setGenerating(false);
     }
