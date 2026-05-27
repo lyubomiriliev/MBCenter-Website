@@ -307,7 +307,7 @@ function AddPersonRow({
   );
 }
 
-type TabId = "account" | "team" | "display" | "earnings";
+type TabId = "account" | "team" | "display" | "earnings" | "offers";
 
 export default function SettingsPage() {
   const locale = useLocale();
@@ -366,6 +366,14 @@ export default function SettingsPage() {
     useState("");
   const [savingEarnings, setSavingEarnings] = useState(false);
 
+  // Offer settings
+  const [defaultPricePerHour, setDefaultPricePerHour] = useState("65");
+  const [defaultMileageUnit, setDefaultMileageUnit] = useState<"km" | "miles">("km");
+  const [defaultPartsDiscount, setDefaultPartsDiscount] = useState("0");
+  const [defaultServicesDiscount, setDefaultServicesDiscount] = useState("0");
+  const [defaultNotes, setDefaultNotes] = useState("");
+  const [savingOfferSettings, setSavingOfferSettings] = useState(false);
+
   // Receptionists
   const [receptionistsList, setReceptionistsList] = useState<Receptionist[]>(
     [],
@@ -401,10 +409,22 @@ export default function SettingsPage() {
     const loadSettings = async () => {
       const { data } = await (supabase.from("app_settings").select("*") as any);
       if (data) {
-        const mech = data.find((s: any) => s.key === "mechanic_rate")?.value;
-        const rec = data.find((s: any) => s.key === "receptionist_pct")?.value;
+        const getNum = (key: string) => data.find((s: any) => s.key === key)?.value;
+        const getText = (key: string) => data.find((s: any) => s.key === key)?.value_text;
+        const mech = getNum("mechanic_rate");
+        const rec = getNum("receptionist_pct");
+        const defPrice = getNum("default_price_per_hour");
+        const defMileage = getText("default_mileage_unit");
+        const defPartsDis = getNum("default_parts_discount");
+        const defSvcDis = getNum("default_services_discount");
+        const defNotes = getText("default_notes");
         if (mech !== undefined) setMechanicEarningsRate(String(mech));
         if (rec !== undefined) setReceptionistEarningsPercent(String(rec));
+        if (defPrice !== undefined) setDefaultPricePerHour(String(defPrice));
+        if (defMileage) setDefaultMileageUnit(defMileage === "miles" ? "miles" : "km");
+        if (defPartsDis !== undefined) setDefaultPartsDiscount(String(defPartsDis));
+        if (defSvcDis !== undefined) setDefaultServicesDiscount(String(defSvcDis));
+        if (defNotes !== undefined) setDefaultNotes(defNotes ?? "");
         const creatorsRow = data.find((s: any) => s.key === "document_creators");
         if (creatorsRow?.value_text) {
           try {
@@ -727,6 +747,44 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveOfferSettings = async () => {
+    setSavingOfferSettings(true);
+    const upserts = [
+      supabase.from("app_settings").upsert(
+        { key: "default_price_per_hour", value: Number(defaultPricePerHour) || 65 } as any,
+        { onConflict: "key" },
+      ),
+      (supabase.from("app_settings") as any).upsert(
+        { key: "default_mileage_unit", value_text: defaultMileageUnit },
+        { onConflict: "key" },
+      ),
+      supabase.from("app_settings").upsert(
+        { key: "default_parts_discount", value: Number(defaultPartsDiscount) || 0 } as any,
+        { onConflict: "key" },
+      ),
+      supabase.from("app_settings").upsert(
+        { key: "default_services_discount", value: Number(defaultServicesDiscount) || 0 } as any,
+        { onConflict: "key" },
+      ),
+      (supabase.from("app_settings") as any).upsert(
+        { key: "default_notes", value_text: defaultNotes },
+        { onConflict: "key" },
+      ),
+    ];
+    const results = await Promise.all(upserts);
+    setSavingOfferSettings(false);
+    const hasError = results.some((r: any) => r.error);
+    if (hasError) {
+      showError(isBg ? "Грешка при запазване" : "Error saving settings");
+    } else {
+      showSuccess(
+        isBg
+          ? "Настройките на офертата са запазени"
+          : "Offer settings saved",
+      );
+    }
+  };
+
   const accountOptions: { value: AccountKey; label: string }[] = [
     { value: "admin", label: isBg ? "Админ" : "Admin" },
     { value: "reception", label: isBg ? "Приемчик" : "Receptionist" },
@@ -806,6 +864,25 @@ export default function SettingsPage() {
             strokeLinejoin="round"
             strokeWidth={1.75}
             d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+    },
+    {
+      id: "offers",
+      label: isBg ? "Оферти" : "Offers",
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.75}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
       ),
@@ -1329,6 +1406,180 @@ export default function SettingsPage() {
                     : "Save Settings"}
               </Button>
             </SubSection>
+          </div>
+        )}
+
+        {/* Offers tab */}
+        {activeTab === "offers" && (
+          <div className="space-y-6">
+            {/* Pricing */}
+            <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+              <SubSection title={isBg ? "Ценообразуване" : "Pricing"}>
+                <p className="text-sm text-mb-silver/60">
+                  {isBg
+                    ? "Стойности по подразбиране при добавяне на сервизна дейност."
+                    : "Default values when adding a new service action."}
+                </p>
+                <div className="bg-mb-black border border-mb-border rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-mb-blue/10 border border-mb-blue/20 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {isBg ? "Цена на час по подразбиране" : "Default Price Per Hour"}
+                      </p>
+                      <p className="text-xs text-mb-silver/50">
+                        {isBg ? "Попълва се при добавяне на почасова сервизна дейност" : "Pre-filled when adding an hourly service action"}
+                      </p>
+                    </div>
+                  </div>
+                  <InputField
+                    label={isBg ? "Цена/час" : "Price/hour"}
+                    type="number"
+                    value={defaultPricePerHour}
+                    onChange={setDefaultPricePerHour}
+                    placeholder="65.00"
+                    suffix="€/h"
+                  />
+                </div>
+              </SubSection>
+            </div>
+
+            {/* Discounts */}
+            <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+              <SubSection title={isBg ? "Отстъпки" : "Discounts"}>
+                <p className="text-sm text-mb-silver/60">
+                  {isBg
+                    ? "Процент отстъпка, приложен автоматично при нова оферта."
+                    : "Discount percentages automatically applied on new offers."}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-mb-black border border-mb-border rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-mb-blue/10 border border-mb-blue/20 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {isBg ? "Части" : "Parts"}
+                        </p>
+                        <p className="text-xs text-mb-silver/50">
+                          {isBg ? "Отстъпка за части" : "Discount on parts"}
+                        </p>
+                      </div>
+                    </div>
+                    <InputField
+                      label={isBg ? "Отстъпка части" : "Parts discount"}
+                      type="number"
+                      value={defaultPartsDiscount}
+                      onChange={setDefaultPartsDiscount}
+                      placeholder="0"
+                      suffix="%"
+                    />
+                  </div>
+                  <div className="bg-mb-black border border-mb-border rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-mb-blue/10 border border-mb-blue/20 flex items-center justify-center shrink-0">
+                        <svg className="w-4 h-4 text-mb-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          {isBg ? "Услуги" : "Services"}
+                        </p>
+                        <p className="text-xs text-mb-silver/50">
+                          {isBg ? "Отстъпка за сервизни дейности" : "Discount on service actions"}
+                        </p>
+                      </div>
+                    </div>
+                    <InputField
+                      label={isBg ? "Отстъпка услуги" : "Services discount"}
+                      type="number"
+                      value={defaultServicesDiscount}
+                      onChange={setDefaultServicesDiscount}
+                      placeholder="0"
+                      suffix="%"
+                    />
+                  </div>
+                </div>
+              </SubSection>
+            </div>
+
+            {/* Vehicle defaults */}
+            <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+              <SubSection title={isBg ? "Автомобил" : "Vehicle"}>
+                <p className="text-sm text-mb-silver/60">
+                  {isBg
+                    ? "Настройки по подразбиране за данните на автомобила."
+                    : "Default settings for vehicle data."}
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-mb-silver/70 uppercase tracking-wide">
+                    {isBg ? "Единица за пробег" : "Mileage unit"}
+                  </label>
+                  <div className="flex gap-2">
+                    {(["km", "miles"] as const).map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => setDefaultMileageUnit(unit)}
+                        className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                          defaultMileageUnit === unit
+                            ? "border-mb-blue bg-mb-blue/10 text-white"
+                            : "border-mb-border text-mb-silver/60 hover:text-white hover:border-mb-silver/40"
+                        }`}
+                      >
+                        {unit === "km" ? "Километри (km)" : "Мили (miles)"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </SubSection>
+            </div>
+
+            {/* Default notes */}
+            <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
+              <SubSection title={isBg ? "Бележки по подразбиране" : "Default Notes"}>
+                <p className="text-sm text-mb-silver/60">
+                  {isBg
+                    ? "Текст, попълван автоматично в полето за бележки при нова оферта."
+                    : "Text pre-filled in the notes field when creating a new offer."}
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-mb-silver/70 uppercase tracking-wide">
+                    {isBg ? "Бележки" : "Notes"}
+                  </label>
+                  <textarea
+                    value={defaultNotes}
+                    onChange={(e) => setDefaultNotes(e.target.value)}
+                    rows={4}
+                    placeholder={isBg ? "Въведете бележки по подразбиране..." : "Enter default notes..."}
+                    className="w-full bg-mb-black border border-mb-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-mb-silver/40 focus:outline-none focus:ring-1 focus:ring-mb-blue resize-none"
+                  />
+                </div>
+              </SubSection>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleSaveOfferSettings}
+              disabled={savingOfferSettings}
+              className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 w-full sm:w-auto"
+            >
+              {savingOfferSettings
+                ? isBg
+                  ? "Запазване..."
+                  : "Saving..."
+                : isBg
+                  ? "Запази настройките"
+                  : "Save Settings"}
+            </Button>
           </div>
         )}
       </div>

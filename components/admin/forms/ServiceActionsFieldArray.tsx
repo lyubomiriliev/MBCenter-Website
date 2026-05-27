@@ -50,6 +50,7 @@ import {
   useUpdateHourlyActivity,
   useDeleteHourlyActivity,
 } from "@/hooks/useHourlyActivities";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 export type FixedActivityItem = { id: string; name: string; priceEur: number };
 
@@ -59,18 +60,20 @@ function AddEditServiceActionModal({
   initialValues,
   editIndex,
   onConfirm,
+  defaultPricePerHour = 65,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialValues: ServiceActionFormData | null;
   editIndex: number | null;
   onConfirm: (action: ServiceActionFormData) => void;
+  defaultPricePerHour?: number;
 }) {
   const t = useTranslations("admin.form");
   const [isFixedPrice, setIsFixedPrice] = useState(false);
   const [actionName, setActionName] = useState("");
   const [timeInput, setTimeInput] = useState("1");
-  const [pricePerHour, setPricePerHour] = useState(65);
+  const [pricePerHour, setPricePerHour] = useState(defaultPricePerHour);
   const [priceInput, setPriceInput] = useState("");
   const [fixedPriceAmount, setFixedPriceAmount] = useState(0);
   const [fixedPriceInput, setFixedPriceInput] = useState("");
@@ -98,13 +101,13 @@ function AddEditServiceActionModal({
   const [addHourlyModalOpen, setAddHourlyModalOpen] = useState(false);
   const [editingHourly, setEditingHourly] = useState<{ id: string; name: string; pricePerHour: number } | null>(null);
   const [newHourlyName, setNewHourlyName] = useState("");
-  const [newHourlyPrice, setNewHourlyPrice] = useState("65");
+  const [newHourlyPrice, setNewHourlyPrice] = useState(() => defaultPricePerHour.toString());
 
-  const reset = useCallback((vals: ServiceActionFormData | null, activities: FixedActivityItem[]) => {
+  const reset = useCallback((vals: ServiceActionFormData | null, activities: FixedActivityItem[], defaultPrice: number) => {
     if (vals) {
       setActionName(vals.actionName);
       setTimeInput(vals.timeRequired ?? "1");
-      const price = vals.pricePerHour ?? 65;
+      const price = vals.pricePerHour ?? defaultPrice;
       setPricePerHour(price);
       setPriceInput(price.toString());
       setIsFixedPrice(vals.isFixedPrice ?? false);
@@ -120,8 +123,8 @@ function AddEditServiceActionModal({
     } else {
       setActionName("");
       setTimeInput("1");
-      setPricePerHour(65);
-      setPriceInput("");
+      setPricePerHour(defaultPrice);
+      setPriceInput(defaultPrice.toString());
       setIsFixedPrice(false);
       setFixedPriceAmount(0);
       setFixedPriceInput("");
@@ -135,7 +138,7 @@ function AddEditServiceActionModal({
     setAddHourlyModalOpen(false);
     setEditingHourly(null);
     setNewHourlyName("");
-    setNewHourlyPrice("65");
+    setNewHourlyPrice(defaultPrice.toString());
   }, []);
 
   const activitiesForReset = useMemo(
@@ -145,9 +148,9 @@ function AddEditServiceActionModal({
 
   const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (open && !prevOpenRef.current) reset(initialValues, activitiesForReset);
+    if (open && !prevOpenRef.current) reset(initialValues, activitiesForReset, defaultPricePerHour);
     prevOpenRef.current = open;
-  }, [open, initialValues, reset, activitiesForReset]);
+  }, [open, initialValues, reset, activitiesForReset, defaultPricePerHour]);
 
   const handleOk = () => {
     const name = actionName.trim();
@@ -652,7 +655,7 @@ function AddEditServiceActionModal({
                       setNewHourlyName("");
                       const lastPrice = hourlyActivities.length > 0
                         ? hourlyActivities[hourlyActivities.length - 1].price_per_hour_eur
-                        : 65;
+                        : defaultPricePerHour;
                       setNewHourlyPrice(lastPrice.toString());
                       setAddHourlyModalOpen(true);
                     }}
@@ -943,6 +946,7 @@ const ServiceActionRow = memo(function ServiceActionRow({ index, remove, openEdi
 export function ServiceActionsFieldArray() {
   const t = useTranslations("admin.form");
   const { control, getValues, setValue } = useFormContext<OfferFormData>();
+  const { settings } = useAppSettings();
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: "serviceActions",
@@ -1102,6 +1106,7 @@ export function ServiceActionsFieldArray() {
         initialValues={modalInitial}
         editIndex={editIndex}
         onConfirm={handleModalConfirm}
+        defaultPricePerHour={settings.default_price_per_hour}
       />
     </Card>
   );

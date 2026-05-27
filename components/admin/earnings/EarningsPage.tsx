@@ -127,6 +127,7 @@ export function EarningsPage() {
       type: string;
       totalEarned: number;
       totalHours: number;
+      fixedSalary?: number;
     }[]
   >([]);
 
@@ -167,13 +168,18 @@ export function EarningsPage() {
 
   // Load earnings log (all workers, current month/year)
   const loadEarningsLog = useCallback(async () => {
-    const { data } = await supabase
-      .from("earnings_entries")
-      .select(
-        "worker_id, worker_name, worker_type, total, earnings, repair_time",
-      )
-      .eq("month", selectedMonth)
-      .eq("year", selectedYear);
+    const [{ data }, { data: summaries }] = await Promise.all([
+      supabase
+        .from("earnings_entries")
+        .select("worker_id, worker_name, worker_type, total, earnings, repair_time")
+        .eq("month", selectedMonth)
+        .eq("year", selectedYear),
+      supabase
+        .from("earnings_monthly_summary")
+        .select("worker_id, worker_type, fixed_salary")
+        .eq("month", selectedMonth)
+        .eq("year", selectedYear),
+    ]);
 
     if (!data) {
       setEarningsLog([]);
@@ -206,6 +212,12 @@ export function EarningsPage() {
       }
       grouped.set(key, existing);
     }
+
+    const summaryMap = new Map<string, number>();
+    for (const s of (summaries as any[]) || []) {
+      summaryMap.set(`${s.worker_type}:${s.worker_id}`, s.fixed_salary || 0);
+    }
+
     setEarningsLog(
       Array.from(grouped.values()).map((w) => ({
         id: w.id,
@@ -213,6 +225,7 @@ export function EarningsPage() {
         type: w.type,
         totalEarned: w.totalEarned,
         totalHours: sumHours(w.repairTimes),
+        fixedSalary: summaryMap.get(`${w.type}:${w.id}`) ?? 0,
       })),
     );
   }, [selectedMonth, selectedYear]);
@@ -696,33 +709,60 @@ export function EarningsPage() {
                   </div>
                   {/* Stats boxes */}
                   <div className="flex divide-x divide-mb-border/40">
-                    {w.type === "mechanic" && (
-                      <div className="flex flex-col items-center px-6 py-3 gap-1 flex-1">
-                        <span className="text-mb-silver text-[11px] uppercase tracking-wide">
-                          {isBg ? "Часове" : "Hours"}
-                        </span>
-                        <span className="text-mb-blue whitespace-nowrap text-base font-bold">
-                          {formatHours(w.totalHours)}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1">
-                      <span className="text-mb-silver text-[11px] uppercase tracking-wide">
-                        {isBg ? "Заработено" : "Earned"}
-                      </span>
-                      <span className="text-white text-base whitespace-nowrap font-bold">
-                        {w.totalEarned.toFixed(2)} €
-                      </span>
-                    </div>
-                    {w.type === "mechanic" && (
-                      <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1 bg-green-500/5">
-                        <span className="text-mb-silver text-[11px] uppercase tracking-wide whitespace-nowrap">
-                          {isBg ? "Нето 50%" : "Net 50%"}
-                        </span>
-                        <span className="text-green-400 text-base font-bold whitespace-nowrap">
-                          {(w.totalEarned * 0.5).toFixed(2)} €
-                        </span>
-                      </div>
+                    {w.type === "mechanic" ? (
+                      <>
+                        <div className="flex flex-col items-center px-6 py-3 gap-1 flex-1">
+                          <span className="text-mb-silver text-[11px] uppercase tracking-wide">
+                            {isBg ? "Часове" : "Hours"}
+                          </span>
+                          <span className="text-mb-blue whitespace-nowrap text-base font-bold">
+                            {formatHours(w.totalHours)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1">
+                          <span className="text-mb-silver text-[11px] uppercase tracking-wide">
+                            {isBg ? "Заработено" : "Earned"}
+                          </span>
+                          <span className="text-white text-base whitespace-nowrap font-bold">
+                            {w.totalEarned.toFixed(2)} €
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1 bg-green-500/5">
+                          <span className="text-mb-silver text-[11px] uppercase tracking-wide whitespace-nowrap">
+                            {isBg ? "Нето 50%" : "Net 50%"}
+                          </span>
+                          <span className="text-green-400 text-base font-bold whitespace-nowrap">
+                            {(w.totalEarned * 0.5).toFixed(2)} €
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1">
+                          <span className="text-mb-silver text-[11px] uppercase tracking-wide whitespace-nowrap">
+                            {isBg ? "Твърдо" : "Fixed"}
+                          </span>
+                          <span className="text-mb-blue whitespace-nowrap text-base font-bold">
+                            {(w.fixedSalary ?? 0).toFixed(2)} €
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1">
+                          <span className="text-mb-silver text-[11px] uppercase tracking-wide">
+                            {isBg ? "Заработено" : "Earned"}
+                          </span>
+                          <span className="text-white text-base whitespace-nowrap font-bold">
+                            {w.totalEarned.toFixed(2)} €
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center px-4 py-3 gap-1 flex-1 bg-green-500/5">
+                          <span className="text-mb-silver text-[11px] uppercase tracking-wide whitespace-nowrap">
+                            {isBg ? "Обща заплата" : "Total Salary"}
+                          </span>
+                          <span className="text-green-400 text-base font-bold whitespace-nowrap">
+                            {((w.fixedSalary ?? 0) + w.totalEarned).toFixed(2)} €
+                          </span>
+                        </div>
+                      </>
                     )}
                   </div>
                 </button>

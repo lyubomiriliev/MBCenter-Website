@@ -39,6 +39,7 @@ import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
 import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import { TransferDataModal } from "@/components/admin/warehouse/TransferDataModal";
 import { useOfferCalculations } from "@/hooks/useOfferCalculations";
 import type {
@@ -165,6 +166,8 @@ export function CreateOfferFormV2({
     refetch: refetchOffer,
   } = useOffer(offerId);
 
+  const { settings: appSettings, loading: appSettingsLoading } = useAppSettings();
+
   const methods = useForm<OfferFormData>({
     resolver: zodResolver(offerFormSchema) as any,
     defaultValues: defaultOfferFormValues,
@@ -194,6 +197,28 @@ export function CreateOfferFormV2({
   useEffect(() => {
     prepaymentsRef.current = prepayments;
   }, [prepayments]);
+
+  // Apply global offer defaults when creating a new offer (only if no saved draft exists)
+  useEffect(() => {
+    if (!isEditing && !appSettingsLoading) {
+      try {
+        const draft = localStorage.getItem(AUTOSAVE_KEY);
+        if (draft) {
+          const parsed = JSON.parse(draft);
+          const hoursSince = (Date.now() - new Date(parsed.timestamp).getTime()) / (1000 * 60 * 60);
+          if (hoursSince < 24 && parsed.formData) return;
+        }
+      } catch {}
+      methods.reset({
+        ...defaultOfferFormValues,
+        carMileageUnit: appSettings.default_mileage_unit,
+        discountPartsPercent: appSettings.default_parts_discount,
+        discountServicesPercent: appSettings.default_services_discount,
+        notes: appSettings.default_notes,
+      } as any);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, appSettingsLoading]);
 
   useEffect(() => {
     if (savedOffer) setPerformedBySelection(savedOffer.performed_by ?? "");
