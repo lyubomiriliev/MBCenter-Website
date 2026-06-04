@@ -43,14 +43,18 @@ interface WarehouseSuggestion {
   quantity: number | null;
 }
 
-function rankSuggestions(items: WarehouseSuggestion[], term: string, field: "name" | "part_number"): WarehouseSuggestion[] {
+function rankSuggestions(
+  items: WarehouseSuggestion[],
+  term: string,
+  field: "name" | "part_number",
+): WarehouseSuggestion[] {
   const t = term.toLowerCase();
   const score = (item: WarehouseSuggestion) => {
     const val = (item[field] ?? "").toLowerCase();
-    if (val === t) return 0;           // exact
-    if (val.startsWith(t)) return 1;   // prefix
+    if (val === t) return 0; // exact
+    if (val.startsWith(t)) return 1; // prefix
     if (val.includes(` ${t}`)) return 2; // word boundary
-    return 3;                          // substring anywhere
+    return 3; // substring anywhere
   };
   return [...items].sort((a, b) => score(a) - score(b));
 }
@@ -78,11 +82,15 @@ function AddEditPartModal({
   const [priceInput, setPriceInput] = useState("");
   // warehouseCostPrice holds the cost_price from the selected warehouse record;
   // it persists even when the user edits the sale price, so margin/profit stay live.
-  const [warehouseCostPrice, setWarehouseCostPrice] = useState<number | null>(null);
+  const [warehouseCostPrice, setWarehouseCostPrice] = useState<number | null>(
+    null,
+  );
   const [error, setError] = useState("");
 
   // "Добави в склада" state
-  const [whExistsState, setWhExistsState] = useState<"unknown" | "exists" | "notExists">("unknown");
+  const [whExistsState, setWhExistsState] = useState<
+    "unknown" | "exists" | "notExists"
+  >("unknown");
   const [showDeliveryPrompt, setShowDeliveryPrompt] = useState(false);
   const [deliveryPriceInput, setDeliveryPriceInput] = useState("");
   const [deliveryPrice, setDeliveryPrice] = useState(0);
@@ -92,11 +100,14 @@ function AddEditPartModal({
   // Warehouse lookup state (by part number)
   const [wsSuggestions, setWsSuggestions] = useState<WarehouseSuggestion[]>([]);
   const [wsDropdownOpen, setWsDropdownOpen] = useState(false);
-  const [wsMatchedPart, setWsMatchedPart] = useState<WarehouseSuggestion | null>(null);
+  const [wsMatchedPart, setWsMatchedPart] =
+    useState<WarehouseSuggestion | null>(null);
   const pnDropdownRef = useRef<HTMLDivElement>(null);
 
   // Warehouse lookup state (by name)
-  const [wsNameSuggestions, setWsNameSuggestions] = useState<WarehouseSuggestion[]>([]);
+  const [wsNameSuggestions, setWsNameSuggestions] = useState<
+    WarehouseSuggestion[]
+  >([]);
   const [wsNameDropdownOpen, setWsNameDropdownOpen] = useState(false);
   const nameDropdownRef = useRef<HTMLDivElement>(null);
   const skipNameSearch = useRef(false);
@@ -109,7 +120,11 @@ function AddEditPartModal({
       setPartNumber(vals.partNumber ?? "");
       setQuantity(vals.quantity ?? 1);
       setUnitPrice(vals.unitPrice ?? 0);
-      setPriceInput(vals.unitPrice != null && vals.unitPrice !== 0 ? vals.unitPrice.toString() : "");
+      setPriceInput(
+        vals.unitPrice != null && vals.unitPrice !== 0
+          ? vals.unitPrice.toString()
+          : "",
+      );
       setWarehouseCostPrice(vals.costPrice ?? null);
     } else {
       setDescription("");
@@ -128,7 +143,7 @@ function AddEditPartModal({
     setWsNameDropdownOpen(false);
     setWhExistsState("unknown");
     setShowDeliveryPrompt(false);
-    setDeliveryPriceInput("0");
+    setDeliveryPriceInput("");
     setDeliveryPrice(0);
     setWarehouseSuccess(false);
     skipNameSearch.current = true;
@@ -147,7 +162,9 @@ function AddEditPartModal({
     if (!pn) return;
     supabase
       .from("warehouse_parts")
-      .select("id, name, part_number, manufacturer, sale_price, cost_price, quantity")
+      .select(
+        "id, name, part_number, manufacturer, sale_price, cost_price, quantity",
+      )
       .eq("part_number", pn)
       .maybeSingle()
       .then(({ data }) => {
@@ -156,7 +173,7 @@ function AddEditPartModal({
         setWsMatchedPart(match);
         setWhExistsState("exists");
         // Only set warehouseCostPrice if it wasn't already loaded from the saved offer
-        setWarehouseCostPrice((prev) => prev ?? (match.cost_price ?? null));
+        setWarehouseCostPrice((prev) => prev ?? match.cost_price ?? null);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editIndex]);
@@ -201,11 +218,15 @@ function AddEditPartModal({
       try {
         const { data } = await supabase
           .from("warehouse_parts")
-          .select("id, name, part_number, manufacturer, sale_price, cost_price, quantity")
+          .select(
+            "id, name, part_number, manufacturer, sale_price, cost_price, quantity",
+          )
           .ilike("part_number", `%${term}%`)
           .limit(20);
         if (data && data.length > 0) {
-          setWsSuggestions(rankSuggestions(data as WarehouseSuggestion[], term, "part_number"));
+          setWsSuggestions(
+            rankSuggestions(data as WarehouseSuggestion[], term, "part_number"),
+          );
           setWsDropdownOpen(true);
         } else {
           setWsSuggestions([]);
@@ -234,11 +255,15 @@ function AddEditPartModal({
       try {
         const { data } = await supabase
           .from("warehouse_parts")
-          .select("id, name, part_number, manufacturer, sale_price, cost_price, quantity")
+          .select(
+            "id, name, part_number, manufacturer, sale_price, cost_price, quantity",
+          )
           .ilike("name", `%${term}%`)
           .limit(20);
         if (data && data.length > 0) {
-          setWsNameSuggestions(rankSuggestions(data as WarehouseSuggestion[], term, "name"));
+          setWsNameSuggestions(
+            rankSuggestions(data as WarehouseSuggestion[], term, "name"),
+          );
           setWsNameDropdownOpen(true);
         } else {
           setWsNameSuggestions([]);
@@ -255,7 +280,10 @@ function AddEditPartModal({
   useEffect(() => {
     if (!wsDropdownOpen) return;
     const handler = (e: MouseEvent) => {
-      if (pnDropdownRef.current && !pnDropdownRef.current.contains(e.target as Node)) {
+      if (
+        pnDropdownRef.current &&
+        !pnDropdownRef.current.contains(e.target as Node)
+      ) {
         setWsDropdownOpen(false);
       }
     };
@@ -266,7 +294,10 @@ function AddEditPartModal({
   useEffect(() => {
     if (!wsNameDropdownOpen) return;
     const handler = (e: MouseEvent) => {
-      if (nameDropdownRef.current && !nameDropdownRef.current.contains(e.target as Node)) {
+      if (
+        nameDropdownRef.current &&
+        !nameDropdownRef.current.contains(e.target as Node)
+      ) {
         setWsNameDropdownOpen(false);
       }
     };
@@ -367,22 +398,22 @@ function AddEditPartModal({
 
   // Fix #2: live margin/profit — always based on warehouseCostPrice (frozen when part selected)
   // and current unitPrice (updated on every keystroke).
-  const liveCost = warehouseCostPrice ?? (wsMatchedPart?.cost_price ?? null);
-  const liveMargin = liveCost !== null && liveCost > 0
-    ? (((unitPrice - liveCost) / liveCost) * 100).toFixed(1) + "%"
-    : liveCost !== null && liveCost === 0
-    ? "—"
-    : null;
-  const liveProfit = liveCost !== null
-    ? (unitPrice - liveCost).toFixed(2) + " €"
-    : null;
+  const liveCost = warehouseCostPrice ?? wsMatchedPart?.cost_price ?? null;
+  const liveMargin =
+    liveCost !== null && liveCost > 0
+      ? (((unitPrice - liveCost) / liveCost) * 100).toFixed(1) + "%"
+      : liveCost !== null && liveCost === 0
+        ? "—"
+        : null;
+  const liveProfit =
+    liveCost !== null ? (unitPrice - liveCost).toFixed(2) + " €" : null;
 
   const wsStockColor = wsMatchedPart
     ? (wsMatchedPart.quantity ?? 0) > 3
       ? "text-green-400"
       : (wsMatchedPart.quantity ?? 0) >= 1
-      ? "text-yellow-400"
-      : "text-red-400"
+        ? "text-yellow-400"
+        : "text-red-400"
     : "";
 
   return (
@@ -429,9 +460,15 @@ function AddEditPartModal({
                       }}
                       className="w-full text-left px-3 py-2 hover:bg-mb-black/60 transition-colors border-b border-mb-border/30 last:border-0"
                     >
-                      <div className="text-white text-sm truncate">{s.name}</div>
-                      <div className="text-mb-silver text-xs font-mono">{s.part_number}</div>
-                      <div className="text-xs text-mb-blue tabular-nums">{(s.sale_price ?? 0).toFixed(2)} €</div>
+                      <div className="text-white text-sm truncate">
+                        {s.name}
+                      </div>
+                      <div className="text-mb-silver text-xs font-mono">
+                        {s.part_number}
+                      </div>
+                      <div className="text-xs text-mb-blue tabular-nums">
+                        {(s.sale_price ?? 0).toFixed(2)} €
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -482,9 +519,15 @@ function AddEditPartModal({
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-mb-black/60 transition-colors border-b border-mb-border/30 last:border-0"
                       >
-                        <div className="text-white text-sm font-mono">{s.part_number}</div>
-                        <div className="text-mb-silver text-xs truncate">{s.name}</div>
-                        <div className="text-xs text-mb-blue tabular-nums">{(s.sale_price ?? 0).toFixed(2)} €</div>
+                        <div className="text-white text-sm font-mono">
+                          {s.part_number}
+                        </div>
+                        <div className="text-mb-silver text-xs truncate">
+                          {s.name}
+                        </div>
+                        <div className="text-xs text-mb-blue tabular-nums">
+                          {(s.sale_price ?? 0).toFixed(2)} €
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -494,9 +537,7 @@ function AddEditPartModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-gray-200">
-                {t("qty")} *
-              </Label>
+              <Label className="text-gray-200">{t("qty")} *</Label>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -509,7 +550,9 @@ function AddEditPartModal({
                   type="number"
                   min={1}
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+                  onChange={(e) =>
+                    setQuantity(Math.max(1, Number(e.target.value) || 1))
+                  }
                   className="bg-gray-100 text-gray-900 border-mb-border text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
@@ -544,7 +587,10 @@ function AddEditPartModal({
                   }
                 }}
                 onBlur={() => {
-                  if (priceInput && !isNaN(Number(priceInput.replace(",", ".")))) {
+                  if (
+                    priceInput &&
+                    !isNaN(Number(priceInput.replace(",", ".")))
+                  ) {
                     setPriceInput(unitPrice.toString());
                   }
                 }}
@@ -569,14 +615,19 @@ function AddEditPartModal({
           {partNumber.trim() && (
             <div className="space-y-2">
               {warehouseSuccess ? (
-                <p className="text-sm text-green-400">Частта е добавена в склада.</p>
+                <p className="text-sm text-green-400">
+                  Частта е добавена в склада.
+                </p>
               ) : whExistsState === "exists" ? (
                 <p className="text-xs text-mb-silver italic">Вече е в склада</p>
               ) : whExistsState === "notExists" ? (
                 <>
                   {showDeliveryPrompt && (
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="delivery-price" className="text-gray-200 text-xs whitespace-nowrap shrink-0">
+                      <Label
+                        htmlFor="delivery-price"
+                        className="text-gray-200 text-xs whitespace-nowrap shrink-0"
+                      >
                         Доставна цена (€)
                       </Label>
                       <Input
@@ -641,16 +692,23 @@ interface PartRowProps {
   openEdit: (index: number) => void;
 }
 
-const PartRow = memo(function PartRow({ index, remove, openEdit }: PartRowProps) {
+const PartRow = memo(function PartRow({
+  index,
+  remove,
+  openEdit,
+}: PartRowProps) {
   const t = useTranslations("admin.form");
   const { control, setValue } = useFormContext<OfferFormData>();
 
   const quantity = useWatch({ control, name: `parts.${index}.quantity` }) ?? 1;
-  const unitPrice = useWatch({ control, name: `parts.${index}.unitPrice` }) ?? 0;
+  const unitPrice =
+    useWatch({ control, name: `parts.${index}.unitPrice` }) ?? 0;
   const total = quantity * unitPrice;
-  const description = useWatch({ control, name: `parts.${index}.description` }) ?? "";
+  const description =
+    useWatch({ control, name: `parts.${index}.description` }) ?? "";
   const brand = useWatch({ control, name: `parts.${index}.brand` }) ?? "";
-  const partNumber = useWatch({ control, name: `parts.${index}.partNumber` }) ?? "";
+  const partNumber =
+    useWatch({ control, name: `parts.${index}.partNumber` }) ?? "";
 
   const {
     attributes,
@@ -791,7 +849,10 @@ export function PartsFieldArray() {
     name: "parts",
   });
 
-  const sortableItems = useMemo(() => fields.map((_, i) => `part-${i}`), [fields]);
+  const sortableItems = useMemo(
+    () => fields.map((_, i) => `part-${i}`),
+    [fields],
+  );
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -841,7 +902,10 @@ export function PartsFieldArray() {
 
   const handleModalConfirm = (part: PartItemFormData) => {
     if (editIndex !== null) {
-      setValue(`parts.${editIndex}`, part, { shouldValidate: true, shouldDirty: true });
+      setValue(`parts.${editIndex}`, part, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     } else {
       append(part);
     }

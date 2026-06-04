@@ -71,6 +71,15 @@ module.exports = {
   		spacing: {
   			section: '8rem',
   			'section-sm': '4rem'
+  		},
+  		keyframes: {
+  			marquee: {
+  				'0%': { transform: 'translateX(0)' },
+  				'100%': { transform: 'translateX(-100%)' }
+  			}
+  		},
+  		animation: {
+  			marquee: 'marquee 32s linear infinite'
   		}
   	}
   },

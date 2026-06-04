@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocale } from "next-intl";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Button } from "@/components/ui/button";
@@ -307,7 +307,12 @@ function AddPersonRow({
   );
 }
 
-type TabId = "account" | "team" | "display" | "earnings" | "offers";
+type TabId = "account" | "team" | "display" | "earnings" | "offers" | "banner";
+
+const DEFAULT_BANNER_TEXT_BG =
+  "Внимание: сервизът няма да работи от 20 септември до 01 октомври.";
+const DEFAULT_BANNER_TEXT_EN =
+  "Notice: the service will be unavailable from 20 September to 01 October.";
 
 export default function SettingsPage() {
   const locale = useLocale();
@@ -374,6 +379,16 @@ export default function SettingsPage() {
   const [defaultNotes, setDefaultNotes] = useState("");
   const [savingOfferSettings, setSavingOfferSettings] = useState(false);
 
+  // Maintenance banner
+  const [bannerEnabled, setBannerEnabled] = useState(false);
+  const [bannerTextBg, setBannerTextBg] = useState(DEFAULT_BANNER_TEXT_BG);
+  const [bannerTextEn, setBannerTextEn] = useState(DEFAULT_BANNER_TEXT_EN);
+  const [savingBanner, setSavingBanner] = useState(false);
+  const [translatingBanner, setTranslatingBanner] = useState(false);
+  // While true, the EN field auto-fills from the BG field. Becomes false the
+  // moment the admin edits EN by hand, so manual corrections are never overwritten.
+  const enAutoFollow = useRef(true);
+
   // Receptionists
   const [receptionistsList, setReceptionistsList] = useState<Receptionist[]>(
     [],
@@ -425,6 +440,17 @@ export default function SettingsPage() {
         if (defPartsDis !== undefined) setDefaultPartsDiscount(String(defPartsDis));
         if (defSvcDis !== undefined) setDefaultServicesDiscount(String(defSvcDis));
         if (defNotes !== undefined) setDefaultNotes(defNotes ?? "");
+        const bannerOn = getNum("maintenance_banner_enabled");
+        const bannerBg = getText("maintenance_banner_text_bg");
+        const bannerEn = getText("maintenance_banner_text_en");
+        if (bannerOn !== undefined) setBannerEnabled(Number(bannerOn) === 1);
+        if (bannerBg) setBannerTextBg(bannerBg);
+        if (bannerEn) {
+          setBannerTextEn(bannerEn);
+          // A previously saved EN value is treated as a manual translation;
+          // don't auto-overwrite it from BG.
+          enAutoFollow.current = false;
+        }
         const creatorsRow = data.find((s: any) => s.key === "document_creators");
         if (creatorsRow?.value_text) {
           try {
@@ -785,6 +811,95 @@ export default function SettingsPage() {
     }
   };
 
+  // Translate BG → EN via Google's free endpoint (works client-side, no API
+  // key — important since the site is a static export with no server runtime).
+  const translateBgToEn = async (text: string): Promise<string> => {
+    const trimmed = text.trim();
+    if (!trimmed) return "";
+    const url =
+      "https://translate.googleapis.com/translate_a/single?client=gtx" +
+      `&sl=bg&tl=en&dt=t&q=${encodeURIComponent(trimmed)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Translation failed (${res.status})`);
+    const data = await res.json();
+    const segments: string[] = Array.isArray(data?.[0])
+      ? data[0].map((seg: any[]) => seg?.[0] ?? "")
+      : [];
+    return segments.join("").trim();
+  };
+
+  // Debounced auto-translate: as the admin types BG, fill EN — but only while
+  // enAutoFollow is true (i.e. the admin hasn't manually edited EN).
+  useEffect(() => {
+    if (!enAutoFollow.current) return;
+    const text = bannerTextBg.trim();
+    if (!text) {
+      setBannerTextEn("");
+      return;
+    }
+    let active = true;
+    const timer = setTimeout(async () => {
+      setTranslatingBanner(true);
+      try {
+        const translated = await translateBgToEn(text);
+        if (active && enAutoFollow.current && translated) {
+          setBannerTextEn(translated);
+        }
+      } catch {
+        // Silent: admin can still type EN manually.
+      } finally {
+        if (active) setTranslatingBanner(false);
+      }
+    }, 650);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [bannerTextBg]);
+
+  // Manual "translate now" button — re-enables auto-follow and forces a fresh translation.
+  const handleTranslateBannerNow = async () => {
+    enAutoFollow.current = true;
+    setTranslatingBanner(true);
+    try {
+      const translated = await translateBgToEn(bannerTextBg);
+      setBannerTextEn(translated);
+    } catch {
+      showError(isBg ? "Грешка при превод" : "Translation failed");
+    } finally {
+      setTranslatingBanner(false);
+    }
+  };
+
+  const handleSaveBanner = async (overrideEnabled?: boolean) => {
+    const enabled = overrideEnabled ?? bannerEnabled;
+    setSavingBanner(true);
+    const upserts = [
+      supabase.from("app_settings").upsert(
+        { key: "maintenance_banner_enabled", value: enabled ? 1 : 0 } as any,
+        { onConflict: "key" },
+      ),
+      (supabase.from("app_settings") as any).upsert(
+        { key: "maintenance_banner_text_bg", value_text: bannerTextBg },
+        { onConflict: "key" },
+      ),
+      (supabase.from("app_settings") as any).upsert(
+        { key: "maintenance_banner_text_en", value_text: bannerTextEn },
+        { onConflict: "key" },
+      ),
+    ];
+    const results = await Promise.all(upserts);
+    setSavingBanner(false);
+    const hasError = results.some((r: any) => r.error);
+    if (hasError) {
+      showError(isBg ? "Грешка при запазване" : "Error saving settings");
+    } else {
+      showSuccess(
+        isBg ? "Настройките на банера са запазени" : "Banner settings saved",
+      );
+    }
+  };
+
   const accountOptions: { value: AccountKey; label: string }[] = [
     { value: "admin", label: isBg ? "Админ" : "Admin" },
     { value: "reception", label: isBg ? "Приемчик" : "Receptionist" },
@@ -883,6 +998,25 @@ export default function SettingsPage() {
             strokeLinejoin="round"
             strokeWidth={1.75}
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      id: "banner",
+      label: isBg ? "Банер" : "Banner",
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.75}
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
           />
         </svg>
       ),
@@ -1580,6 +1714,197 @@ export default function SettingsPage() {
                   ? "Запази настройките"
                   : "Save Settings"}
             </Button>
+          </div>
+        )}
+
+        {/* Banner tab */}
+        {activeTab === "banner" && (
+          <div className="space-y-6">
+            <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-5">
+              <SubSection
+                title={
+                  isBg ? "Банер за прекъсване" : "Maintenance Banner"
+                }
+              >
+                <p className="text-sm text-mb-silver/60">
+                  {isBg
+                    ? "Показва съобщение в горната част на публичния сайт, което посетителите виждат първо."
+                    : "Shows a message at the top of the public site that visitors see first."}
+                </p>
+
+                {/* Toggle */}
+                <div className="flex items-center justify-between gap-4 bg-mb-black border border-mb-border rounded-xl p-4">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium text-white">
+                      {isBg ? "Покажи банера" : "Show banner"}
+                    </p>
+                    <p className="text-xs text-mb-silver/50">
+                      {bannerEnabled
+                        ? isBg
+                          ? "Банерът е активен и се показва на сайта."
+                          : "The banner is active and visible on the site."
+                        : isBg
+                          ? "Банерът е скрит."
+                          : "The banner is hidden."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={bannerEnabled}
+                    onClick={() => {
+                      const next = !bannerEnabled;
+                      setBannerEnabled(next);
+                      handleSaveBanner(next);
+                    }}
+                    disabled={savingBanner}
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                      bannerEnabled ? "bg-mb-blue" : "bg-mb-border"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                        bannerEnabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Preview */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-mb-silver/70 uppercase tracking-wide">
+                    {isBg ? "Преглед" : "Preview"}
+                  </label>
+                  <div className="rounded-lg overflow-hidden border border-mb-border">
+                    <div className="overflow-hidden bg-gradient-to-r from-mb-blue via-blue-600 to-mb-blue shadow-lg">
+                      <div className="flex w-max py-3.5">
+                        {[0, 1].map((track) => (
+                          <div
+                            key={track}
+                            className="flex shrink-0 items-center gap-10 pr-10 animate-marquee"
+                          >
+                            {Array.from({ length: 4 }).map((_, i) => (
+                              <span
+                                key={i}
+                                className="flex items-center gap-3 shrink-0"
+                              >
+                                <svg
+                                  className="w-6 h-6 text-white shrink-0 animate-pulse"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth={2.25}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                                  />
+                                </svg>
+                                <span className="text-base font-bold tracking-wide text-white whitespace-nowrap">
+                                  {(isBg ? bannerTextBg : bannerTextEn) ||
+                                    (isBg
+                                      ? DEFAULT_BANNER_TEXT_BG
+                                      : DEFAULT_BANNER_TEXT_EN)}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text BG */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-mb-silver/70 uppercase tracking-wide">
+                    {isBg ? "Текст (BG)" : "Text (BG)"}
+                  </label>
+                  <textarea
+                    value={bannerTextBg}
+                    onChange={(e) => setBannerTextBg(e.target.value)}
+                    rows={2}
+                    placeholder={DEFAULT_BANNER_TEXT_BG}
+                    className="w-full bg-mb-black border border-mb-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-mb-silver/40 focus:outline-none focus:ring-1 focus:ring-mb-blue resize-none"
+                  />
+                  <p className="text-xs text-mb-silver/50">
+                    {isBg
+                      ? "Английският текст се превежда автоматично. Можете да го коригирате ръчно по-долу."
+                      : "The English text is translated automatically. You can correct it manually below."}
+                  </p>
+                </div>
+
+                {/* Text EN */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-medium text-mb-silver/70 uppercase tracking-wide">
+                      {isBg ? "Текст (EN)" : "Text (EN)"}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {translatingBanner && (
+                        <span className="flex items-center gap-1.5 text-xs text-mb-silver/50">
+                          <svg
+                            className="w-3.5 h-3.5 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
+                          </svg>
+                          {isBg ? "Превод..." : "Translating..."}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleTranslateBannerNow}
+                        disabled={translatingBanner || !bannerTextBg.trim()}
+                        className="text-xs font-medium text-mb-blue hover:text-mb-blue/80 transition-colors disabled:opacity-40"
+                      >
+                        {isBg ? "Преведи от BG" : "Translate from BG"}
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    value={bannerTextEn}
+                    onChange={(e) => {
+                      // Manual edit: stop auto-overwriting EN from BG.
+                      enAutoFollow.current = false;
+                      setBannerTextEn(e.target.value);
+                    }}
+                    rows={2}
+                    placeholder={DEFAULT_BANNER_TEXT_EN}
+                    className="w-full bg-mb-black border border-mb-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-mb-silver/40 focus:outline-none focus:ring-1 focus:ring-mb-blue resize-none"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => handleSaveBanner()}
+                  disabled={savingBanner}
+                  className="bg-mb-blue hover:bg-mb-blue/90 disabled:opacity-50 w-full sm:w-auto"
+                >
+                  {savingBanner
+                    ? isBg
+                      ? "Запазване..."
+                      : "Saving..."
+                    : isBg
+                      ? "Запази настройките"
+                      : "Save Settings"}
+                </Button>
+              </SubSection>
+            </div>
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { NAV_ITEMS, getSiteConfig } from "@/lib/constants";
+import { MaintenanceBanner } from "@/components/layout/MaintenanceBanner";
 
 export function Header() {
   const t = useTranslations();
@@ -77,15 +78,18 @@ export function Header() {
 
   return (
     <>
-      <header
+      <div
         className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 ease-in-out ${
           isVisible ? "translate-y-0" : "-translate-y-full"
-        } ${
-          isScrolled
-            ? "bg-mb-black/98 backdrop-blur-md border-b border-mb-border shadow-lg"
-            : "bg-transparent"
         }`}
       >
+        <header
+          className={`${
+            isScrolled
+              ? "bg-mb-black/98 backdrop-blur-md border-b border-mb-border shadow-lg"
+              : "bg-transparent"
+          }`}
+        >
         <nav className="max-w-7xl mx-auto px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -164,7 +168,11 @@ export function Header() {
             </button>
           </div>
         </nav>
-      </header>
+        </header>
+
+        {/* Maintenance banner — attached just below the header, shows/hides with it */}
+        <MaintenanceBanner />
+      </div>
 
       {/* Mobile Menu - Full Screen Overlay */}
       {isMobileMenuOpen && (
