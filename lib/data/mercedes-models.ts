@@ -44,6 +44,7 @@ export const MERCEDES_CLASSES = [
   'Sprinter',
   'Vito',
   'X-Class',
+  'Smart',
 ] as const;
 
 export type MercedesClass = typeof MERCEDES_CLASSES[number];
@@ -212,6 +213,7 @@ export const MERCEDES_MODELS: MercedesModel[] = [
   { id: 'x167m', name: 'Maybach GLS (X167)', class: 'Maybach', years: generateYears(2020, 2026) },
   { id: 'z296m', name: 'Maybach EQS SUV', class: 'Maybach', years: generateYears(2023, 2026) },
   { id: 'v297m', name: 'Maybach EQS Sedan', class: 'Maybach', years: generateYears(2023, 2026) },
+  { id: 'w240', name: 'Maybach 57/62 (W240)', class: 'Maybach', years: generateYears(2002, 2013) },
 
   // V-Class
   { id: 'w639', name: 'Viano (W639)', class: 'V-Class', years: generateYears(2003, 2014) },
@@ -241,6 +243,16 @@ export const MERCEDES_MODELS: MercedesModel[] = [
 
   // X-Class
   { id: 'w470', name: 'X-Class (W470)', class: 'X-Class', years: generateYears(2017, 2020) },
+
+  // Smart
+  { id: 'w450', name: 'Smart ForTwo (W450)', class: 'Smart', years: generateYears(1999, 2007) },
+  { id: 'w452', name: 'Smart Roadster (W452)', class: 'Smart', years: generateYears(2003, 2005) },
+  { id: 'w454', name: 'Smart ForFour (W454)', class: 'Smart', years: generateYears(2004, 2006) },
+  { id: 'c451', name: 'Smart ForTwo Coupe (C451)', class: 'Smart', years: generateYears(2007, 2014) },
+  { id: 'a451', name: 'Smart ForTwo Cabrio (A451)', class: 'Smart', years: generateYears(2007, 2014) },
+  { id: 'w453', name: 'Smart ForFour (W453)', class: 'Smart', years: generateYears(2014, 2021) },
+  { id: 'c453', name: 'Smart ForTwo Coupe (C453)', class: 'Smart', years: generateYears(2014, 2024) },
+  { id: 'a453', name: 'Smart ForTwo Cabrio (A453)', class: 'Smart', years: generateYears(2016, 2024) },
 ];
 
 // Helper function to get models by class
