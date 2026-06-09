@@ -56,20 +56,22 @@ export function TransferDataModal({
       setQuery("");
       setIsOpen(false);
       setError("");
+      setOffers([]);
       return;
     }
+    // Load all offers when modal opens
     setIsLoading(true);
     supabase
       .from("offers")
       .select("id, offer_number, car_model_text, customer_name")
       .neq("id", sourceOfferId)
-      .order("customer_name", { ascending: true, nullsFirst: false })
-      .limit(200)
+      .order("created_at", { ascending: false })
       .then(({ data }) => {
         setOffers((data as OfferSuggestion[]) ?? []);
         setIsLoading(false);
       });
   }, [open, sourceOfferId]);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -213,8 +215,8 @@ export function TransferDataModal({
                   inputRef.current?.focus();
                 }}
               >
-                {!isOpen && selectedOffer ? (
-                  <span className="text-gray-900 text-sm truncate flex-1">
+                {!isOpen && selectedOffer && (
+                  <span className="text-gray-900 text-sm truncate flex-1 pointer-events-none">
                     <span className="font-mono font-medium">{selectedOffer.offer_number}</span>
                     {(selectedOffer.car_model_text || selectedOffer.customer_name) && (
                       <span className="text-gray-500 ml-2 text-xs">
@@ -222,21 +224,19 @@ export function TransferDataModal({
                       </span>
                     )}
                   </span>
-                ) : (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => {
-                      setQuery(e.target.value);
-                      setIsOpen(true);
-                    }}
-                    onFocus={() => setIsOpen(true)}
-                    placeholder={isLoading ? "Зареждане..." : t("offerNumberPlaceholder")}
-                    disabled={isLoading}
-                    className="flex-1 bg-transparent text-gray-900 text-sm outline-none placeholder:text-gray-400 min-w-0"
-                  />
                 )}
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setIsOpen(true);
+                  }}
+                  onFocus={() => setIsOpen(true)}
+                  placeholder={isLoading ? "Зареждане..." : t("offerNumberPlaceholder")}
+                  className={`bg-transparent text-gray-900 text-sm outline-none placeholder:text-gray-400 min-w-0 ${!isOpen && selectedOffer ? "w-0 opacity-0 absolute" : "flex-1"}`}
+                />
                 <svg
                   className={`w-4 h-4 text-gray-500 shrink-0 ml-1 transition-transform ${isOpen ? "rotate-180" : ""}`}
                   fill="none"
