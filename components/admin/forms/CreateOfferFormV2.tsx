@@ -386,7 +386,8 @@ export function CreateOfferFormV2({
         vinText: existingOffer.vin_text ?? "",
         carLicensePlate:
           existingOffer.license_plate ?? existingOffer.car?.license_plate ?? "",
-        carMileage: existingOffer.mileage ?? existingOffer.car?.mileage ?? 0,
+        carMileage:
+          existingOffer.mileage ?? existingOffer.car?.mileage ?? undefined,
         carMileageUnit: (existingOffer.mileage_unit as "km" | "miles") ?? "km",
         carId: existingOffer.car_id ?? undefined,
 
@@ -1111,7 +1112,8 @@ export function CreateOfferFormV2({
           repair_name: savedOffer.repair_name,
           vin_text: savedOffer.vin_text,
           license_plate: savedOffer.license_plate,
-          mileage: savedOffer.mileage,
+          // Пробегът не се клонира - въвежда се наново за всяка оферта
+          mileage: null,
           mileage_unit: savedOffer.mileage_unit,
           car_year: savedOffer.car_year,
           created_by_name: savedOffer.created_by_name,
@@ -1127,7 +1129,8 @@ export function CreateOfferFormV2({
           notes: savedOffer.notes,
           notes_internal: savedOffer.notes_internal,
           notes_service: savedOffer.notes_service,
-          prepayments_eur: savedOffer.prepayments_eur,
+          // Авансовото плащане не се клонира - специфично е за конкретната оферта
+          prepayments_eur: null,
           last_edited_at: new Date().toISOString(),
         } as never)
         .select()
@@ -2498,7 +2501,7 @@ export function CreateOfferFormV2({
                           v === null ||
                           v === undefined ||
                           isNaN(Number(v))
-                            ? 0
+                            ? undefined
                             : Number(v),
                       })}
                       placeholder="0"

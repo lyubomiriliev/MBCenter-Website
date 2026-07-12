@@ -61,6 +61,7 @@ function AddEditServiceActionModal({
   editIndex,
   onConfirm,
   defaultPricePerHour = 65,
+  settingsLoading = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -68,6 +69,7 @@ function AddEditServiceActionModal({
   editIndex: number | null;
   onConfirm: (action: ServiceActionFormData) => void;
   defaultPricePerHour?: number;
+  settingsLoading?: boolean;
 }) {
   const t = useTranslations("admin.form");
   const [isFixedPrice, setIsFixedPrice] = useState(false);
@@ -148,9 +150,12 @@ function AddEditServiceActionModal({
 
   const prevOpenRef = useRef(false);
   useEffect(() => {
+    // Изчакваме зареждането на настройките, за да не се попълни стара ставка на час
+    // (напр. 65 по подразбиране вместо реалната стойност от настройките)
+    if (settingsLoading) return;
     if (open && !prevOpenRef.current) reset(initialValues, activitiesForReset, defaultPricePerHour);
     prevOpenRef.current = open;
-  }, [open, initialValues, reset, activitiesForReset, defaultPricePerHour]);
+  }, [open, initialValues, reset, activitiesForReset, defaultPricePerHour, settingsLoading]);
 
   const handleOk = () => {
     const name = actionName.trim();
@@ -243,8 +248,6 @@ function AddEditServiceActionModal({
     const act = hourlyActivities.find((a) => a.id === id);
     if (act) {
       setActionName(act.name);
-      setPricePerHour(act.price_per_hour_eur);
-      setPriceInput(act.price_per_hour_eur.toString());
     }
     setHourlyPresetPopoverOpen(false);
   };
@@ -612,7 +615,7 @@ function AddEditServiceActionModal({
                             onClick={() => handleSelectHourlyPreset(act.id)}
                           >
                             <span className="flex-1 truncate min-w-0">
-                              {act.name} - {act.price_per_hour_eur.toFixed(2)} €/ч.
+                              {act.name} - {Number(pricePerHour).toFixed(2)} €/ч.
                             </span>
                             <button
                               type="button"
@@ -946,7 +949,7 @@ const ServiceActionRow = memo(function ServiceActionRow({ index, remove, openEdi
 export function ServiceActionsFieldArray() {
   const t = useTranslations("admin.form");
   const { control, getValues, setValue } = useFormContext<OfferFormData>();
-  const { settings } = useAppSettings();
+  const { settings, loading: settingsLoading } = useAppSettings();
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: "serviceActions",
@@ -1107,6 +1110,7 @@ export function ServiceActionsFieldArray() {
         editIndex={editIndex}
         onConfirm={handleModalConfirm}
         defaultPricePerHour={settings.default_price_per_hour}
+        settingsLoading={settingsLoading}
       />
     </Card>
   );

@@ -447,6 +447,9 @@ export function useCloneOffer() {
         .from("offers")
         .insert({
           ...sourceObj,
+          // Пробегът и авансовото плащане не се клонират - въвеждат се наново
+          mileage: null,
+          prepayments_eur: null,
           offer_number: offerNumber,
           status: "draft",
           last_edited_at: new Date().toISOString(),

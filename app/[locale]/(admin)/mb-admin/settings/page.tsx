@@ -811,21 +811,18 @@ export default function SettingsPage() {
     }
   };
 
-  // Translate BG → EN via Google's free endpoint (works client-side, no API
-  // key — important since the site is a static export with no server runtime).
   const translateBgToEn = async (text: string): Promise<string> => {
     const trimmed = text.trim();
     if (!trimmed) return "";
-    const url =
-      "https://translate.googleapis.com/translate_a/single?client=gtx" +
-      `&sl=bg&tl=en&dt=t&q=${encodeURIComponent(trimmed)}`;
+    // Uses MyMemory — a free translation API with proper CORS headers.
+    // No API key required, works client-side in production.
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=bg|en`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Translation failed (${res.status})`);
     const data = await res.json();
-    const segments: string[] = Array.isArray(data?.[0])
-      ? data[0].map((seg: any[]) => seg?.[0] ?? "")
-      : [];
-    return segments.join("").trim();
+    const translated = data?.responseData?.translatedText;
+    if (!translated) throw new Error("Empty translation response");
+    return translated.trim();
   };
 
   // Debounced auto-translate: as the admin types BG, fill EN — but only while
