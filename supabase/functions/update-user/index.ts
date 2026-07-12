@@ -4,14 +4,35 @@
 // run on a static export (cPanel shared hosting has no Node server). This runs
 // on Supabase's infrastructure instead, so it works from the static site.
 //
-// It changes another user's email and/or password using the service-role key.
-// The service-role key is stored as a Function secret and never reaches the
-// browser. Unlike the old route, this one AUTHORIZES the caller: only a signed-in
-// user whose profile role is 'admin' may perform the change.
+// It changes another user's email and/or password using a secret (service-role)
+// key. That key never reaches the browser. Unlike the old route, this one
+// AUTHORIZES the caller: only a signed-in user whose profile role is 'admin'
+// may perform the change.
+//
+// Keys are read from the reserved secrets Supabase auto-injects into every
+// function. It prefers the new JSON-dictionary keys (SUPABASE_SECRET_KEYS /
+// SUPABASE_PUBLISHABLE_KEYS) and falls back to the legacy plain-string keys
+// (SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY). No manual secret needed.
 //
 // Request body: { email: string, newEmail?: string, newPassword?: string }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Read a key that may be either a JSON dictionary (new format, keyed by name,
+// default entry "default") or a legacy plain string. Returns the usable key.
+function resolveKey(jsonEnv: string, legacyEnv: string): string | undefined {
+  const dict = Deno.env.get(jsonEnv);
+  if (dict) {
+    try {
+      const parsed = JSON.parse(dict) as Record<string, string>;
+      if (parsed?.default) return parsed.default;
+    } catch {
+      // not JSON; treat the raw value as the key
+      return dict;
+    }
+  }
+  return Deno.env.get(legacyEnv) ?? undefined;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,8 +57,14 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceRoleKey = resolveKey(
+    "SUPABASE_SECRET_KEYS",
+    "SUPABASE_SERVICE_ROLE_KEY",
+  );
+  const anonKey = resolveKey(
+    "SUPABASE_PUBLISHABLE_KEYS",
+    "SUPABASE_ANON_KEY",
+  );
 
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
     return json({ error: "Server not configured" }, 500);
