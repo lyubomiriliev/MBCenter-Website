@@ -2505,7 +2505,7 @@ export function CreateOfferFormV2({
                             : Number(v),
                       })}
                       placeholder="0"
-                      className="flex-1 bg-gray-100 text-gray-900 border-mb-border placeholder:text-gray-500"
+                      className="flex-1 bg-gray-100 text-gray-900 border-mb-border"
                     />
                     <div className="flex rounded-md overflow-hidden border border-mb-border text-xs shrink-0 w-[72px]">
                       <button

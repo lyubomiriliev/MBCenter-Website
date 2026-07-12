@@ -643,18 +643,35 @@ export default function SettingsPage() {
     }
   };
 
+  // supabase-js sets `error` for non-2xx responses but doesn't parse the body
+  // onto `data`. Pull our JSON { error } message out of the failed response so
+  // the user sees a meaningful message instead of a generic "non-2xx" string.
+  const extractFunctionError = async (
+    error: unknown,
+    fallback: string,
+  ): Promise<string> => {
+    const ctx = (error as { context?: Response })?.context;
+    if (ctx && typeof ctx.json === "function") {
+      try {
+        const parsed = await ctx.json();
+        if (parsed?.error) return parsed.error as string;
+      } catch {
+        // response wasn't JSON; fall through
+      }
+    }
+    return (error as { message?: string })?.message || fallback;
+  };
+
   const handleUpdateOtherEmail = async () => {
     const currentEmail = ACCOUNT_EMAILS[selectedAccount];
     if (!currentEmail || !otherNewEmail.trim()) return;
     setSavingOtherEmail(true);
     try {
-      const res = await fetch("/api/admin/update-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: currentEmail, newEmail: otherNewEmail.trim() }),
+      const { data, error } = await supabase.functions.invoke("update-user", {
+        body: { email: currentEmail, newEmail: otherNewEmail.trim() },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (error) throw new Error(await extractFunctionError(error, "Request failed"));
+      if (data?.error) throw new Error(data.error);
       showSuccess(
         isBg
           ? "Имейлът е сменен успешно"
@@ -689,13 +706,11 @@ export default function SettingsPage() {
     }
     setSavingOtherPassword(true);
     try {
-      const res = await fetch("/api/admin/update-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: currentEmail, newPassword: otherNewPassword }),
+      const { data, error } = await supabase.functions.invoke("update-user", {
+        body: { email: currentEmail, newPassword: otherNewPassword },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (error) throw new Error(await extractFunctionError(error, "Request failed"));
+      if (data?.error) throw new Error(data.error);
       showSuccess(
         isBg
           ? "Паролата е сменена успешно"
