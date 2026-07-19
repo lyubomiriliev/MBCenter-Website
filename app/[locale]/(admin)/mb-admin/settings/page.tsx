@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { useNotification } from "@/hooks/useNotification";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
-import { authClient as supabase } from "@/lib/supabase/client";
+import { authClient, supabase } from "@/lib/supabase/client";
 import type { Mechanic, Receptionist } from "@/types/database";
 
 
@@ -564,7 +564,7 @@ export default function SettingsPage() {
   const handleUpdateEmail = async () => {
     if (!myEmail.trim()) return;
     setSavingEmail(true);
-    const { error } = await supabase.auth.updateUser({ email: myEmail.trim() });
+    const { error } = await authClient.auth.updateUser({ email: myEmail.trim() });
     setSavingEmail(false);
     if (error) {
       showError(isBg ? "Грешка при смяна на имейл" : "Error updating email");
@@ -598,7 +598,7 @@ export default function SettingsPage() {
       return;
     }
     setSavingPassword(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await authClient.auth.signInWithPassword({
       email: user?.email ?? "",
       password: myOldPassword,
     });
@@ -607,7 +607,7 @@ export default function SettingsPage() {
       showError(isBg ? "Грешна текуща парола" : "Incorrect current password");
       return;
     }
-    const { error } = await supabase.auth.updateUser({
+    const { error } = await authClient.auth.updateUser({
       password: myNewPassword,
     });
     setSavingPassword(false);
@@ -628,7 +628,7 @@ export default function SettingsPage() {
   const handleSendReset = async (email: string) => {
     if (!email.trim()) return;
     setSendingReset(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error } = await authClient.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/${locale}/admin-login`,
     });
     setSendingReset(false);
@@ -667,7 +667,7 @@ export default function SettingsPage() {
     if (!currentEmail || !otherNewEmail.trim()) return;
     setSavingOtherEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke("update-user", {
+      const { data, error } = await authClient.functions.invoke("update-user", {
         body: { email: currentEmail, newEmail: otherNewEmail.trim() },
       });
       if (error) throw new Error(await extractFunctionError(error, "Request failed"));
@@ -706,7 +706,7 @@ export default function SettingsPage() {
     }
     setSavingOtherPassword(true);
     try {
-      const { data, error } = await supabase.functions.invoke("update-user", {
+      const { data, error } = await authClient.functions.invoke("update-user", {
         body: { email: currentEmail, newPassword: otherNewPassword },
       });
       if (error) throw new Error(await extractFunctionError(error, "Request failed"));

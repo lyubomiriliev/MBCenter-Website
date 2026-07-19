@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { authClient as supabase } from "@/lib/supabase/client";
+import { authClient, supabase } from "@/lib/supabase/client";
 import type { InsertProfile, UserRole } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
     try {
       // Sign in with Supabase Auth
       const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
+        await authClient.auth.signInWithPassword({
           email,
           password,
         });

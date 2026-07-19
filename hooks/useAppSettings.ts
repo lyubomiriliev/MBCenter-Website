@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { authClient as supabase } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase/client";
 
 export interface AppSettings {
   mechanic_rate: number;

@@ -260,12 +260,12 @@ export function Footer() {
             <p>
               Website created by{" "}
               <a
-                href="https://lyubomir-iliev.vercel.app/"
+                href="https://avivadigital.bg/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-mb-blue cursor-pointer font-bold"
               >
-                Lyubomir.Dev
+                AVIVA digital
               </a>
             </p>
           </div>

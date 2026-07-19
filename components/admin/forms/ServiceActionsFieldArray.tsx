@@ -157,6 +157,19 @@ function AddEditServiceActionModal({
     prevOpenRef.current = open;
   }, [open, initialValues, reset, activitiesForReset, defaultPricePerHour, settingsLoading]);
 
+  // Гарантираме, че ставката на час винаги отразява стойността от настройките
+  // (Цена на час по подразбиране). Ако модалът е отворен за нова дейност и полето
+  // е празно (напр. настройките са се заредили след отварянето), попълваме реалната
+  // стойност от бекенда вместо да оставим празно поле / липсваща "Обща стойност".
+  useEffect(() => {
+    if (!open || editIndex !== null) return;
+    if (settingsLoading) return;
+    if (priceInput === "") {
+      setPricePerHour(defaultPricePerHour);
+      setPriceInput(defaultPricePerHour.toString());
+    }
+  }, [open, editIndex, settingsLoading, defaultPricePerHour, priceInput]);
+
   const handleOk = () => {
     const name = actionName.trim();
     if (!name) {
