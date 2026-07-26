@@ -145,12 +145,18 @@ export function useOffers(filters: OffersFilters = {}) {
         );
       }
 
+      // Filter on effective_at (service card date -> last edit -> created),
+      // matching what the Date/Time columns actually display, not created_at.
       if (dateFrom) {
-        query = query.gte("created_at", dateFrom);
+        query = query.gte("effective_at", dateFrom);
       }
 
       if (dateTo) {
-        query = query.lte("created_at", dateTo);
+        // dateTo comes in as local midnight of the selected day; push it to
+        // the end of that day so the whole day is included, not just 00:00.
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = query.lte("effective_at", endOfDay.toISOString());
       }
 
       const { data, error, count } = await query;

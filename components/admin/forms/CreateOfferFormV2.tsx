@@ -60,6 +60,84 @@ interface CreateOfferFormV2Props {
 
 const AUTOSAVE_KEY = "mbcenter_offer_draft";
 
+// Fields whose changes must NOT bump last_edited_at / mark the service card
+// stale: "Наименование на ремонт", "Пробег" (+ unit) and all 3 notes fields.
+const DATE_NEUTRAL_FORM_FIELDS = [
+  "repairName",
+  "carMileage",
+  "carMileageUnit",
+  "notes",
+  "notesInternal",
+  "notesService",
+] as const satisfies readonly (keyof OfferFormData)[];
+
+// Every other field that should bump the date when it changes.
+const DATE_AFFECTING_FORM_FIELDS = [
+  "customerName",
+  "customerPhone",
+  "clientEmail",
+  "carModel",
+  "carModelDetail",
+  "vinText",
+  "carLicensePlate",
+  "carYear",
+  "createdByName",
+  "discountPercent",
+  "discountPartsPercent",
+  "discountServicesPercent",
+  "parts",
+  "serviceActions",
+] as const satisfies readonly (keyof OfferFormData)[];
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  const norm = (v: unknown) => (v === undefined || v === null ? "" : v);
+  const na = norm(a);
+  const nb = norm(b);
+  if (typeof na === "object" || typeof nb === "object") {
+    return JSON.stringify(na) === JSON.stringify(nb);
+  }
+  return na === nb;
+}
+
+// Compares the currently submitted form values against a snapshot of the
+// form taken at load/last-save time (NOT the raw DB offer row — the initial
+// form values apply fallbacks, e.g. carYear falling back to the linked car's
+// year, that don't exist on the raw row and would cause false positives).
+function computeDateNeutralDiff(
+  current: OfferFormData,
+  baseline: OfferFormData | null,
+): {
+  onlyDateNeutralDirty: boolean;
+  otherFieldsChanged: boolean;
+  changedNeutralFields: string[];
+  changedOtherFields: string[];
+  hadBaseline: boolean;
+} {
+  if (!baseline) {
+    return {
+      onlyDateNeutralDirty: false,
+      otherFieldsChanged: true,
+      changedNeutralFields: [],
+      changedOtherFields: ["<no-baseline>"],
+      hadBaseline: false,
+    };
+  }
+  const changedNeutralFields = DATE_NEUTRAL_FORM_FIELDS.filter(
+    (f) => !valuesEqual(current[f], baseline[f]),
+  );
+  const changedOtherFields = DATE_AFFECTING_FORM_FIELDS.filter(
+    (f) => !valuesEqual(current[f], baseline[f]),
+  );
+  return {
+    onlyDateNeutralDirty:
+      changedNeutralFields.length > 0 && changedOtherFields.length === 0,
+    otherFieldsChanged: changedOtherFields.length > 0,
+    changedNeutralFields,
+    changedOtherFields,
+    hadBaseline: true,
+  };
+}
+
 export function CreateOfferFormV2({
   offerId,
   isMechanicView = false,
@@ -193,6 +271,14 @@ export function CreateOfferFormV2({
   const formLoadedRef = useRef(false);
   const changedAfterLastCardRef = useRef(true);
   const prepaymentsRef = useRef(prepayments);
+  // Snapshot of the form values exactly as loaded/last-saved, used to detect
+  // which fields actually changed on save. Captured via methods.getValues()
+  // right after reset() so it's guaranteed to match the shape/types that
+  // getValues() returns later — comparing against raw existingOffer DB
+  // fields is unreliable because the initial form values apply fallbacks
+  // (e.g. carYear falls back to the linked car's year) that don't exist on
+  // the raw offer row.
+  const savedFormSnapshotRef = useRef<OfferFormData | null>(null);
 
   useEffect(() => {
     prepaymentsRef.current = prepayments;
@@ -430,6 +516,7 @@ export function CreateOfferFormV2({
         ...defaultOfferFormValues,
         ...formData,
       } as OfferFormData);
+      savedFormSnapshotRef.current = methods.getValues();
       setSummaryResetKey((k) => k + 1);
       const name = existingOffer.created_by_name ?? "";
       if (name) {
@@ -438,6 +525,7 @@ export function CreateOfferFormV2({
             shouldValidate: true,
             shouldDirty: false,
           });
+          savedFormSnapshotRef.current = methods.getValues();
         }, 0);
       }
     };
@@ -490,6 +578,9 @@ export function CreateOfferFormV2({
             shouldTouch: false,
           });
         });
+        // Re-capture the baseline snapshot so this background cost backfill
+        // (not a user edit) doesn't register as a "parts changed" diff.
+        savedFormSnapshotRef.current = methods.getValues();
         setSummaryResetKey((k) => k + 1);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -602,9 +693,6 @@ export function CreateOfferFormV2({
 
   const saveEditedOffer = async (navUrl?: string) => {
     if (!offerId) return;
-    // Capture dirty fields synchronously before any await — React state
-    // captured in closures becomes stale after async suspension points.
-    const dirtyFieldsSnapshot = { ...dirtyFields };
     setIsSaving(true);
     try {
       const data = getValues();
@@ -656,19 +744,22 @@ export function CreateOfferFormV2({
           prepaymentsRef.current.length > 0 ? prepaymentsRef.current : null,
       };
 
-      const NOTES_ONLY_FIELDS = new Set([
-        "notes",
-        "notesInternal",
-        "notesService",
-      ]);
-      const onlyNotesDirty =
-        Object.keys(dirtyFieldsSnapshot).length > 0 &&
-        Object.keys(dirtyFieldsSnapshot).every((f) => NOTES_ONLY_FIELDS.has(f));
+      // Промяна само на "Име на ремонт", "Пробег" или полетата за забележки
+      // не трябва да актуализира датата/часа на офертата или сервизната карта.
+      // Сравняваме текущите form values спрямо снимка на формата, взета в
+      // момента на зареждане/последния запис (savedFormSnapshotRef) — НЕ
+      // спрямо суровия ред от базата данни, защото началните form values
+      // прилагат fallback-и (напр. carYear пада към годината на колата от
+      // релацията car), които не съществуват в суровия offer ред и биха
+      // предизвикали фалшиво "променено" на всеки запис.
+      const diff = computeDateNeutralDiff(data, savedFormSnapshotRef.current);
+      const otherFieldsChanged = diff.otherFieldsChanged || prepaymentsDirty;
+      const onlyDateNeutralDirty = diff.onlyDateNeutralDirty && !prepaymentsDirty;
 
       const { error: offerErr } = await supabase
         .from("offers")
         .update(
-          onlyNotesDirty
+          onlyDateNeutralDirty
             ? (updateData as never)
             : ({
                 ...updateData,
@@ -724,23 +815,16 @@ export function CreateOfferFormV2({
       queryClient.invalidateQueries({ queryKey: ["offer", offerId] });
 
       // Only mark the service card as stale if a field that's VISUALLY shown
-      // in the PDF actually changed. notes, notesInternal, notesService and
-      // repairName are NOT rendered in ServiceCardPDFv3, so dirtying only
-      // those fields must not reset the service card date.
-      const NON_PDF_FIELDS = new Set([
-        "notes",
-        "notesInternal",
-        "notesService",
-        "repairName",
-      ]);
-      const dirtyKeys = Object.keys(dirtyFieldsSnapshot);
-      const pdfFieldsChanged = dirtyKeys.some((f) => !NON_PDF_FIELDS.has(f));
-
-      if (pdfFieldsChanged) {
+      // in the PDF actually changed. repairName, mileage and all notes fields
+      // are NOT rendered in ServiceCardPDFv3, so changing only those must not
+      // reset the service card date. Uses the same value-diff computed above
+      // instead of react-hook-form dirtyFields.
+      if (otherFieldsChanged) {
         changedAfterLastCardRef.current = true;
       }
 
       methods.reset(methods.getValues());
+      savedFormSnapshotRef.current = methods.getValues();
       setBaselinePrepayments([...prepaymentsRef.current]);
       showSuccess(t("saved"));
 
@@ -1342,6 +1426,7 @@ export function CreateOfferFormV2({
           assyst_service_description: assystServiceDescription.trim() || null,
           assyst_mileage_unit: assystMileageUnit,
         } as any,
+        skipLastEdited: true,
       });
       queryClient.invalidateQueries({ queryKey: ["offer", savedOffer.id] });
       showSuccess(locale === "bg" ? "Запазено." : "Saved.");
@@ -1396,23 +1481,16 @@ export function CreateOfferFormV2({
 
         // Промяна само на "Име на ремонт", "Пробег" или полетата за забележки
         // не трябва да актуализира датата/часа на офертата или сервизната карта.
-        // Проверяваме кои полета са реално променени спрямо заредената оферта.
-        const DATE_NEUTRAL_FIELDS = new Set([
-          "repairName",
-          "carMileage",
-          "carMileageUnit",
-          "notes",
-          "notesInternal",
-          "notesService",
-        ]);
-        const changedFieldKeys = Object.keys(dirtyFields);
-        const hasDateAffectingChange =
-          prepaymentsDirty ||
-          changedFieldKeys.some((key) => !DATE_NEUTRAL_FIELDS.has(key));
+        // Сравняваме текущите form values спрямо снимка на формата, взета в
+        // момента на зареждане/последния запис (виж computeDateNeutralDiff).
+        const submitDiff = computeDateNeutralDiff(
+          data,
+          savedFormSnapshotRef.current,
+        );
         // Пропускаме обновяването на last_edited_at, ако са променени само
         // date-neutral полета (и има поне една такава промяна).
         const skipDateUpdate =
-          !hasDateAffectingChange && changedFieldKeys.length > 0;
+          submitDiff.onlyDateNeutralDirty && !prepaymentsDirty;
 
         const updateData = {
           customer_name: data.customerName,
@@ -1689,6 +1767,7 @@ export function CreateOfferFormV2({
         }
 
         methods.reset(methods.getValues());
+        savedFormSnapshotRef.current = methods.getValues();
         setBaselinePrepayments([...prepaymentsRef.current]);
         showSuccess(t("saved"));
 
@@ -1985,6 +2064,7 @@ export function CreateOfferFormV2({
                               mileage: val,
                               mileage_unit: mileageUnitInput,
                             } as any,
+                            skipLastEdited: true,
                           });
                           queryClient.invalidateQueries({
                             queryKey: ["offer", savedOffer.id],
