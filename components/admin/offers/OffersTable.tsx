@@ -132,7 +132,7 @@ export function OffersTable({
       const stored = localStorage.getItem(SORT_STORAGE_KEY);
       if (stored) return JSON.parse(stored);
     } catch {}
-    return { sortBy: "last_edited_at", sortDir: "desc" };
+    return { sortBy: "effective_at", sortDir: "desc" };
   }
 
   const searchParams = useSearchParams();
@@ -572,20 +572,45 @@ export function OffersTable({
           },
         }),
       columnHelper.accessor(
-        (row) => (row as any).service_card_generated_at || (row as any).last_edited_at || row.created_at,
+        (row) =>
+          (row as any).effective_at ||
+          (row as any).service_card_generated_at ||
+          (row as any).last_edited_at ||
+          row.created_at,
         {
           id: "created_at",
           meta: { className: isMechanicView ? "" : "hidden sm:table-cell" },
           header: () => (
             <button
-              onClick={() => handleSort("last_edited_at")}
+              onClick={() => handleSort("effective_at")}
               className="flex items-center hover:text-mb-blue hover:underline transition-colors"
             >
               {t("offers.columns.date")}
-              <SortIcon col="last_edited_at" />
+              <SortIcon col="effective_at" />
             </button>
           ),
           cell: (info) => format(new Date(info.getValue()), "dd.MM.yyyy"),
+        },
+      ),
+      columnHelper.accessor(
+        (row) =>
+          (row as any).effective_at ||
+          (row as any).service_card_generated_at ||
+          (row as any).last_edited_at ||
+          row.created_at,
+        {
+          id: "time",
+          meta: { className: isMechanicView ? "" : "hidden sm:table-cell" },
+          header: () => (
+            <button
+              onClick={() => handleSort("effective_at")}
+              className="flex items-center hover:text-mb-blue hover:underline transition-colors"
+            >
+              {t("offers.columns.time")}
+              <SortIcon col="effective_at" />
+            </button>
+          ),
+          cell: (info) => format(new Date(info.getValue()), "HH:mm"),
         },
       ),
       !isMechanicView &&

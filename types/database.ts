@@ -136,6 +136,9 @@ export interface Database {
           created_at: string;
           updated_at: string;
           last_edited_at: string | null;
+          // Generated column: COALESCE(service_card_generated_at, last_edited_at, created_at)
+          // Optional because a few code paths build offer objects in-memory without it.
+          effective_at?: string;
           assyst_remaining_time: string | null;
           assyst_remaining_mileage: string | null;
           assyst_service_code: string | null;
@@ -514,6 +517,7 @@ export interface Database {
           advance_amount: number;
           fines_amount: number;
           bonus_amount: number;
+          paid_leave_amount: number;
           fixed_salary: number;
           cash_amount: number;
           created_at: string;
@@ -529,6 +533,7 @@ export interface Database {
           advance_amount?: number;
           fines_amount?: number;
           bonus_amount?: number;
+          paid_leave_amount?: number;
           fixed_salary?: number;
           cash_amount?: number;
           created_at?: string;
@@ -544,6 +549,7 @@ export interface Database {
           advance_amount?: number;
           fines_amount?: number;
           bonus_amount?: number;
+          paid_leave_amount?: number;
           fixed_salary?: number;
           cash_amount?: number;
           created_at?: string;

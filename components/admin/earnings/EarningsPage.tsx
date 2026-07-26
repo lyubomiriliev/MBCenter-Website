@@ -113,6 +113,7 @@ export function EarningsPage() {
   const [mechanicAdvance, setMechanicAdvance] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
   const [mechanicBonus, setMechanicBonus] = useState("");
+  const [mechanicPaidLeave, setMechanicPaidLeave] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
   const [receptionistAdvance, setReceptionistAdvance] = useState("");
@@ -250,6 +251,7 @@ export function EarningsPage() {
           setMechanicAdvance("");
           setMechanicFines("");
           setMechanicBonus("");
+          setMechanicPaidLeave("");
         } else {
           setReceptionistEntries([]);
           setReceptionistFixed("");
@@ -294,11 +296,13 @@ export function EarningsPage() {
           setMechanicAdvance(sumData.advance_amount?.toString() || "");
           setMechanicFines(sumData.fines_amount?.toString() || "");
           setMechanicBonus(sumData.bonus_amount?.toString() || "");
+          setMechanicPaidLeave(sumData.paid_leave_amount?.toString() || "");
         } else {
           setMechanicCard("");
           setMechanicAdvance("");
           setMechanicFines("");
           setMechanicBonus("");
+          setMechanicPaidLeave("");
         }
       } else {
         if (sumData) {
@@ -482,6 +486,7 @@ export function EarningsPage() {
             advance={parseFloat(mechanicAdvance) || 0}
             fines={parseFloat(mechanicFines) || 0}
             bonus={parseFloat(mechanicBonus) || 0}
+            paidLeave={parseFloat(mechanicPaidLeave) || 0}
           />
         );
         filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${selectedYear}.pdf`;
@@ -573,7 +578,14 @@ export function EarningsPage() {
   const mechAdvanceVal = parseFloat(mechanicAdvance) || 0;
   const mechFinesVal = parseFloat(mechanicFines) || 0;
   const mechBonusVal = parseFloat(mechanicBonus) || 0;
-  const mechanicCash = mechanicNet - mechCardVal - mechAdvanceVal - mechFinesVal + mechBonusVal;
+  const mechPaidLeaveVal = parseFloat(mechanicPaidLeave) || 0;
+  const mechanicCash =
+    mechanicNet -
+    mechCardVal -
+    mechAdvanceVal -
+    mechFinesVal +
+    mechBonusVal +
+    mechPaidLeaveVal;
 
   const receptionistTotal = receptionistEntries.reduce(
     (s, e) => s + (e.earnings || 0),
@@ -971,7 +983,7 @@ export function EarningsPage() {
                         <p className="text-xs text-mb-silver uppercase tracking-wide">
                           {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                         </p>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 max-w-3xl">
                           <div className="space-y-1">
                             <Label className="text-xs">
                               {isBg ? "Карта (€)" : "Card (€)"}
@@ -1060,6 +1072,30 @@ export function EarningsPage() {
                                   "mechanic",
                                   {
                                     bonus_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
+                                );
+                              }}
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {isBg ? "Платен отпуск (€)" : "Paid Leave (€)"}
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={mechanicPaidLeave}
+                              onChange={(e) => {
+                                setMechanicPaidLeave(e.target.value);
+                                saveMonthlySummary(
+                                  selectedMechanic,
+                                  "mechanic",
+                                  {
+                                    paid_leave_amount:
                                       parseFloat(e.target.value) || 0,
                                   },
                                 );

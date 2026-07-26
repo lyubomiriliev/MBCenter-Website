@@ -55,6 +55,7 @@ export function getSearchVariants(term: string): string[] {
 }
 
 export type OfferSortColumn =
+  | "effective_at"
   | "last_edited_at"
   | "created_at"
   | "customer_name"
@@ -82,7 +83,7 @@ export function useOffers(filters: OffersFilters = {}) {
     dateTo,
     page = 1,
     pageSize = 20,
-    sortBy = "last_edited_at",
+    sortBy = "effective_at",
     sortDir = "desc",
   } = filters;
 
@@ -107,6 +108,7 @@ export function useOffers(filters: OffersFilters = {}) {
           total_gross,
           created_at,
           last_edited_at,
+          effective_at,
           service_card_number,
           service_card_generated_at,
           client:clients(id, name),
@@ -115,6 +117,7 @@ export function useOffers(filters: OffersFilters = {}) {
           { count: "exact" }
         )
         .order(sortBy, { ascending: sortDir === "asc", nullsFirst: sortDir === "asc" })
+        .order("created_at", { ascending: sortDir === "asc" })
         .range((page - 1) * pageSize, page * pageSize - 1);
 
       // Apply filters

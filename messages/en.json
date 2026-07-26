@@ -1262,6 +1262,7 @@
         "status": "Status",
         "total": "Total",
         "date": "Date",
+        "time": "Time",
         "actions": "Actions"
       },
       "status": {

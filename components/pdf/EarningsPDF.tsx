@@ -40,6 +40,7 @@ interface MechanicEarningsPDFProps {
   advance?: number;
   fines?: number;
   bonus?: number;
+  paidLeave?: number;
 }
 
 interface ReceptionistEarningsPDFProps {
@@ -198,6 +199,7 @@ export function MechanicEarningsPDF({
   advance,
   fines,
   bonus,
+  paidLeave,
 }: MechanicEarningsPDFProps) {
   const styles = createStyles();
   const totalEarnings = entries.reduce((s, e) => s + e.total, 0);
@@ -207,7 +209,9 @@ export function MechanicEarningsPDF({
   const advanceAmount = advance || 0;
   const finesAmount = fines || 0;
   const bonusAmount = bonus || 0;
-  const cashAmount = net50 - cardAmount - advanceAmount - finesAmount + bonusAmount;
+  const paidLeaveAmount = paidLeave || 0;
+  const cashAmount =
+    net50 - cardAmount - advanceAmount - finesAmount + bonusAmount + paidLeaveAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -275,6 +279,12 @@ export function MechanicEarningsPDF({
             <View style={styles.summaryRow}>
               <Text style={styles.summaryBold}>Бонус (€)</Text>
               <Text style={styles.summaryValueBold}>+{bonusAmount.toFixed(2)} €</Text>
+            </View>
+          )}
+          {paidLeaveAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryBold}>Платен отпуск (€)</Text>
+              <Text style={styles.summaryValueBold}>+{paidLeaveAmount.toFixed(2)} €</Text>
             </View>
           )}
           {finesAmount > 0 && (

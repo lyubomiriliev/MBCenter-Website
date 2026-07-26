@@ -1394,6 +1394,26 @@ export function CreateOfferFormV2({
         // UPDATE existing offer
         console.log("Updating existing offer:", offerId);
 
+        // Промяна само на "Име на ремонт", "Пробег" или полетата за забележки
+        // не трябва да актуализира датата/часа на офертата или сервизната карта.
+        // Проверяваме кои полета са реално променени спрямо заредената оферта.
+        const DATE_NEUTRAL_FIELDS = new Set([
+          "repairName",
+          "carMileage",
+          "carMileageUnit",
+          "notes",
+          "notesInternal",
+          "notesService",
+        ]);
+        const changedFieldKeys = Object.keys(dirtyFields);
+        const hasDateAffectingChange =
+          prepaymentsDirty ||
+          changedFieldKeys.some((key) => !DATE_NEUTRAL_FIELDS.has(key));
+        // Пропускаме обновяването на last_edited_at, ако са променени само
+        // date-neutral полета (и има поне една такава промяна).
+        const skipDateUpdate =
+          !hasDateAffectingChange && changedFieldKeys.length > 0;
+
         const updateData = {
           customer_name: data.customerName,
           customer_phone: data.customerPhone || null,
@@ -1417,7 +1437,9 @@ export function CreateOfferFormV2({
           notes_internal: data.notesInternal || null,
           notes_service: data.notesService || null,
           prepayments_eur: prepayments.length > 0 ? prepayments : null,
-          last_edited_at: new Date().toISOString(),
+          ...(skipDateUpdate
+            ? {}
+            : { last_edited_at: new Date().toISOString() }),
         };
 
         const offerRes = await supabase

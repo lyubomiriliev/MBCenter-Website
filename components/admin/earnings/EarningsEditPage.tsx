@@ -10,6 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { EarningsEntry, EarningsMonthlySummary } from "@/types/database";
 
 /* ------------------------------------------------------------------ */
@@ -84,6 +92,7 @@ export function EarningsEditPage({
   const [mechanicAdvance, setMechanicAdvance] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
   const [mechanicBonus, setMechanicBonus] = useState("");
+  const [mechanicPaidLeave, setMechanicPaidLeave] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
   const [receptionistAdvance, setReceptionistAdvance] = useState("");
@@ -94,6 +103,10 @@ export function EarningsEditPage({
   // Inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
+
+  // Delete confirmation state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load Worker Name
   useEffect(() => {
@@ -138,6 +151,7 @@ export function EarningsEditPage({
         setMechanicAdvance(sumData.advance_amount?.toString() || "");
         setMechanicFines(sumData.fines_amount?.toString() || "");
         setMechanicBonus(sumData.bonus_amount?.toString() || "");
+        setMechanicPaidLeave(sumData.paid_leave_amount?.toString() || "");
       } else {
         setReceptionistFixed(sumData.fixed_salary?.toString() || "");
         setReceptionistCard(sumData.card_amount?.toString() || "");
@@ -150,6 +164,7 @@ export function EarningsEditPage({
         setMechanicAdvance("");
         setMechanicFines("");
         setMechanicBonus("");
+        setMechanicPaidLeave("");
       } else {
         setReceptionistFixed("");
         setReceptionistCard("");
@@ -193,9 +208,19 @@ export function EarningsEditPage({
     [workerId, workerType, month, year],
   );
 
-  const deleteEntry = async (id: string) => {
-    await supabase.from("earnings_entries").delete().eq("id", id);
-    loadData();
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    setIsDeleting(true);
+    try {
+      await supabase
+        .from("earnings_entries")
+        .delete()
+        .eq("id", deleteConfirmId);
+      loadData();
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmId(null);
+    }
   };
 
   const startEdit = (e: EarningsEntry) => {
@@ -274,7 +299,9 @@ export function EarningsEditPage({
   const advanceVal = parseFloat(mechanicAdvance) || 0;
   const finesVal = parseFloat(mechanicFines) || 0;
   const bonusVal = parseFloat(mechanicBonus) || 0;
-  const mechanicCash = mechanicNet - cardVal - advanceVal - finesVal + bonusVal;
+  const paidLeaveVal = parseFloat(mechanicPaidLeave) || 0;
+  const mechanicCash =
+    mechanicNet - cardVal - advanceVal - finesVal + bonusVal + paidLeaveVal;
 
   const receptionistTotal = entries.reduce((s, e) => s + (e.earnings || 0), 0);
   const recFixedVal = parseFloat(receptionistFixed) || 0;
@@ -323,6 +350,7 @@ export function EarningsEditPage({
             advance={advanceVal}
             fines={finesVal}
             bonus={bonusVal}
+            paidLeave={paidLeaveVal}
           />
         );
         filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${year}.pdf`;
@@ -371,6 +399,7 @@ export function EarningsEditPage({
   };
 
   return (
+    <>
     <div className="space-y-6 p-10 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -438,8 +467,8 @@ export function EarningsEditPage({
                     <col style={{ width: "80px" }} />
                     <col style={{ width: "75px" }} />
                     <col style={{ width: "90px" }} />
-                    <col style={{ width: "100px" }} />
-                    <col style={{ width: "56px" }} />
+                    <col style={{ width: "150px" }} />
+                    <col style={{ width: "80px" }} />
                   </colgroup>
                   <thead>
                     <tr className="border-b border-mb-border text-mb-silver text-xs uppercase">
@@ -475,7 +504,7 @@ export function EarningsEditPage({
                       <th className="text-right py-2 pr-2">
                         {isBg ? "Дата" : "Date"}
                       </th>
-                      <th className="w-8"></th>
+                      <th className="w-20"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -605,18 +634,18 @@ export function EarningsEditPage({
                                     entry_date: ev.target.value,
                                   }))
                                 }
-                                className="bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:hue-rotate-[190deg] [&::-webkit-calendar-picker-indicator]:saturate-[10]"
+                                className="w-full min-w-0 bg-mb-black border border-mb-border rounded px-2 py-1 text-sm text-white [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:w-4 [&::-webkit-calendar-picker-indicator]:h-4 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:hue-rotate-[190deg] [&::-webkit-calendar-picker-indicator]:saturate-[10]"
                               />
                             </td>
-                            <td className="py-1">
-                              <div className="flex gap-1">
+                            <td className="py-1 pl-3 w-20">
+                              <div className="flex items-center gap-3 whitespace-nowrap">
                                 <button
                                   onClick={() => saveEdit(e.id)}
-                                  className="text-green-400 hover:text-green-300 p-0.5"
+                                  className="shrink-0 text-green-400 hover:text-green-300 p-0.5"
                                   title={isBg ? "Запази" : "Save"}
                                 >
                                   <svg
-                                    className="w-3.5 h-3.5"
+                                    className="w-4 h-4"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -631,11 +660,11 @@ export function EarningsEditPage({
                                 </button>
                                 <button
                                   onClick={cancelEdit}
-                                  className="text-mb-silver hover:text-white p-0.5"
+                                  className="shrink-0 text-mb-silver hover:text-white p-0.5"
                                   title={isBg ? "Откажи" : "Cancel"}
                                 >
                                   <svg
-                                    className="w-3.5 h-3.5"
+                                    className="w-4 h-4"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -692,15 +721,15 @@ export function EarningsEditPage({
                           <td className="py-1.5 pr-2 text-right text-mb-silver whitespace-nowrap">
                             {formatDate(e.entry_date)}
                           </td>
-                          <td className="py-1.5">
-                            <div className="flex gap-1">
+                          <td className="py-1.5 pl-2 w-20">
+                            <div className="flex items-center gap-3 whitespace-nowrap">
                               <button
                                 onClick={() => startEdit(e)}
-                                className="text-mb-blue hover:text-blue-300 p-0.5"
+                                className="shrink-0 text-mb-blue hover:text-blue-300 p-0.5"
                                 title={isBg ? "Редактирай" : "Edit"}
                               >
                                 <svg
-                                  className="w-3.5 h-3.5"
+                                  className="w-4 h-4"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="currentColor"
@@ -714,12 +743,12 @@ export function EarningsEditPage({
                                 </svg>
                               </button>
                               <button
-                                onClick={() => deleteEntry(e.id)}
-                                className="text-red-400 hover:text-red-300 p-0.5"
+                                onClick={() => setDeleteConfirmId(e.id)}
+                                className="shrink-0 text-red-400 hover:text-red-300 p-0.5"
                                 title={isBg ? "Изтрий" : "Delete"}
                               >
                                 <svg
-                                  className="w-3.5 h-3.5"
+                                  className="w-4 h-4"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="currentColor"
@@ -777,7 +806,7 @@ export function EarningsEditPage({
                     <p className="text-xs text-mb-silver uppercase tracking-wide">
                       {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                     </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 max-w-3xl">
                       <div className="space-y-1">
                         <Label className="text-xs">
                           {isBg ? "Карта (€)" : "Card (€)"}
@@ -848,6 +877,25 @@ export function EarningsEditPage({
                             setMechanicBonus(e.target.value);
                             saveMonthlySummary({
                               bonus_amount: parseFloat(e.target.value) || 0,
+                            });
+                          }}
+                          className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">
+                          {isBg ? "Платен отпуск (€)" : "Paid Leave (€)"}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={mechanicPaidLeave}
+                          onChange={(e) => {
+                            setMechanicPaidLeave(e.target.value);
+                            saveMonthlySummary({
+                              paid_leave_amount: parseFloat(e.target.value) || 0,
                             });
                           }}
                           className="bg-gray-100 text-gray-900 border-mb-border text-sm"
@@ -1028,5 +1076,49 @@ export function EarningsEditPage({
         </CardContent>
       </Card>
     </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirmId(null);
+        }}
+      >
+        <DialogContent className="bg-mb-anthracite border-mb-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {isBg ? "Изтриване на заработка" : "Delete Earning"}
+            </DialogTitle>
+            <DialogDescription className="text-mb-silver">
+              {isBg
+                ? "Сигурни ли сте, че искате да изтриете този запис? Действието е необратимо."
+                : "Are you sure you want to delete this entry? This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              className="border-mb-border"
+            >
+              {isBg ? "Откажи" : "Cancel"}
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting
+                ? isBg
+                  ? "Изтриване..."
+                  : "Deleting..."
+                : isBg
+                  ? "Изтрий"
+                  : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
