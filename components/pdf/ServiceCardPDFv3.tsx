@@ -15,8 +15,6 @@ export const setFontRegistered = (v: boolean) => {
   fontRegistered = !!v;
 };
 
-const EUR_TO_BGN = 1.95583;
-
 // Create styles function that uses current fontRegistered state
 const createStyles = () => {
   const fontFamily = fontRegistered ? "NotoSans" : "Helvetica";
@@ -420,11 +418,10 @@ export function ServiceCardPDFv3({
     return `${eurValue.toFixed(2)} €`;
   };
 
-  // EUR + лв. (for totals only)
+  // EUR (for totals)
   const formatDual = (eurValue: number) => {
-    if (isNaN(eurValue) || eurValue == null) return "0.00 € / 0.00 лв.";
-    const bgnValue = eurValue * EUR_TO_BGN;
-    return `${eurValue.toFixed(2)} € / ${bgnValue.toFixed(2)} лв.`;
+    if (isNaN(eurValue) || eurValue == null) return "0.00 €";
+    return `${eurValue.toFixed(2)} €`;
   };
 
   // Discount percentages from offer

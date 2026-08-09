@@ -59,8 +59,6 @@ import type { OfferWithRelations, OfferStatus } from "@/types/database";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { TransferDataModal } from "@/components/admin/warehouse/TransferDataModal";
 
-const EUR_TO_BGN = 1.95583;
-
 function getColumnsKey(role: string): string {
   if (role === "reception") return "mb_offer_columns_visibility_reception";
   if (role === "mechanic") return "mb_offer_columns_visibility_mechanic";
@@ -560,13 +558,9 @@ export function OffersTable({
           ),
           cell: (info) => {
             const eur = info.getValue();
-            const bgn = eur * EUR_TO_BGN;
             return (
               <div className="text-center">
                 <div className="font-medium">{eur.toFixed(2)} €</div>
-                <div className="text-xs text-mb-silver">
-                  {bgn.toFixed(2)} лв.
-                </div>
               </div>
             );
           },

@@ -36,7 +36,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import type { OfferFormData, ServiceActionFormData } from "@/lib/schemas/offer";
-import { EUR_TO_BGN } from "@/lib/schemas/offer";
 import { parseTimeToHours, formatHours } from "@/lib/utils";
 import {
   useFixedActivities,
@@ -361,9 +360,7 @@ function AddEditServiceActionModal({
                                   return act
                                     ? `${act.name} - ${act.price_eur.toFixed(
                                         2,
-                                      )} € / ${(
-                                        act.price_eur * EUR_TO_BGN
-                                      ).toFixed(2)} лв.`
+                                      )} €`
                                     : t("selectFixedActivity");
                                 })()
                               : t("selectFixedActivity")}
@@ -400,8 +397,7 @@ function AddEditServiceActionModal({
                             }}
                           >
                             <span className="flex-1 truncate min-w-0">
-                              {act.name} - {act.price_eur.toFixed(2)} € /{" "}
-                              {(act.price_eur * EUR_TO_BGN).toFixed(2)} лв.
+                              {act.name} - {act.price_eur.toFixed(2)} €
                             </span>
                             <button
                               type="button"

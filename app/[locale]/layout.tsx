@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import {
   getMessages,
@@ -15,12 +14,11 @@ import { SmoothScroll } from "@/components/layout/SmoothScroll";
 import { generateAlternateLinks, generateLocalBusinessSchema } from "@/lib/seo";
 import { SITE_CONFIG } from "@/lib/constants";
 import { ConditionalLayout } from "./ConditionalLayout";
-
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
-  display: "swap",
-});
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { GoogleAnalyticsPageView } from "@/components/analytics/GoogleAnalyticsPageView";
+import { Umami } from "@/components/analytics/Umami";
+import { HtmlLangSetter } from "@/components/layout/HtmlLangSetter";
+import { Suspense } from "react";
 
 type Props = {
   children: React.ReactNode;
@@ -113,22 +111,24 @@ export default async function LocaleLayout({
   const ogImageUrl = `${SITE_CONFIG.baseUrl}/og-image.jpg`;
 
   return (
-    <html lang={locale} className={inter.variable}>
-      <head>
-        <meta property="og:image" content={ogImageUrl} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:image:type" content="image/jpeg" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </head>
-      <body className="bg-mb-black text-white">
-        <NextIntlClientProvider messages={messages}>
-          <ConditionalLayout>{children}</ConditionalLayout>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <>
+      <GoogleAnalytics />
+      <Umami />
+      <meta property="og:image" content={ogImageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:type" content="image/jpeg" />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <HtmlLangSetter locale={locale} />
+      <Suspense fallback={null}>
+        <GoogleAnalyticsPageView />
+      </Suspense>
+      <NextIntlClientProvider messages={messages}>
+        <ConditionalLayout>{children}</ConditionalLayout>
+      </NextIntlClientProvider>
+    </>
   );
 }

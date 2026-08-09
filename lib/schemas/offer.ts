@@ -106,4 +106,3 @@ export const defaultOfferFormValues: Partial<OfferFormData> = {
 };
 
 export const VAT_RATE = 0.2;
-export const EUR_TO_BGN = 1.95583;

@@ -66,6 +66,7 @@ export function VideoHero({
           preload="none"
           poster="/assets/images/glc-video-poster.jpg"
           className="w-full h-full object-cover"
+          suppressHydrationWarning
           onError={(e) => {
             // Silently handle video loading errors
             const target = e.target as HTMLVideoElement;

@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useWatch } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import type { OfferFormData } from "@/lib/schemas/offer";
-import { EUR_TO_BGN } from "@/lib/schemas/offer";
 import { parseTimeToHours } from "@/lib/utils";
 
 interface CalculationResult {
@@ -23,39 +22,21 @@ interface CalculationResult {
   netTotal: number;
   vatAmount: number;
   grossTotal: number;
-  subtotalBGN: number;
-  partsDiscountAmountBGN: number;
-  servicesDiscountAmountBGN: number;
-  discountAmountBGN: number;
-  netTotalBGN: number;
-  vatAmountBGN: number;
-  grossTotalBGN: number;
   formatted: {
     partsSubtotal: string;
     laborSubtotal: string;
     subtotal: string;
     partsDiscountAmount: string;
-    partsDiscountAmountBGN: string;
     servicesDiscountAmount: string;
-    servicesDiscountAmountBGN: string;
     discountAmount: string;
     netTotal: string;
     vatAmount: string;
     grossTotal: string;
-    subtotalBGN: string;
-    discountAmountBGN: string;
-    netTotalBGN: string;
-    vatAmountBGN: string;
-    grossTotalBGN: string;
   };
 }
 
 function formatEUR(value: number): string {
   return `${value.toFixed(2)} €`;
-}
-
-function formatBGN(value: number): string {
-  return `${value.toFixed(2)} лв.`;
 }
 
 export function calculateOffer(
@@ -111,14 +92,6 @@ export function calculateOffer(
     const netTotal = grossTotal;
     const vatAmount = 0;
 
-    const subtotalBGN = subtotal * EUR_TO_BGN;
-    const partsDiscountAmountBGN = partsDiscountAmount * EUR_TO_BGN;
-    const servicesDiscountAmountBGN = servicesDiscountAmount * EUR_TO_BGN;
-    const discountAmountBGN = totalDiscountAmount * EUR_TO_BGN;
-    const netTotalBGN = grossTotal * EUR_TO_BGN;
-    const vatAmountBGN = 0;
-    const grossTotalBGN = grossTotal * EUR_TO_BGN;
-
     return {
       partsSubtotal,
       partsCount: parts.length,
@@ -135,30 +108,16 @@ export function calculateOffer(
       netTotal,
       vatAmount,
       grossTotal,
-      subtotalBGN,
-      partsDiscountAmountBGN,
-      servicesDiscountAmountBGN,
-      discountAmountBGN,
-      netTotalBGN,
-      vatAmountBGN,
-      grossTotalBGN,
       formatted: {
         partsSubtotal: formatEUR(partsSubtotal),
         laborSubtotal: formatEUR(laborSubtotal),
         subtotal: formatEUR(subtotal),
         partsDiscountAmount: formatEUR(partsDiscountAmount),
-        partsDiscountAmountBGN: formatBGN(partsDiscountAmountBGN),
         servicesDiscountAmount: formatEUR(servicesDiscountAmount),
-        servicesDiscountAmountBGN: formatBGN(servicesDiscountAmountBGN),
         discountAmount: formatEUR(totalDiscountAmount),
         netTotal: formatEUR(netTotal),
         vatAmount: formatEUR(vatAmount),
         grossTotal: formatEUR(grossTotal),
-        subtotalBGN: formatBGN(subtotalBGN),
-        discountAmountBGN: formatBGN(discountAmountBGN),
-        netTotalBGN: formatBGN(netTotalBGN),
-        vatAmountBGN: formatBGN(vatAmountBGN),
-        grossTotalBGN: formatBGN(grossTotalBGN),
       },
     };
 }

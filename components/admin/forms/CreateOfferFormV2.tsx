@@ -71,8 +71,12 @@ const DATE_NEUTRAL_FORM_FIELDS = [
   "notesService",
 ] as const satisfies readonly (keyof OfferFormData)[];
 
-// Every other field that should bump the date when it changes.
-const DATE_AFFECTING_FORM_FIELDS = [
+// Other scalar fields that should bump the date when they change. Arrays
+// (parts / serviceActions) are handled separately by comparing their computed
+// monetary totals, NOT by deep JSON diff — a deep diff is too fragile because
+// the loaded snapshot and the live form differ in ways that aren't real user
+// edits (undefined vs null on optional fields, async warehouse cost backfill).
+const DATE_AFFECTING_SCALAR_FIELDS = [
   "customerName",
   "customerPhone",
   "clientEmail",
@@ -85,18 +89,55 @@ const DATE_AFFECTING_FORM_FIELDS = [
   "discountPercent",
   "discountPartsPercent",
   "discountServicesPercent",
-  "parts",
-  "serviceActions",
 ] as const satisfies readonly (keyof OfferFormData)[];
 
+// Deeply normalizes a value so that undefined / null / "" are all treated as
+// equal, recursively — used to avoid false positives when comparing form
+// snapshots (RHF/DB round-trips flip undefined <-> null on optional fields).
+function normalizeDeep(v: unknown): unknown {
+  if (v === undefined || v === null || v === "") return null;
+  if (Array.isArray(v)) return v.map(normalizeDeep);
+  if (typeof v === "object") {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(v as Record<string, unknown>).sort()) {
+      const nv = normalizeDeep((v as Record<string, unknown>)[key]);
+      if (nv !== null) out[key] = nv;
+    }
+    return out;
+  }
+  if (typeof v === "number") return v;
+  return v;
+}
+
 function valuesEqual(a: unknown, b: unknown): boolean {
-  const norm = (v: unknown) => (v === undefined || v === null ? "" : v);
-  const na = norm(a);
-  const nb = norm(b);
+  const na = normalizeDeep(a);
+  const nb = normalizeDeep(b);
   if (typeof na === "object" || typeof nb === "object") {
     return JSON.stringify(na) === JSON.stringify(nb);
   }
   return na === nb;
+}
+
+// Sum of parts + service actions, used as a robust "did the lists change"
+// signal instead of a brittle deep-equality check.
+function offerLineItemsTotal(data: OfferFormData): number {
+  let partsTotal = 0;
+  (data.parts ?? []).forEach((p) => {
+    partsTotal += (p.unitPrice || 0) * (p.quantity || 1);
+  });
+  let serviceTotal = 0;
+  (data.serviceActions ?? []).forEach((a) => {
+    if (a.isFixedPrice && a.fixedPriceAmount) {
+      serviceTotal += a.fixedPriceAmount;
+    } else {
+      serviceTotal += parseTimeToHours(a.timeRequired || "0") * (a.pricePerHour || 0);
+    }
+  });
+  const partsCount = (data.parts ?? []).length;
+  const serviceCount = (data.serviceActions ?? []).length;
+  // Include counts so adding+removing items that net to the same total still
+  // registers as a change.
+  return partsTotal + serviceTotal + partsCount * 1e-6 + serviceCount * 1e-9;
 }
 
 // Compares the currently submitted form values against a snapshot of the
@@ -125,9 +166,17 @@ function computeDateNeutralDiff(
   const changedNeutralFields = DATE_NEUTRAL_FORM_FIELDS.filter(
     (f) => !valuesEqual(current[f], baseline[f]),
   );
-  const changedOtherFields = DATE_AFFECTING_FORM_FIELDS.filter(
+  const changedOtherFields: string[] = DATE_AFFECTING_SCALAR_FIELDS.filter(
     (f) => !valuesEqual(current[f], baseline[f]),
   );
+  // parts / serviceActions: compare by computed total, not deep JSON, to avoid
+  // false positives from undefined<->null and async cost backfill.
+  if (
+    Math.abs(offerLineItemsTotal(current) - offerLineItemsTotal(baseline)) >
+    1e-9
+  ) {
+    changedOtherFields.push("lineItems");
+  }
   return {
     onlyDateNeutralDirty:
       changedNeutralFields.length > 0 && changedOtherFields.length === 0,
@@ -755,6 +804,13 @@ export function CreateOfferFormV2({
       const diff = computeDateNeutralDiff(data, savedFormSnapshotRef.current);
       const otherFieldsChanged = diff.otherFieldsChanged || prepaymentsDirty;
       const onlyDateNeutralDirty = diff.onlyDateNeutralDirty && !prepaymentsDirty;
+      console.log("[date-bump-debug] saveEditedOffer", {
+        offerId,
+        changedNeutralFields: diff.changedNeutralFields,
+        changedOtherFields: diff.changedOtherFields,
+        prepaymentsDirty,
+        willBumpDate: !onlyDateNeutralDirty,
+      });
 
       const { error: offerErr } = await supabase
         .from("offers")

@@ -8,7 +8,6 @@ import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { OfferFormData } from "@/lib/schemas/offer";
-import { EUR_TO_BGN } from "@/lib/schemas/offer";
 
 interface FloatingSummaryProps {
   children?: React.ReactNode;
@@ -48,7 +47,6 @@ export function FloatingSummary({
   );
   const prepaymentsTotal = prepayments.reduce((a, b) => a + b, 0);
   const amountDueEur = Math.max(0, calculations.grossTotal - prepaymentsTotal);
-  const amountDueBgn = amountDueEur * EUR_TO_BGN;
 
   return (
     <div className="space-y-4 mr-0 lg:mr-6 lg:fixed lg:top-30 rounded-lg lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:z-10">
@@ -121,9 +119,6 @@ export function FloatingSummary({
               </span>
               <div className="text-right text-green-400">
                 <div>-{calculations.formatted.partsDiscountAmount}</div>
-                <div className="text-xs">
-                  -{calculations.formatted.partsDiscountAmountBGN}
-                </div>
               </div>
             </div>
           )}
@@ -136,9 +131,6 @@ export function FloatingSummary({
               </span>
               <div className="text-right text-green-400">
                 <div>-{calculations.formatted.servicesDiscountAmount}</div>
-                <div className="text-xs">
-                  -{calculations.formatted.servicesDiscountAmountBGN}
-                </div>
               </div>
             </div>
           )}
@@ -150,9 +142,6 @@ export function FloatingSummary({
             <span className="text-mb-silver">СТАВКА {t("vat")} (20%)</span>
             <div className="text-right text-mb-silver">
               <div>{(calculations.grossTotal / 6).toFixed(2)} €</div>
-              <div className="text-xs">
-                {((calculations.grossTotal / 6) * EUR_TO_BGN).toFixed(2)} лв.
-              </div>
             </div>
           </div>
 
@@ -162,9 +151,6 @@ export function FloatingSummary({
             <div className="text-right">
               <div className="text-2xl font-bold text-mb-blue">
                 {calculations.formatted.grossTotal}
-              </div>
-              <div className="text-sm text-mb-silver">
-                {calculations.formatted.grossTotalBGN}
               </div>
             </div>
           </div>
@@ -177,9 +163,6 @@ export function FloatingSummary({
                 <div className="text-right">
                   <div className="text-white">
                     {calculations.totalCost.toFixed(2)} €
-                  </div>
-                  <div className="text-xs text-mb-silver">
-                    {(calculations.totalCost * EUR_TO_BGN).toFixed(2)} лв.
                   </div>
                 </div>
               </div>
@@ -203,9 +186,6 @@ export function FloatingSummary({
                     {calculations.totalProfit >= 0 ? "+" : ""}
                     {calculations.totalProfit.toFixed(2)} €
                   </div>
-                  <div className="text-xs text-mb-silver">
-                    {(calculations.totalProfit * EUR_TO_BGN).toFixed(2)} лв.
-                  </div>
                 </div>
               </div>
             </>
@@ -224,9 +204,6 @@ export function FloatingSummary({
                   <div className="flex items-center gap-2">
                     <div className="text-right text-green-400">
                       <div>-{amt.toFixed(2)} €</div>
-                      <div className="text-xs">
-                        -{(amt * EUR_TO_BGN).toFixed(2)} лв.
-                      </div>
                     </div>
                     {onRemovePrepayment && (
                       <button
@@ -258,9 +235,6 @@ export function FloatingSummary({
                 <div className="text-right">
                   <div className="text-xl font-bold text-mb-blue">
                     {amountDueEur.toFixed(2)} €
-                  </div>
-                  <div className="text-sm text-mb-silver">
-                    {amountDueBgn.toFixed(2)} лв.
                   </div>
                 </div>
               </div>

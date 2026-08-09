@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   },
 };
 
+// The Google tag is intentionally not mounted here: this layout also wraps the
+// locale layout, which mounts its own. "/" gets the tag from app/page.tsx.
 export default function RootLayout({
   children,
 }: {
