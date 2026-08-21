@@ -372,6 +372,11 @@ const createStyles = () => {
   });
 };
 
+// Above this many service rows the block is taller than a page and must be
+// allowed to wrap; at or below it the block is kept atomic so it never splits
+// across the page edge. Measured against rendered output.
+const MAX_ATOMIC_SERVICE_ROWS = 9;
+
 interface OfferPDFv3Props {
   offer: OfferWithRelations;
   locale: "bg" | "en";
@@ -502,10 +507,14 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
 
         {/* Parts Table */}
         {parts.length > 0 && (
-          <>
+          // Must be a <View>, not a <> fragment: react-pdf does not treat a
+          // fragment as a layout node, so the title + table could not split
+          // across a page boundary and the whole table jumped to page 2,
+          // leaving page 1 nearly empty.
+          <View>
             <Text style={styles.sectionTitle}>Части</Text>
             <View style={styles.table}>
-              <View style={styles.tableHeader} wrap={false} minPresenceAhead={60}>
+              <View style={styles.tableHeader} wrap={false}>
                 <View style={styles.col1}>
                   <Text style={[styles.colTextCenter, { color: "#fff" }]}>
                     №
@@ -580,17 +589,23 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
                 );
               })}
             </View>
-          </>
+          </View>
         )}
 
         {/* Service Actions Table */}
         {offer.service_actions && offer.service_actions.length > 0 && (() => {
           const sortedActions = [...offer.service_actions].sort((a, b) => a.sort_order - b.sort_order);
-          const forcePageBreak = sortedParts.length >= 18 && sortedParts.length <= 22;
           return (
-            <View minPresenceAhead={80} break={forcePageBreak}>
+            // A short service block is kept atomic (wrap={false}) so it can
+            // never be split at the page edge — that is what clipped the first
+            // row when the parts table ended near the bottom. A long block
+            // must stay wrappable: it cannot fit in the space left on a page,
+            // and an atomic block would jump to the next page whole, leaving a
+            // large blank gap. The row count only decides atomicity here, it
+            // never forces a page break.
+            <View wrap={sortedActions.length > MAX_ATOMIC_SERVICE_ROWS}>
               <View style={styles.table}>
-                <View wrap={false} minPresenceAhead={60}>
+                <View wrap={false}>
                   <Text style={styles.sectionTitle}>Сервизни активности</Text>
                   <View style={styles.tableHeader}>
                     <View style={styles.colSvc1}>

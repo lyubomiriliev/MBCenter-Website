@@ -386,6 +386,11 @@ const createStyles = () => {
   });
 };
 
+// Above this many service rows the block is taller than a page and must be
+// allowed to wrap; at or below it the block is kept atomic so it never splits
+// across the page edge. Measured against rendered output.
+const MAX_ATOMIC_SERVICE_ROWS = 8;
+
 interface ServiceCardPDFv3Props {
   offer: OfferWithRelations;
   locale: "bg" | "en";
@@ -527,7 +532,11 @@ export function ServiceCardPDFv3({
 
         {/* Parts Table - WITH part number column (service cards have part numbers) */}
         {sortedParts.length > 0 && (
-          <>
+          // Must be a <View>, not a <> fragment: react-pdf does not treat a
+          // fragment as a layout node, so the title + table could not split
+          // across a page boundary and the whole table jumped to page 2,
+          // leaving page 1 nearly empty.
+          <View>
             <Text style={styles.sectionTitle}>Части</Text>
             <View style={styles.table} wrap={true}>
               {sortedParts.map((item, index) => {
@@ -598,12 +607,19 @@ export function ServiceCardPDFv3({
                 );
               })}
             </View>
-          </>
+          </View>
         )}
 
         {offer.service_actions && offer.service_actions.length > 0 && (
-          <View break={sortedParts.length >= 15}>
-            <View style={styles.table} wrap={true}>
+          // No count-based page break: row heights vary (long names wrap to two
+          // lines), so a part count can't predict where the page boundary falls.
+          // A short service block is kept atomic (wrap={false}) so it can never
+          // be split at the page edge. A long block must stay wrappable: it
+          // cannot fit in the space left on a page, and an atomic block would
+          // jump to the next page whole, leaving a large blank gap. The row
+          // count only decides atomicity here, it never forces a page break.
+          <View wrap={offer.service_actions.length > MAX_ATOMIC_SERVICE_ROWS}>
+            <View style={styles.table}>
               <View wrap={false}>
                 <Text style={styles.sectionTitle}>Сервизни активности</Text>
                 <View style={styles.tableHeader}>
