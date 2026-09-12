@@ -423,6 +423,7 @@ export function TurnoverPage() {
       const blob = await pdf(
         <TurnoverPDF
           periodLabel={view === "day" ? periodLabel : monthLabelShort}
+          view={view}
           rows={rows.map((r) => ({
             entry_date: r.entry_date,
             vehicle: r.vehicle,
@@ -443,9 +444,26 @@ export function TurnoverPage() {
         />,
       ).toBlob();
 
+      // Download with a meaningful name, like the other PDFs in the app.
+      // A month report is "месечен", not "дневен".
+      const filename =
+        view === "day"
+          ? `dneven-oborot-${localDateKey(cursor)}.pdf`
+          : `mesechen-oborot-${cursor.getFullYear()}-${String(
+              cursor.getMonth() + 1,
+            ).padStart(2, "0")}.pdf`;
+
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
       console.error("[turnover] PDF failed:", error);
       setError(

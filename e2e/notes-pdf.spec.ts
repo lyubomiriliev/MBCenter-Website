@@ -101,16 +101,22 @@ test.describe("PDF", () => {
     ).toBeVisible();
   });
 
-  test("clicking it opens a PDF in a new tab", async ({ page, context }) => {
+  test("clicking it downloads a PDF with a meaningful name", async ({
+    page,
+  }) => {
     await signIn(page, { email: ADMIN, role: "admin" });
     await mockSupabase(page, dbWithRow(), { role: "admin", full_name: "Admin" });
 
     await page.goto("/bg/mb-admin/turnover/");
     await expect(page.getByText("S500 W222")).toBeVisible();
 
-    const popupPromise = context.waitForEvent("page", { timeout: 25_000 });
+    const downloadPromise = page.waitForEvent("download", { timeout: 25_000 });
     await page.getByRole("button", { name: /Разпечатай PDF/ }).click();
-    const popup = await popupPromise;
-    expect(popup.url()).toMatch(/^blob:/);
+    const download = await downloadPromise;
+
+    // dneven-oborot-YYYY-MM-DD.pdf for a day, -YYYY-MM for a month.
+    expect(download.suggestedFilename()).toMatch(
+      /^dneven-oborot-\d{4}-\d{2}(-\d{2})?\.pdf$/,
+    );
   });
 });

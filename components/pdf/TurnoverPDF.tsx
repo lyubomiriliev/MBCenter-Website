@@ -1,5 +1,12 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import {
+  Document,
+  Image,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+} from "@react-pdf/renderer";
 
 export let fontRegistered = false;
 export const setFontRegistered = (v: boolean) => {
@@ -24,6 +31,8 @@ export interface TurnoverPDFRow {
 interface TurnoverPDFProps {
   /** Heading period, e.g. "12 септември 2026" or "септември 2026". */
   periodLabel: string;
+  /** Which report this is; drives the title. */
+  view?: "day" | "month";
   rows: TurnoverPDFRow[];
   /** Day notes, keyed by YYYY-MM-DD. */
   notes?: Record<string, string>;
@@ -67,41 +76,83 @@ function createStyles(fontFamily: string) {
       backgroundColor: "#ffffff",
       lineHeight: 1.3,
     },
-    titleBlock: {
-      marginBottom: 14,
-      paddingBottom: 8,
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      marginBottom: 12,
+      paddingBottom: 10,
       borderBottomWidth: 2,
-      borderBottomColor: "#333",
+      borderBottomColor: "#000",
     },
-    title: { fontSize: 15, fontFamily, fontWeight: "bold", textAlign: "center" },
-    subtitle: {
-      fontSize: 10,
+    headerLeft: { width: "55%" },
+    headerRight: { width: "42%", alignItems: "flex-end" },
+    logo: { width: 150, height: 38, objectFit: "contain", marginBottom: 4 },
+    companyName: { fontSize: 9, fontFamily, fontWeight: "bold", marginTop: 2 },
+    companyInfo: { fontSize: 7.5, color: "#555", lineHeight: 1.4 },
+    title: {
+      fontSize: 15,
       fontFamily,
-      textAlign: "center",
-      color: "#666",
-      marginTop: 3,
+      fontWeight: "bold",
+      textAlign: "right",
+      letterSpacing: 0.5,
+      lineHeight: 1.2,
     },
+    subtitle: {
+      fontSize: 10.5,
+      fontFamily,
+      textAlign: "right",
+      color: "#333",
+      marginTop: 4,
+      lineHeight: 1.2,
+    },
+    printedAt: { fontSize: 7.5, color: "#777", textAlign: "right", marginTop: 6 },
     summaryRow: { flexDirection: "row", marginBottom: 12, gap: 6 },
     summaryBox: {
       flex: 1,
+      borderWidth: 0.75,
+      borderColor: "#ccc",
+      borderRadius: 3,
+      paddingVertical: 5,
+      paddingHorizontal: 7,
+      backgroundColor: "#fbfbfb",
+    },
+    summaryBoxAccent: {
+      flex: 1,
       borderWidth: 1,
+      borderColor: "#000",
+      borderRadius: 3,
+      paddingVertical: 5,
+      paddingHorizontal: 7,
+      backgroundColor: "#f0f0f0",
+    },
+    summaryLabel: {
+      fontSize: 6.5,
+      color: "#666",
+      textTransform: "uppercase",
+      letterSpacing: 0.3,
+    },
+    summaryValue: {
+      fontSize: 12,
+      fontFamily,
+      fontWeight: "bold",
+      marginTop: 2,
+    },
+    dayBlock: {
+      marginBottom: 14,
+      borderWidth: 0.75,
       borderColor: "#ddd",
       borderRadius: 3,
-      padding: 6,
+      overflow: "hidden",
     },
-    summaryLabel: { fontSize: 7, color: "#666", textTransform: "uppercase" },
-    summaryValue: { fontSize: 12, fontFamily, fontWeight: "bold", marginTop: 2 },
-    dayBlock: { marginBottom: 12 },
     dayHeader: {
       flexDirection: "row",
       justifyContent: "space-between",
-      backgroundColor: "#eee",
-      paddingVertical: 4,
-      paddingHorizontal: 5,
-      borderBottomWidth: 1,
-      borderBottomColor: "#999",
+      backgroundColor: "#1a1a1a",
+      paddingVertical: 5,
+      paddingHorizontal: 6,
     },
-    dayTitle: { fontSize: 10, fontFamily, fontWeight: "bold" },
+    dayTitle: { fontSize: 9.5, fontFamily, fontWeight: "bold", color: "#fff" },
     tableHeader: {
       flexDirection: "row",
       borderBottomWidth: 1,
@@ -127,16 +178,19 @@ function createStyles(fontFamily: string) {
     dayTotal: {
       flexDirection: "row",
       justifyContent: "flex-end",
-      paddingTop: 3,
-      paddingHorizontal: 4,
+      paddingTop: 4,
+      paddingHorizontal: 5,
+      borderTopWidth: 0.75,
+      borderTopColor: "#333",
     },
     dayTotalText: { fontSize: 9, fontFamily, fontWeight: "bold" },
     noteBox: {
-      marginTop: 4,
-      padding: 5,
-      backgroundColor: "#fafafa",
-      borderLeftWidth: 2,
-      borderLeftColor: "#999",
+      margin: 5,
+      padding: 6,
+      backgroundColor: "#f7f7f7",
+      borderLeftWidth: 2.5,
+      borderLeftColor: "#1a1a1a",
+      borderRadius: 2,
     },
     noteLabel: { fontSize: 7, color: "#666", textTransform: "uppercase" },
     noteText: { fontSize: 8.5, marginTop: 2 },
@@ -159,6 +213,7 @@ function createStyles(fontFamily: string) {
 
 export function TurnoverPDF({
   periodLabel,
+  view = "day",
   rows,
   notes = {},
   includeProfit = false,
@@ -196,9 +251,30 @@ export function TurnoverPDF({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>ДНЕВЕН ОБОРОТ</Text>
-          <Text style={styles.subtitle}>{periodLabel}</Text>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <Image
+              src="/assets/logos/mbcenter-specialist2.png"
+              style={styles.logo}
+            />
+            <Text style={styles.companyName}>ЕМ БИ ЦЕНТЪР ООД</Text>
+            <Text style={styles.companyInfo}>
+              ул. Околовръстен път 155, 1700 София
+            </Text>
+            <Text style={styles.companyInfo}>Булстат: 207901533</Text>
+            <Text style={styles.companyInfo}>Тел. +359883788873</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.title}>
+              {view === "month" ? "МЕСЕЧЕН ОБОРОТ" : "ДНЕВЕН ОБОРОТ"}
+            </Text>
+            <Text style={styles.subtitle}>{periodLabel}</Text>
+            <Text style={styles.printedAt}>
+              Разпечатано: {new Date().toLocaleDateString("bg-BG")}
+              {generatedBy ? `\n${generatedBy}` : ""}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.summaryRow}>
@@ -214,7 +290,7 @@ export function TurnoverPDF({
             <Text style={styles.summaryLabel}>Банка</Text>
             <Text style={styles.summaryValue}>{fmtMoney(totals.bank)}</Text>
           </View>
-          <View style={styles.summaryBox}>
+          <View style={styles.summaryBoxAccent}>
             <Text style={styles.summaryLabel}>Общо</Text>
             <Text style={styles.summaryValue}>{fmtMoney(totals.all)}</Text>
           </View>
@@ -226,7 +302,7 @@ export function TurnoverPDF({
               <Text style={styles.summaryLabel}>Себестойност (части)</Text>
               <Text style={styles.summaryValue}>{fmtMoney(totals.cost)}</Text>
             </View>
-            <View style={styles.summaryBox}>
+            <View style={styles.summaryBoxAccent}>
               <Text style={styles.summaryLabel}>Печалба</Text>
               <Text style={styles.summaryValue}>
                 {fmtMoney(totals.all - totals.cost)}
