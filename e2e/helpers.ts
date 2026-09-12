@@ -26,6 +26,7 @@ export interface Db {
   leave_periods: any[];
   leave_entitlements: any[];
   daily_turnover: any[];
+  daily_turnover_notes: any[];
   offer_items: any[];
 }
 
@@ -36,6 +37,7 @@ export function emptyDb(): Db {
     leave_periods: [],
     leave_entitlements: [],
     daily_turnover: [],
+    daily_turnover_notes: [],
     offer_items: [],
   };
 }

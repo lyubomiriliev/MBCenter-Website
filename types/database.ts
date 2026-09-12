@@ -697,6 +697,15 @@ export type DailyTurnoverInsert = Omit<
 >;
 export type DailyTurnoverUpdate = Partial<DailyTurnoverInsert>;
 
+export interface DailyTurnoverNote {
+  id: string;
+  note_date: string;
+  note: string;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ============================================
 // Leave periods (Отпуски)
 // ============================================

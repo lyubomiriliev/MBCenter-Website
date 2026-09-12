@@ -18,7 +18,11 @@ import {
 import { cn } from "@/lib/utils";
 import { localDateKey } from "@/lib/turnover";
 import { canSeeBetaSections } from "@/lib/feature-flags";
-import type { DailyTurnover, PaymentMethod } from "@/types/database";
+import type {
+  DailyTurnover,
+  DailyTurnoverNote,
+  PaymentMethod,
+} from "@/types/database";
 
 const MONTHS_BG = [
   "януари", "февруари", "март", "април", "май", "юни",
@@ -172,6 +176,14 @@ export function TurnoverPage() {
   const [rows, setRows] = useState<DailyTurnover[]>([]);
   // Month figures are shown even while looking at a single day, so the month's
   // running total and profit are always in view.
+  // Забележки for the day currently in view, plus the notes needed by a PDF.
+  const [dayNote, setDayNote] = useState("");
+  const [savedDayNote, setSavedDayNote] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteError, setNoteError] = useState("");
+  const [periodNotes, setPeriodNotes] = useState<Record<string, string>>({});
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
   const [monthTotals, setMonthTotals] = useState({
     all: 0,
     cost: 0,
@@ -254,6 +266,30 @@ export function TurnoverPage() {
       setMonthTotals({ all, cost, profit: all - cost });
     }
 
+    // Забележки covering the visible range (used by the day field and the PDF).
+    const { data: noteRows, error: noteErr } = await supabase
+      .from("daily_turnover_notes")
+      .select("note_date, note")
+      .gte("note_date", range.from)
+      .lte("note_date", range.to);
+
+    if (noteErr) {
+      console.error("[turnover] notes load failed:", noteErr);
+      setPeriodNotes({});
+    } else {
+      const map: Record<string, string> = {};
+      for (const n of (noteRows ?? []) as Pick<
+        DailyTurnoverNote,
+        "note_date" | "note"
+      >[]) {
+        map[n.note_date] = n.note ?? "";
+      }
+      setPeriodNotes(map);
+      const todaysNote = map[localDateKey(cursor)] ?? "";
+      setDayNote(todaysNote);
+      setSavedDayNote(todaysNote);
+    }
+
     setLoading(false);
   }, [range.from, range.to, isBg, cursor]);
 
@@ -332,6 +368,93 @@ export function TurnoverPage() {
     const months = isBg ? MONTHS_BG : MONTHS_EN;
     return `${months[cursor.getMonth()]} ${cursor.getFullYear()}`;
   }, [cursor, isBg]);
+
+  /**
+   * Saves the Забележки for the day in view. Insert when there is no note yet,
+   * update otherwise — updating is admin-only by RLS, matching the rule that
+   * reception cannot correct what has been recorded.
+   */
+  const saveDayNote = async () => {
+    const noteDate = localDateKey(cursor);
+    setNoteSaving(true);
+    setNoteError("");
+
+    const existing = periodNotes[noteDate] !== undefined;
+    const { error: err } = existing
+      ? await supabase
+          .from("daily_turnover_notes")
+          .update({ note: dayNote } as never)
+          .eq("note_date", noteDate)
+      : await supabase.from("daily_turnover_notes").insert({
+          note_date: noteDate,
+          note: dayNote,
+          created_by_name: profile?.full_name ?? null,
+        } as never);
+
+    setNoteSaving(false);
+    if (err) {
+      console.error("[turnover] note save failed:", err);
+      setNoteError(
+        (err as { code?: string }).code === "PGRST205"
+          ? isBg
+            ? "Липсва миграция: изпълнете supabase/migration_turnover_daily_notes.sql."
+            : "Missing migration: run supabase/migration_turnover_daily_notes.sql."
+          : isBg
+            ? "Грешка при запис на забележката."
+            : "Failed to save the note.",
+      );
+      return;
+    }
+    setSavedDayNote(dayNote);
+    setPeriodNotes((prev) => ({ ...prev, [noteDate]: dayNote }));
+  };
+
+  /** Renders the period currently in view as a PDF and opens it for printing. */
+  const generatePDF = async () => {
+    setPdfGenerating(true);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { registerPDFFonts } = await import("@/lib/pdf-fonts");
+      const { TurnoverPDF, setFontRegistered } = await import(
+        "@/components/pdf/TurnoverPDF"
+      );
+      setFontRegistered(await registerPDFFonts());
+
+      const blob = await pdf(
+        <TurnoverPDF
+          periodLabel={view === "day" ? periodLabel : monthLabelShort}
+          rows={rows.map((r) => ({
+            entry_date: r.entry_date,
+            vehicle: r.vehicle,
+            license_plate: r.license_plate,
+            repair_name: r.repair_name,
+            client_name: r.client_name,
+            amount: Number(r.amount) || 0,
+            amount_cash: Number(r.amount_cash) || 0,
+            amount_card: Number(r.amount_card) || 0,
+            amount_bank: Number(r.amount_bank) || 0,
+            parts_cost: Number(r.parts_cost) || 0,
+            source: r.source,
+            service_card_number: r.service_card_number,
+          }))}
+          notes={periodNotes}
+          includeProfit={canSeeProfit}
+          generatedBy={profile?.full_name ?? null}
+        />,
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      console.error("[turnover] PDF failed:", error);
+      setError(
+        isBg ? "Грешка при генериране на PDF." : "Failed to generate the PDF.",
+      );
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -556,6 +679,17 @@ export function TurnoverPage() {
             </button>
           </div>
 
+          <Button
+            onClick={generatePDF}
+            disabled={pdfGenerating}
+            variant="outline"
+            className="border-mb-border bg-mb-black text-white hover:bg-mb-border hover:text-white"
+          >
+            {pdfGenerating
+              ? isBg ? "Генериране..." : "Generating..."
+              : isBg ? "Разпечатай PDF" : "Print PDF"}
+          </Button>
+
           <Button onClick={openCreate} className="bg-mb-blue hover:bg-mb-blue/90">
             {isBg ? "Добави запис" : "Add entry"}
           </Button>
@@ -640,6 +774,49 @@ export function TurnoverPage() {
           </>
         )}
       </div>
+
+      {/* Забележки for the day in view */}
+      {view === "day" && (
+        <div className="rounded-xl border border-mb-border bg-mb-anthracite p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <Label className="text-sm text-white">
+              {isBg ? "Забележки за деня" : "Notes for the day"}
+            </Label>
+            {dayNote !== savedDayNote && (
+              <span className="text-xs text-amber-400">
+                {isBg ? "Незапазени промени" : "Unsaved changes"}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={dayNote}
+              onChange={(e) => {
+                setDayNote(e.target.value);
+                setNoteError("");
+              }}
+              placeholder={
+                isBg
+                  ? "напр. Липсва фактура за части, клиентът ще доплати утре"
+                  : "e.g. Parts invoice missing, customer pays the rest tomorrow"
+              }
+              className="flex-1 bg-gray-100 text-gray-900 border-mb-border"
+            />
+            <Button
+              onClick={saveDayNote}
+              disabled={noteSaving || dayNote === savedDayNote}
+              className="bg-mb-blue hover:bg-mb-blue/90 sm:w-auto"
+            >
+              {noteSaving
+                ? isBg ? "Запис..." : "Saving..."
+                : isBg ? "Запази" : "Save"}
+            </Button>
+          </div>
+          {noteError && (
+            <p className="mt-2 text-sm text-red-400">{noteError}</p>
+          )}
+        </div>
+      )}
 
       {/* Entries */}
       {loading ? (
