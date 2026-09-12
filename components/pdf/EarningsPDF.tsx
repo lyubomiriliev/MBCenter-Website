@@ -39,6 +39,7 @@ interface MechanicEarningsPDFProps {
   card?: number;
   advance?: number;
   fines?: number;
+  deductions?: number;
   bonus?: number;
   paidLeave?: number;
 }
@@ -51,8 +52,8 @@ interface ReceptionistEarningsPDFProps {
   fixedSalary?: number;
   card?: number;
   advance?: number;
-  cash?: number;
   fines?: number;
+  deductions?: number;
 }
 
 function formatDate(iso: string) {
@@ -198,6 +199,7 @@ export function MechanicEarningsPDF({
   card,
   advance,
   fines,
+  deductions,
   bonus,
   paidLeave,
 }: MechanicEarningsPDFProps) {
@@ -208,10 +210,17 @@ export function MechanicEarningsPDF({
   const cardAmount = card || 0;
   const advanceAmount = advance || 0;
   const finesAmount = fines || 0;
+  const deductionsAmount = deductions || 0;
   const bonusAmount = bonus || 0;
   const paidLeaveAmount = paidLeave || 0;
   const cashAmount =
-    net50 - cardAmount - advanceAmount - finesAmount + bonusAmount + paidLeaveAmount;
+    net50 -
+    cardAmount -
+    advanceAmount -
+    finesAmount -
+    deductionsAmount +
+    bonusAmount +
+    paidLeaveAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -293,6 +302,14 @@ export function MechanicEarningsPDF({
               <Text style={styles.summaryValue}>-{finesAmount.toFixed(2)} €</Text>
             </View>
           )}
+          {deductionsAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Удръжки</Text>
+              <Text style={styles.summaryValue}>
+                -{deductionsAmount.toFixed(2)} €
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryRowHighlight}>
             <Text style={styles.summaryBold}>В БРОЙ</Text>
             <Text style={styles.summaryValueBold}>{cashAmount.toFixed(2)} €</Text>
@@ -325,18 +342,19 @@ export function ReceptionistEarningsPDF({
   fixedSalary,
   card,
   advance,
-  cash,
   fines,
+  deductions,
 }: ReceptionistEarningsPDFProps) {
   const styles = createStyles();
   const totalEarnings = entries.reduce((s, e) => s + e.earnings, 0);
   const fixedAmount = fixedSalary || 0;
   const cardAmount = card || 0;
   const advanceAmount = advance || 0;
-  const cashAmount = cash || 0;
   const finesAmount = fines || 0;
+  const deductionsAmount = deductions || 0;
   const totalSalary = totalEarnings + fixedAmount;
-  const remaining = totalSalary - cardAmount - advanceAmount - finesAmount - cashAmount;
+  const remaining =
+    totalSalary - cardAmount - advanceAmount - finesAmount - deductionsAmount;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("bg-BG", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -402,6 +420,14 @@ export function ReceptionistEarningsPDF({
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Глоби</Text>
               <Text style={styles.summaryValue}>-{finesAmount.toFixed(2)} €</Text>
+            </View>
+          )}
+          {deductionsAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Удръжки</Text>
+              <Text style={styles.summaryValue}>
+                -{deductionsAmount.toFixed(2)} €
+              </Text>
             </View>
           )}
           <View style={styles.summaryRowHighlight}>

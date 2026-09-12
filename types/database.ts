@@ -516,6 +516,7 @@ export interface Database {
           card_amount: number;
           advance_amount: number;
           fines_amount: number;
+          deductions_amount: number;
           bonus_amount: number;
           paid_leave_amount: number;
           fixed_salary: number;
@@ -532,6 +533,7 @@ export interface Database {
           card_amount?: number;
           advance_amount?: number;
           fines_amount?: number;
+          deductions_amount?: number;
           bonus_amount?: number;
           paid_leave_amount?: number;
           fixed_salary?: number;
@@ -548,6 +550,7 @@ export interface Database {
           card_amount?: number;
           advance_amount?: number;
           fines_amount?: number;
+          deductions_amount?: number;
           bonus_amount?: number;
           paid_leave_amount?: number;
           fixed_salary?: number;

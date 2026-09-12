@@ -143,12 +143,14 @@ export function EarningsPage() {
   const [mechanicCard, setMechanicCard] = useState("");
   const [mechanicAdvance, setMechanicAdvance] = useState("");
   const [mechanicFines, setMechanicFines] = useState("");
+  const [mechanicDeductions, setMechanicDeductions] = useState("");
   const [mechanicBonus, setMechanicBonus] = useState("");
   const [mechanicPaidLeave, setMechanicPaidLeave] = useState("");
   const [receptionistFixed, setReceptionistFixed] = useState("");
   const [receptionistCard, setReceptionistCard] = useState("");
   const [receptionistAdvance, setReceptionistAdvance] = useState("");
   const [receptionistFines, setReceptionistFines] = useState("");
+  const [receptionistDeductions, setReceptionistDeductions] = useState("");
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
   // All-workers earnings log
@@ -281,6 +283,7 @@ export function EarningsPage() {
           setMechanicCard("");
           setMechanicAdvance("");
           setMechanicFines("");
+          setMechanicDeductions("");
           setMechanicBonus("");
           setMechanicPaidLeave("");
         } else {
@@ -289,6 +292,7 @@ export function EarningsPage() {
           setReceptionistCard("");
           setReceptionistAdvance("");
           setReceptionistFines("");
+          setReceptionistDeductions("");
         }
         return;
       }
@@ -326,12 +330,14 @@ export function EarningsPage() {
           setMechanicCard(sumData.card_amount?.toString() || "");
           setMechanicAdvance(sumData.advance_amount?.toString() || "");
           setMechanicFines(sumData.fines_amount?.toString() || "");
+          setMechanicDeductions(sumData.deductions_amount?.toString() || "");
           setMechanicBonus(sumData.bonus_amount?.toString() || "");
           setMechanicPaidLeave(sumData.paid_leave_amount?.toString() || "");
         } else {
           setMechanicCard("");
           setMechanicAdvance("");
           setMechanicFines("");
+          setMechanicDeductions("");
           setMechanicBonus("");
           setMechanicPaidLeave("");
         }
@@ -341,11 +347,15 @@ export function EarningsPage() {
           setReceptionistCard(sumData.card_amount?.toString() || "");
           setReceptionistAdvance(sumData.advance_amount?.toString() || "");
           setReceptionistFines(sumData.fines_amount?.toString() || "");
+          setReceptionistDeductions(
+            sumData.deductions_amount?.toString() || "",
+          );
         } else {
           setReceptionistFixed("");
           setReceptionistCard("");
           setReceptionistAdvance("");
           setReceptionistFines("");
+          setReceptionistDeductions("");
         }
       }
     },
@@ -516,6 +526,7 @@ export function EarningsPage() {
             card={parseFloat(mechanicCard) || 0}
             advance={parseFloat(mechanicAdvance) || 0}
             fines={parseFloat(mechanicFines) || 0}
+            deductions={parseFloat(mechanicDeductions) || 0}
             bonus={parseFloat(mechanicBonus) || 0}
             paidLeave={parseFloat(mechanicPaidLeave) || 0}
           />
@@ -540,7 +551,7 @@ export function EarningsPage() {
             card={parseFloat(receptionistCard) || 0}
             advance={parseFloat(receptionistAdvance) || 0}
             fines={parseFloat(receptionistFines) || 0}
-            cash={recCash}
+            deductions={parseFloat(receptionistDeductions) || 0}
           />
         );
         filename = `${workerName.trim().replace(/\s+/g, "-")}-${monthLabel}-${selectedYear}.pdf`;
@@ -608,13 +619,15 @@ export function EarningsPage() {
   const mechCardVal = parseFloat(mechanicCard) || 0;
   const mechAdvanceVal = parseFloat(mechanicAdvance) || 0;
   const mechFinesVal = parseFloat(mechanicFines) || 0;
+  const mechDeductionsVal = parseFloat(mechanicDeductions) || 0;
   const mechBonusVal = parseFloat(mechanicBonus) || 0;
   const mechPaidLeaveVal = parseFloat(mechanicPaidLeave) || 0;
   const mechanicCash =
     mechanicNet -
     mechCardVal -
     mechAdvanceVal -
-    mechFinesVal +
+    mechFinesVal -
+    mechDeductionsVal +
     mechBonusVal +
     mechPaidLeaveVal;
 
@@ -626,8 +639,14 @@ export function EarningsPage() {
   const recCardVal = parseFloat(receptionistCard) || 0;
   const recAdvanceVal = parseFloat(receptionistAdvance) || 0;
   const recFinesVal = parseFloat(receptionistFines) || 0;
+  const recDeductionsVal = parseFloat(receptionistDeductions) || 0;
   const recTotalSalary = receptionistTotal + recFixedVal;
-  const recCash = recTotalSalary - recCardVal - recAdvanceVal - recFinesVal;
+  const recCash =
+    recTotalSalary -
+    recCardVal -
+    recAdvanceVal -
+    recFinesVal -
+    recDeductionsVal;
 
   return (
     <div className="space-y-6 p-4 sm:p-10">
@@ -1049,7 +1068,7 @@ export function EarningsPage() {
                         <p className="text-xs text-mb-silver uppercase tracking-wide">
                           {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                         </p>
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 max-w-3xl">
+                        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 max-w-4xl">
                           <div className="space-y-1">
                             <Label className="text-xs">
                               {isBg ? "Карта (€)" : "Card (€)"}
@@ -1114,6 +1133,30 @@ export function EarningsPage() {
                                   "mechanic",
                                   {
                                     fines_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
+                                );
+                              }}
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {isBg ? "Удръжки (€)" : "Deductions (€)"}
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={mechanicDeductions}
+                              onChange={(e) => {
+                                setMechanicDeductions(e.target.value);
+                                saveMonthlySummary(
+                                  selectedMechanic,
+                                  "mechanic",
+                                  {
+                                    deductions_amount:
                                       parseFloat(e.target.value) || 0,
                                   },
                                 );
@@ -1402,7 +1445,7 @@ export function EarningsPage() {
                         <p className="text-xs text-mb-silver uppercase tracking-wide">
                           {isBg ? "Месечни удръжки" : "Monthly Deductions"}
                         </p>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-xl">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 max-w-3xl">
                           <div className="space-y-1">
                             <Label className="text-xs">
                               {isBg
@@ -1493,6 +1536,30 @@ export function EarningsPage() {
                                   "receptionist",
                                   {
                                     fines_amount:
+                                      parseFloat(e.target.value) || 0,
+                                  },
+                                );
+                              }}
+                              className="bg-gray-100 text-gray-900 border-mb-border text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">
+                              {isBg ? "Удръжки (€)" : "Deductions (€)"}
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={receptionistDeductions}
+                              onChange={(e) => {
+                                setReceptionistDeductions(e.target.value);
+                                saveMonthlySummary(
+                                  selectedReceptionist,
+                                  "receptionist",
+                                  {
+                                    deductions_amount:
                                       parseFloat(e.target.value) || 0,
                                   },
                                 );
