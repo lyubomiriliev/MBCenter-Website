@@ -42,6 +42,12 @@ import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { TransferDataModal } from "@/components/admin/warehouse/TransferDataModal";
 import { useOfferCalculations } from "@/hooks/useOfferCalculations";
+import {
+  PaymentMethodDialog,
+  type PaymentSplit,
+} from "@/components/admin/turnover/PaymentMethodDialog";
+import { offerHasTurnover, recordServiceCardTurnover } from "@/lib/turnover";
+import { canSeeBetaSections } from "@/lib/feature-flags";
 import type {
   OfferWithRelations,
   InsertOffer,
@@ -279,7 +285,10 @@ export function CreateOfferFormV2({
   const [defaultMechRate, setDefaultMechRate] = useState("");
   const [defaultRecPct, setDefaultRecPct] = useState("");
 
-  const { profile } = useSupabaseAuthContext();
+  const { profile, user } = useSupabaseAuthContext();
+  // Temporary: the turnover capture is in testing, so the payment dialog is
+  // shown only to the beta tester account. Everyone else keeps the old flow.
+  const turnoverEnabled = canSeeBetaSections(user?.email);
   const isReceptionRole = profile?.role === "reception";
 
   const updateOfferMutation = useUpdateOffer();
@@ -308,6 +317,11 @@ export function CreateOfferFormV2({
 
   const { isDirty, dirtyFields } = useFormState({ control: methods.control });
   const offerCalculations = useOfferCalculations(methods.control);
+
+  // Payment capture for the daily turnover section. The dialog is shown before
+  // a service card is generated, unless this offer already has turnover rows.
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const pendingPaymentRef = useRef<PaymentSplit[] | null>(null);
 
   const prepaymentsDirty = useMemo(() => {
     if (!isEditing) return false;
@@ -981,7 +995,46 @@ export function CreateOfferFormV2({
     }
   };
 
+  /**
+   * Entry point for the "generate service card" button.
+   *
+   * Asks how the customer paid so the amount lands in Дневен оборот, then runs
+   * the actual generation. The dialog is skipped when there is nothing to
+   * record against: an unsaved draft (no offer id yet) or an offer that already
+   * has turnover rows from an earlier generation.
+   */
   const generateServiceCardPDF = async () => {
+    const formValues = methods.getValues();
+    if (
+      !savedOffer &&
+      formValues.parts.length === 0 &&
+      formValues.serviceActions.length === 0
+    ) {
+      showError(t("errors.noItemsForServiceCard"));
+      return;
+    }
+
+    if (turnoverEnabled && savedOffer && savedOffer.id !== "temp") {
+      // If the check itself fails, still ask: recordServiceCardTurnover
+      // re-checks before inserting, so asking cannot create a duplicate,
+      // while skipping the ask would silently lose the payment.
+      let alreadyRecorded = false;
+      try {
+        alreadyRecorded = await offerHasTurnover(savedOffer.id);
+      } catch (error) {
+        console.error("[turnover] existence check threw:", error);
+      }
+      if (!alreadyRecorded) {
+        pendingPaymentRef.current = null;
+        setPaymentDialogOpen(true);
+        return;
+      }
+    }
+
+    await runServiceCardGeneration();
+  };
+
+  const runServiceCardGeneration = async () => {
     const formValues = methods.getValues();
     if (
       !savedOffer &&
@@ -1157,6 +1210,31 @@ export function CreateOfferFormV2({
           .update(updateData as never)
           .eq("id", savedOffer.id);
 
+        // Record the payment into Дневен оборот. Best-effort: a turnover
+        // failure must never block the service card the customer is waiting on.
+        const splits = pendingPaymentRef.current;
+        pendingPaymentRef.current = null;
+        if (splits && splits.length > 0) {
+          try {
+            await recordServiceCardTurnover({
+              offer: {
+                id: savedOffer.id,
+                offer_number: savedOffer.offer_number,
+                service_card_number:
+                  serviceCardNumber || savedOffer.offer_number,
+                customer_name: formValues.customerName || null,
+                car_model_text: formValues.carModel || null,
+                license_plate: formValues.carLicensePlate || null,
+                repair_name: formValues.repairName || null,
+              },
+              splits,
+              createdByName: formValues.createdByName || null,
+            });
+          } catch (error) {
+            console.error("[turnover] failed to record service card:", error);
+          }
+        }
+
         // Deduct warehouse stock — only on first generation (needsNewTimestamp).
         // This prevents double-deduction on re-generation.
         if (needsNewTimestamp) {
@@ -1223,7 +1301,34 @@ export function CreateOfferFormV2({
     } catch (error) {
       console.error("Error generating service card PDF:", error);
       showError(t("errors.serviceCardFailed"));
+
+      // The customer has already paid; the turnover row must not be lost just
+      // because the PDF failed. The offer may have no card number yet, so the
+      // row is written against the offer number.
+      const unsaved = pendingPaymentRef.current;
+      pendingPaymentRef.current = null;
+      if (unsaved && unsaved.length > 0 && savedOffer && savedOffer.id !== "temp") {
+        const formValues = methods.getValues();
+        try {
+          await recordServiceCardTurnover({
+            offer: {
+              id: savedOffer.id,
+              offer_number: savedOffer.offer_number,
+              service_card_number: savedOffer.service_card_number,
+              customer_name: formValues.customerName || null,
+              car_model_text: formValues.carModel || null,
+              license_plate: formValues.carLicensePlate || null,
+              repair_name: formValues.repairName || null,
+            },
+            splits: unsaved,
+            createdByName: formValues.createdByName || null,
+          });
+        } catch (turnoverError) {
+          console.error("[turnover] recovery write failed:", turnoverError);
+        }
+      }
     } finally {
+      pendingPaymentRef.current = null;
       setServiceCardGenerating(false);
     }
   };
@@ -3553,6 +3658,26 @@ export function CreateOfferFormV2({
           </div>
         )}
       </form>
+
+      {/* Payment method for the daily turnover section */}
+      <PaymentMethodDialog
+        open={paymentDialogOpen}
+        total={offerCalculations.grossTotal}
+        subtitle={
+          savedOffer
+            ? `${locale === "bg" ? "Оферта" : "Offer"} №${savedOffer.offer_number}`
+            : undefined
+        }
+        onCancel={() => {
+          pendingPaymentRef.current = null;
+          setPaymentDialogOpen(false);
+        }}
+        onConfirm={(splits) => {
+          pendingPaymentRef.current = splits;
+          setPaymentDialogOpen(false);
+          void runServiceCardGeneration();
+        }}
+      />
 
       {/* Prepayment modal */}
       <Dialog open={prepaymentModalOpen} onOpenChange={setPrepaymentModalOpen}>

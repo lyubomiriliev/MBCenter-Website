@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,13 @@ import { OfferPDFv3, setFontRegistered as setOfferFontRegistered } from './Offer
 import { ServiceCardPDFv3, setFontRegistered as setServiceCardFontRegistered } from './ServiceCardPDFv3';
 import { registerPDFFonts } from '@/lib/pdf-fonts';
 import { supabase } from '@/lib/supabase/client';
+import {
+  PaymentMethodDialog,
+  type PaymentSplit,
+} from '@/components/admin/turnover/PaymentMethodDialog';
+import { offerHasTurnover, recordServiceCardTurnover } from '@/lib/turnover';
+import { useOptionalSupabaseAuthContext } from '@/components/admin/SupabaseAuthContext';
+import { canSeeBetaSections } from '@/lib/feature-flags';
 import type { OfferWithRelations } from '@/types/database';
 
 interface PDFActionsProps {
@@ -26,6 +33,74 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
   const t = useTranslations('admin.offers');
   const locale = useLocale() as 'bg' | 'en';
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
+
+  // Temporary: the turnover capture is in testing, so the payment dialog is
+  // shown only to the beta tester account. Everyone else keeps the old flow.
+  // Optional: this component can be rendered outside the admin layout, where
+  // there is no auth provider. No user means no payment capture.
+  const auth = useOptionalSupabaseAuthContext();
+  const turnoverEnabled = canSeeBetaSections(auth?.user?.email);
+
+  // Payment capture for Дневен оборот. A service card can be produced from four
+  // places here (download/open x button/dropdown), so the ask is funnelled
+  // through one deferred action instead of being repeated at each call site.
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const pendingActionRef = useRef<(() => Promise<void>) | null>(null);
+  const pendingSplitsRef = useRef<PaymentSplit[] | null>(null);
+
+  /**
+   * Runs `action`, first asking how the customer paid when this offer has no
+   * turnover recorded yet. Offer PDFs are never gated.
+   */
+  const withPaymentCapture = async (
+    type: 'offer' | 'serviceCard',
+    action: () => Promise<void>,
+  ) => {
+    if (!turnoverEnabled || type !== 'serviceCard' || !offer.id) {
+      await action();
+      return;
+    }
+
+    let alreadyRecorded = true;
+    try {
+      alreadyRecorded = await offerHasTurnover(offer.id);
+    } catch (error) {
+      console.error('[turnover] existence check threw:', error);
+    }
+
+    if (alreadyRecorded) {
+      await action();
+      return;
+    }
+
+    pendingActionRef.current = action;
+    pendingSplitsRef.current = null;
+    setPaymentDialogOpen(true);
+  };
+
+  /** Writes the captured payment once the card has actually been produced. */
+  const flushTurnover = async (cardNumber: string) => {
+    const splits = pendingSplitsRef.current;
+    pendingSplitsRef.current = null;
+    if (!splits || splits.length === 0) return;
+    try {
+      await recordServiceCardTurnover({
+        offer: {
+          id: offer.id,
+          offer_number: offer.offer_number,
+          service_card_number: cardNumber,
+          customer_name: offer.customer_name,
+          car_model_text: offer.car_model_text,
+          license_plate: offer.license_plate,
+          repair_name: offer.repair_name,
+        },
+        splits,
+        createdByName: offer.created_by_name,
+      });
+    } catch (error) {
+      console.error('[turnover] failed to record service card:', error);
+    }
+  };
 
   // Old service card numbers were copied from offer_number (10 random digits).
   // New ones are 8-digit zero-padded sequential numbers (e.g. 00020240).
@@ -76,9 +151,16 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      if (type === 'serviceCard') await flushTurnover(cardNumber);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      // The payment was already confirmed - record it even though the PDF failed.
+      if (type === 'serviceCard') {
+        await flushTurnover(offer.service_card_number ?? offer.offer_number);
+      }
     } finally {
+      pendingSplitsRef.current = null;
       setIsGenerating(null);
     }
   };
@@ -96,8 +178,9 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       let offerData = offer;
+      let cardNumber = offer.offer_number;
       if (type === 'serviceCard') {
-        ({ offer: offerData } = await resolveServiceCardNumber());
+        ({ offer: offerData, cardNumber } = await resolveServiceCardNumber());
       }
 
       const PDFComponent = type === 'offer'
@@ -107,15 +190,43 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
       const blob = await pdf(PDFComponent).toBlob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
+
+      if (type === 'serviceCard') await flushTurnover(cardNumber);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      // The payment was already confirmed - record it even though the PDF failed.
+      if (type === 'serviceCard') {
+        await flushTurnover(offer.service_card_number ?? offer.offer_number);
+      }
     } finally {
+      pendingSplitsRef.current = null;
       setIsGenerating(null);
     }
   };
 
+  const paymentDialog = (
+    <PaymentMethodDialog
+      open={paymentDialogOpen}
+      total={Number(offer.total_gross) || 0}
+      subtitle={`${locale === 'bg' ? 'Оферта' : 'Offer'} №${offer.offer_number}`}
+      onCancel={() => {
+        pendingActionRef.current = null;
+        pendingSplitsRef.current = null;
+        setPaymentDialogOpen(false);
+      }}
+      onConfirm={(splits) => {
+        pendingSplitsRef.current = splits;
+        setPaymentDialogOpen(false);
+        const action = pendingActionRef.current;
+        pendingActionRef.current = null;
+        void action?.();
+      }}
+    />
+  );
+
   if (variant === 'button') {
     return (
+      <>
       <div className="flex flex-col gap-2 w-full">
         <Button
           variant="outline"
@@ -136,7 +247,7 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => generatePDF('serviceCard')}
+          onClick={() => withPaymentCapture('serviceCard', () => generatePDF('serviceCard'))}
           disabled={!!isGenerating}
           className="w-full border-mb-border"
         >
@@ -149,11 +260,14 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
           )}
           {t('generateServiceCard')}
         </Button>
-      </div>
+        </div>
+        {paymentDialog}
+      </>
     );
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="border-mb-border">
@@ -191,7 +305,7 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-mb-border" />
         <DropdownMenuItem 
-          onClick={() => generatePDF('serviceCard')}
+          onClick={() => withPaymentCapture('serviceCard', () => generatePDF('serviceCard'))}
           disabled={!!isGenerating}
           className="cursor-pointer"
         >
@@ -203,7 +317,7 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
           {t('downloadServiceCard')}
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onClick={() => openPDFInNewTab('serviceCard')}
+          onClick={() => withPaymentCapture('serviceCard', () => openPDFInNewTab('serviceCard'))}
           disabled={!!isGenerating}
           className="cursor-pointer"
         >
@@ -214,6 +328,8 @@ export function PDFActions({ offer, variant = 'dropdown' }: PDFActionsProps) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    {paymentDialog}
+    </>
   );
 }
 

@@ -21,3 +21,12 @@ export function useSupabaseAuthContext(): SupabaseAuthContextValue {
   if (!ctx) throw new Error("useSupabaseAuthContext must be used inside SupabaseAuthProvider");
   return ctx;
 }
+
+/**
+ * Same context, but returns null instead of throwing when there is no provider.
+ * For components that may render outside the admin layout and only need the
+ * auth state when it happens to be available.
+ */
+export function useOptionalSupabaseAuthContext(): SupabaseAuthContextValue | null {
+  return useContext(SupabaseAuthContext);
+}

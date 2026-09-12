@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
-import { parseTimeToHours, formatHours, sumHours } from "@/lib/utils";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { parseTimeToHours, formatHours, sumHours, cn } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
+import { LeaveSection } from "@/components/admin/leave/LeaveSection";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { canSeeBetaSections } from "@/lib/feature-flags";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +73,34 @@ export function EarningsPage() {
   const locale = useLocale() as "bg" | "en";
   const isBg = locale === "bg";
   const router = useRouter();
+
+  // "Заработки" and "Отпуски" live in one section, switched by these tabs.
+  // The Отпуски tab is in testing, so it is shown only to the beta tester
+  // account for now — see lib/feature-flags.ts.
+  // Отпуски is owner-level information: the true admin only, never приемна.
+  // (The beta-tester account is included while the section is in testing.)
+  const { user, isSuperAdmin } = useSupabaseAuthContext();
+  const showLeave =
+    isSuperAdmin() && canSeeBetaSections(user?.email);
+
+  // The active tab lives in the URL (?tab=leave) so a refresh, a shared link or
+  // the browser Back button all land on the section the user was looking at.
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: "earnings" | "leave" =
+    tabParam === "leave" && showLeave ? "leave" : "earnings";
+
+  const setActiveTab = useCallback(
+    (tab: "earnings" | "leave") => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tab === "leave") params.set("tab", "leave");
+      else params.delete("tab");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   // Current month/year state
   const now = new Date();
@@ -604,11 +635,19 @@ export function EarningsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            {isBg ? "Заработки" : "Earnings"}
+            {showLeave && activeTab === "leave"
+              ? isBg ? "Отпуски" : "Leave"
+              : isBg ? "Заработки" : "Earnings"}
           </h1>
         </div>
-        {/* Month/Year Picker */}
-        <div className="flex items-center gap-2 bg-mb-anthracite border border-mb-border rounded-xl px-3 py-2 w-full sm:w-auto justify-between sm:justify-start">
+        {/* Month/Year Picker — Заработки only. Отпуски navigates by its own
+            calendar and year arrows, so this control would do nothing there. */}
+        <div
+          className={cn(
+            "flex items-center gap-2 bg-mb-anthracite border border-mb-border rounded-xl px-3 py-2 w-full sm:w-auto justify-between sm:justify-start",
+            showLeave && activeTab === "leave" && "hidden",
+          )}
+        >
           <button
             onClick={prevMonth}
             className="text-mb-silver hover:text-white p-1 transition-colors"
@@ -650,6 +689,33 @@ export function EarningsPage() {
           </button>
         </div>
       </div>
+
+      {/* Section tabs */}
+      {showLeave && (
+      <div className="flex rounded-xl border border-mb-border bg-mb-anthracite p-1 w-fit">
+        {(["earnings", "leave"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={
+              "px-4 py-2 text-sm rounded-lg transition-colors " +
+              (activeTab === tab
+                ? "bg-mb-blue text-white"
+                : "text-mb-silver hover:text-white")
+            }
+          >
+            {tab === "earnings"
+              ? isBg ? "Заработки" : "Earnings"
+              : isBg ? "Отпуски" : "Leave"}
+          </button>
+        ))}
+      </div>
+      )}
+
+      {showLeave && activeTab === "leave" && <LeaveSection />}
+
+      {(!showLeave || activeTab === "earnings") && (
+      <>
 
       {/* Earnings Log - All Workers Summary */}
       {earningsLog.length > 0 && (
@@ -1485,6 +1551,8 @@ export function EarningsPage() {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }

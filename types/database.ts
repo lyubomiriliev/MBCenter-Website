@@ -654,3 +654,79 @@ export interface WarehousePart {
 }
 export type WarehousePartInsert = Omit<WarehousePart, 'id' | 'created_at' | 'updated_at'>;
 export type WarehousePartUpdate = Partial<WarehousePartInsert>;
+
+// ============================================
+// Daily Turnover (Дневен оборот)
+// ============================================
+export type PaymentMethod = "cash" | "card" | "bank";
+/** Stored method: a single one, or "mixed" when split across several. */
+export type StoredPaymentMethod = PaymentMethod | "mixed";
+export type TurnoverSource = "service_card" | "manual";
+
+export interface DailyTurnover {
+  id: string;
+  source: TurnoverSource;
+  offer_id: string | null;
+  offer_number: string | null;
+  service_card_number: string | null;
+  entry_date: string;
+  vehicle: string | null;
+  license_plate: string | null;
+  repair_name: string | null;
+  client_name: string | null;
+  /** Row total; always equals amount_cash + amount_card + amount_bank. */
+  amount: number;
+  /** The single method used, or "mixed" when split. Kept in sync by trigger. */
+  payment_method: StoredPaymentMethod;
+  amount_cash: number;
+  amount_card: number;
+  amount_bank: number;
+  /** Parts cost at the time of recording. Profit = amount - parts_cost. */
+  parts_cost: number;
+  notes: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export type DailyTurnoverInsert = Omit<
+  DailyTurnover,
+  "id" | "created_at" | "updated_at"
+>;
+export type DailyTurnoverUpdate = Partial<DailyTurnoverInsert>;
+
+// ============================================
+// Leave periods (Отпуски)
+// ============================================
+export type WorkerType = "mechanic" | "receptionist";
+export type LeaveType = "paid" | "unpaid" | "sick";
+
+export interface LeavePeriod {
+  id: string;
+  worker_id: string;
+  worker_type: WorkerType;
+  worker_name: string;
+  start_date: string;
+  end_date: string;
+  working_days: number;
+  leave_type: LeaveType;
+  note: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export interface LeaveEntitlement {
+  id: string;
+  worker_id: string;
+  worker_type: WorkerType;
+  year: number;
+  /** Paid leave days granted for the year. */
+  total_days: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LeavePeriodInsert = Omit<
+  LeavePeriod,
+  "id" | "working_days" | "created_at" | "updated_at"
+>;
+export type LeavePeriodUpdate = Partial<LeavePeriodInsert>;

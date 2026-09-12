@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
 import { clearOfferFilters } from "@/components/admin/offers/OfferFilters";
+import { canSeeBetaSections } from "@/lib/feature-flags";
 
 interface NavItem {
   href: string;
@@ -17,6 +18,7 @@ interface NavItem {
   icon: React.ReactNode;
   adminOnly?: boolean;      // hidden from mechanics
   superAdminOnly?: boolean; // hidden from reception too (e.g. Settings)
+  betaOnly?: boolean;       // temporary: only the beta tester account (see lib/feature-flags)
 }
 
 const navItems: NavItem[] = [
@@ -134,6 +136,18 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    href: "/turnover",
+    labelKey: "admin.sidebar.turnover",
+    adminOnly: true, // visible to reception (read-only) and admin, not mechanics
+    betaOnly: true,  // temporary: testing account only
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    ),
+  },
+  {
     href: "/warehouse",
     labelKey: "admin.sidebar.warehouse",
     adminOnly: true,
@@ -164,7 +178,9 @@ export function AdminSidebar({ basePath }: AdminSidebarProps) {
   const pathname = usePathname();
   const locale = useLocale();
   const t = useTranslations();
-  const { profile, signOut, isAdmin, isSuperAdmin } = useSupabaseAuthContext();
+  const { profile, user, signOut, isAdmin, isSuperAdmin } =
+    useSupabaseAuthContext();
+  const showBeta = canSeeBetaSections(user?.email);
   const { open, setOpen } = useSidebar();
 
   const handleSignOut = async () => {
@@ -266,6 +282,8 @@ export function AdminSidebar({ basePath }: AdminSidebarProps) {
             if (item.superAdminOnly && !isSuperAdmin()) return null;
             // Hide admin-only items from mechanics
             if (item.adminOnly && !isAdmin()) return null;
+            // Hide in-testing sections from everyone but the beta tester
+            if (item.betaOnly && !showBeta) return null;
 
             const href = `${basePath}${item.href}`;
             const isActive =
