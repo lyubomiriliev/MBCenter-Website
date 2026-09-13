@@ -46,7 +46,12 @@ import {
   PaymentMethodDialog,
   type PaymentSplit,
 } from "@/components/admin/turnover/PaymentMethodDialog";
-import { offerHasTurnover, recordServiceCardTurnover } from "@/lib/turnover";
+import {
+  offerHasTurnover,
+  recordAdvanceTurnover,
+  recordServiceCardTurnover,
+} from "@/lib/turnover";
+import type { PaymentMethod } from "@/types/database";
 import { canSeeBetaSections } from "@/lib/feature-flags";
 import type {
   OfferWithRelations,
@@ -217,6 +222,10 @@ export function CreateOfferFormV2({
   const [prepaymentModalOpen, setPrepaymentModalOpen] = useState(false);
   const [prepaymentAmount, setPrepaymentAmount] = useState("");
   const [prepaymentError, setPrepaymentError] = useState("");
+  // An advance is still paid in cash/card/bank - the method is recorded so the
+  // turnover for that day is correct.
+  const [prepaymentMethod, setPrepaymentMethod] =
+    useState<PaymentMethod>("cash");
   const [performedBySelection, setPerformedBySelection] = useState("");
   const [performedBySaving, setPerformedBySaving] = useState(false);
   const [notesFromServiceInput, setNotesFromServiceInput] = useState("");
@@ -1025,9 +1034,19 @@ export function CreateOfferFormV2({
         console.error("[turnover] existence check threw:", error);
       }
       if (!alreadyRecorded) {
-        pendingPaymentRef.current = null;
-        setPaymentDialogOpen(true);
-        return;
+        // If advances already cover the whole job there is nothing left to
+        // collect, so asking for a payment would be wrong (and the dialog
+        // rejects a zero amount). Go straight to generating the card.
+        const advances = prepayments.reduce(
+          (sum, p) => sum + (Number(p) || 0),
+          0,
+        );
+        const balance = offerCalculations.grossTotal - advances;
+        if (balance > 0.005) {
+          pendingPaymentRef.current = null;
+          setPaymentDialogOpen(true);
+          return;
+        }
       }
     }
 
@@ -1228,6 +1247,11 @@ export function CreateOfferFormV2({
                 repair_name: formValues.repairName || null,
               },
               splits,
+              // Advances already taken, so profit is computed on the full job.
+              advanceApplied: prepayments.reduce(
+                (sum, prep) => sum + (Number(prep) || 0),
+                0,
+              ),
               createdByName: formValues.createdByName || null,
             });
           } catch (error) {
@@ -1321,6 +1345,10 @@ export function CreateOfferFormV2({
               repair_name: formValues.repairName || null,
             },
             splits: unsaved,
+            advanceApplied: prepayments.reduce(
+              (sum, prep) => sum + (Number(prep) || 0),
+              0,
+            ),
             createdByName: formValues.createdByName || null,
           });
         } catch (turnoverError) {
@@ -3662,12 +3690,30 @@ export function CreateOfferFormV2({
       {/* Payment method for the daily turnover section */}
       <PaymentMethodDialog
         open={paymentDialogOpen}
-        total={offerCalculations.grossTotal}
-        subtitle={
-          savedOffer
+        // Advances were already recorded on their own day, so the closing
+        // payment is only the remaining balance. Without this the final day's
+        // till would be overstated by the advances.
+        total={Math.max(
+          0,
+          offerCalculations.grossTotal -
+            prepayments.reduce((sum, p) => sum + (Number(p) || 0), 0),
+        )}
+        subtitle={(() => {
+          const advances = prepayments.reduce(
+            (sum, p) => sum + (Number(p) || 0),
+            0,
+          );
+          const base = savedOffer
             ? `${locale === "bg" ? "Оферта" : "Offer"} №${savedOffer.offer_number}`
-            : undefined
-        }
+            : "";
+          if (advances <= 0) return base || undefined;
+          const gross = offerCalculations.grossTotal;
+          const note =
+            locale === "bg"
+              ? `Общо ${gross.toFixed(2)} € − аванс ${advances.toFixed(2)} € = за доплащане`
+              : `Total ${gross.toFixed(2)} € − advance ${advances.toFixed(2)} € = balance due`;
+          return base ? `${base} · ${note}` : note;
+        })()}
         onCancel={() => {
           pendingPaymentRef.current = null;
           setPaymentDialogOpen(false);
@@ -3706,6 +3752,37 @@ export function CreateOfferFormV2({
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
             </div>
+            {/* An advance is paid in cash/card/bank like any other payment;
+                capturing it here puts it in the right day's turnover. */}
+            <div className="space-y-2">
+              <Label className="text-gray-200">
+                {locale === "bg" ? "Начин на плащане" : "Payment method"} *
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ["cash", "Брой", "Cash"],
+                    ["card", "Карта", "Card"],
+                    ["bank", "Банка", "Bank"],
+                  ] as [PaymentMethod, string, string][]
+                ).map(([m, bg, en]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPrepaymentMethod(m)}
+                    className={
+                      "rounded-lg border px-3 py-2 text-sm font-medium transition-colors " +
+                      (prepaymentMethod === m
+                        ? "border-mb-blue bg-mb-blue text-white"
+                        : "border-mb-border bg-mb-black text-mb-silver hover:text-white")
+                    }
+                  >
+                    {locale === "bg" ? bg : en}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {prepaymentError && (
               <p className="text-sm text-red-400">{prepaymentError}</p>
             )}
@@ -3729,6 +3806,30 @@ export function CreateOfferFormV2({
                 }
                 setPrepayments((prev) => [...prev, n]);
                 setPrepaymentModalOpen(false);
+
+                // Record the advance on today's turnover, so the money lands on
+                // the day it was actually taken. Best-effort: never block the
+                // offer on it, and only for a saved offer we can link to.
+                if (turnoverEnabled && savedOffer && savedOffer.id !== "temp") {
+                  const methodForRow = prepaymentMethod;
+                  void recordAdvanceTurnover({
+                    offer: {
+                      id: savedOffer.id,
+                      offer_number: savedOffer.offer_number,
+                      customer_name: methods.getValues().customerName || null,
+                      car_model_text: methods.getValues().carModel || null,
+                      license_plate:
+                        methods.getValues().carLicensePlate || null,
+                      repair_name: methods.getValues().repairName || null,
+                    },
+                    amount: n,
+                    method: methodForRow,
+                    createdByName: profile?.full_name ?? null,
+                  }).catch((error) => {
+                    console.error("[turnover] advance not recorded:", error);
+                  });
+                }
+                setPrepaymentMethod("cash");
               }}
               className="bg-mb-blue hover:bg-mb-blue/90"
             >

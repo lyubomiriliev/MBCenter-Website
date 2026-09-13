@@ -686,6 +686,10 @@ export interface DailyTurnover {
   amount_bank: number;
   /** Parts cost at the time of recording. Profit = amount - parts_cost. */
   parts_cost: number;
+  /** True when this row is an advance taken before the job was closed. */
+  is_advance: boolean;
+  /** Advance already collected for this job; added back for profit only. */
+  advance_applied: number;
   notes: string | null;
   created_by_name: string | null;
   created_at: string;

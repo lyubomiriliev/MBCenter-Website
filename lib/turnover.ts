@@ -18,12 +18,18 @@ export interface PaymentSplitInput {
   amount: number;
 }
 
-/** True when this offer already has turnover rows recorded. */
+/**
+ * True when this offer's FINAL payment has already been recorded.
+ *
+ * Advance rows are excluded deliberately: an offer may already have advances
+ * in the turnover while its closing balance is still outstanding.
+ */
 export async function offerHasTurnover(offerId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from("daily_turnover")
     .select("id")
     .eq("offer_id", offerId)
+    .eq("is_advance", false)
     .limit(1);
 
   if (error) {
@@ -56,8 +62,16 @@ export async function recordServiceCardTurnover(params: {
   splits: PaymentSplitInput[];
   createdByName?: string | null;
   entryDate?: string;
+  /** Advances already collected for this job, for the profit calculation. */
+  advanceApplied?: number;
 }): Promise<{ inserted: number; skipped: boolean }> {
-  const { offer, splits, createdByName, entryDate } = params;
+  const {
+    offer,
+    splits,
+    createdByName,
+    entryDate,
+    advanceApplied = 0,
+  } = params;
 
   if (!offer.id || offer.id === "temp") return { inserted: 0, skipped: true };
   if (await offerHasTurnover(offer.id)) return { inserted: 0, skipped: true };
@@ -109,6 +123,10 @@ export async function recordServiceCardTurnover(params: {
       amount_card: round2(byMethod.card),
       amount_bank: round2(byMethod.bank),
       parts_cost: round2(partsCost),
+      is_advance: false,
+      // Advances already collected for this job. Added back for the profit
+      // calculation only — turnover still counts just this row's amount.
+      advance_applied: round2(advanceApplied),
       notes: null,
       created_by_name: createdByName ?? null,
     },
@@ -134,4 +152,86 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 export function localDateKey(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Records an advance (авансово плащане) on the day the money was taken.
+ *
+ * Kept separate from the closing payment so each day's till is correct: the
+ * advance belongs to its own day, and the closing day carries only the
+ * remaining balance.
+ */
+export async function recordAdvanceTurnover(params: {
+  offer: Pick<
+    OfferWithRelations,
+    | "id"
+    | "offer_number"
+    | "customer_name"
+    | "car_model_text"
+    | "license_plate"
+    | "repair_name"
+  >;
+  amount: number;
+  method: PaymentMethod;
+  entryDate?: string;
+  createdByName?: string | null;
+}): Promise<{ inserted: number }> {
+  const { offer, amount, method, entryDate, createdByName } = params;
+  if (!offer.id || offer.id === "temp" || !(amount > 0)) {
+    return { inserted: 0 };
+  }
+
+  const value = round2(amount);
+  const row: DailyTurnoverInsert = {
+    source: "service_card",
+    offer_id: offer.id,
+    offer_number: offer.offer_number ?? null,
+    service_card_number: null,
+    entry_date: entryDate ?? localDateKey(new Date()),
+    vehicle: offer.car_model_text ?? null,
+    license_plate: offer.license_plate ?? null,
+    repair_name: offer.repair_name
+      ? `Аванс - ${offer.repair_name}`
+      : "Авансово плащане",
+    client_name: offer.customer_name ?? null,
+    amount: value,
+    payment_method: method,
+    amount_cash: method === "cash" ? value : 0,
+    amount_card: method === "card" ? value : 0,
+    amount_bank: method === "bank" ? value : 0,
+    // Cost belongs to the closing row, so an advance never inflates profit.
+    parts_cost: 0,
+    is_advance: true,
+    advance_applied: 0,
+    notes: null,
+    created_by_name: createdByName ?? null,
+  };
+
+  const { error } = await supabase
+    .from("daily_turnover")
+    .insert(row as never);
+
+  if (error) {
+    console.error("[turnover] advance insert failed:", error);
+    throw error;
+  }
+  return { inserted: 1 };
+}
+
+/** Total of the advances already recorded in the turnover for this offer. */
+export async function advancesRecorded(offerId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from("daily_turnover")
+    .select("amount")
+    .eq("offer_id", offerId)
+    .eq("is_advance", true);
+
+  if (error) {
+    console.error("[turnover] advance lookup failed:", error);
+    throw error;
+  }
+  return (data ?? []).reduce(
+    (sum: number, r: { amount: number | null }) => sum + (Number(r.amount) || 0),
+    0,
+  );
 }

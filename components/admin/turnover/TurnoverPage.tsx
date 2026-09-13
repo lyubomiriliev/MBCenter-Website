@@ -246,7 +246,7 @@ export function TurnoverPage() {
     );
     const { data: monthRows, error: monthErr } = await supabase
       .from("daily_turnover")
-      .select("amount, parts_cost")
+      .select("amount, parts_cost, is_advance, advance_applied")
       .gte("entry_date", monthStart)
       .lte("entry_date", monthEnd);
 
@@ -256,14 +256,20 @@ export function TurnoverPage() {
     } else {
       let all = 0;
       let cost = 0;
+      let profitRevenue = 0;
       for (const r of (monthRows ?? []) as Pick<
         DailyTurnover,
-        "amount" | "parts_cost"
+        "amount" | "parts_cost" | "is_advance" | "advance_applied"
       >[]) {
         all += Number(r.amount) || 0;
         cost += Number(r.parts_cost) || 0;
+        // Advances carry no profit; the closing row counts the full job value.
+        if (!r.is_advance) {
+          profitRevenue +=
+            (Number(r.amount) || 0) + (Number(r.advance_applied) || 0);
+        }
       }
-      setMonthTotals({ all, cost, profit: all - cost });
+      setMonthTotals({ all, cost, profit: profitRevenue - cost });
     }
 
     // Забележки covering the visible range (used by the day field and the PDF).
@@ -300,15 +306,32 @@ export function TurnoverPage() {
   // Totals come from the per-method columns so a mixed row contributes its
   // cash part to Брой and its card part to Карта.
   const totals = useMemo(() => {
-    const t = { cash: 0, card: 0, bank: 0, all: 0, cost: 0, profit: 0 };
+    const t = {
+      cash: 0,
+      card: 0,
+      bank: 0,
+      all: 0,
+      cost: 0,
+      profit: 0,
+      revenueForProfit: 0,
+      advanceForProfit: 0,
+    };
     for (const r of rows) {
       t.cash += Number(r.amount_cash) || 0;
       t.card += Number(r.amount_card) || 0;
       t.bank += Number(r.amount_bank) || 0;
       t.all += Number(r.amount) || 0;
       t.cost += Number(r.parts_cost) || 0;
+      // An advance is money in, but the job is not finished — no profit yet.
+      // The whole profit is counted on the day the service card is issued.
+      if (!r.is_advance) {
+        t.revenueForProfit += Number(r.amount) || 0;
+        t.advanceForProfit += Number(r.advance_applied) || 0;
+      }
     }
-    t.profit = t.all - t.cost;
+    // Closing rows carry the balance only, so add back the advances that
+    // belong to those jobs — the profit is then on the full job value.
+    t.profit = t.revenueForProfit + t.advanceForProfit - t.cost;
     return t;
   }, [rows]);
 
@@ -435,6 +458,8 @@ export function TurnoverPage() {
             amount_card: Number(r.amount_card) || 0,
             amount_bank: Number(r.amount_bank) || 0,
             parts_cost: Number(r.parts_cost) || 0,
+            is_advance: r.is_advance,
+            advance_applied: Number(r.advance_applied) || 0,
             source: r.source,
             service_card_number: r.service_card_number,
           }))}
@@ -909,7 +934,15 @@ export function TurnoverPage() {
                             {/* One badge per method actually used, each with
                                 its own amount, so a mixed payment reads at a
                                 glance without leaving the row. */}
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap items-center gap-1">
+                              {/* An advance is shown as "Аванс" next to the
+                                  method it was paid by, so the row reads
+                                  "Аванс · Карта 400.00". */}
+                              {r.is_advance ? (
+                                <span className="inline-block whitespace-nowrap rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-400">
+                                  {isBg ? "Аванс" : "Advance"}
+                                </span>
+                              ) : null}
                               {methodParts(r).map((part) => (
                                 <span
                                   key={part.method}
@@ -929,30 +962,38 @@ export function TurnoverPage() {
                             </div>
                           </td>
                           <td className="py-2 px-3 text-xs text-mb-silver">
-                            {r.source === "service_card" ? (
-                              // Link back to the offer the card was made from,
-                              // so a figure can be traced to its paperwork.
-                              r.offer_id ? (
-                                <Link
-                                  href={`/${locale}/mb-admin/offers/edit?id=${r.offer_id}`}
-                                  className="text-mb-blue underline-offset-2 hover:underline"
-                                  title={
-                                    isBg
-                                      ? "Отвори сервизната карта"
-                                      : "Open the service card"
-                                  }
-                                >
-                                  {isBg ? "Сервизна карта" : "Service card"}{" "}
-                                  {r.service_card_number ?? ""}
-                                </Link>
-                              ) : (
-                                `${isBg ? "Сервизна карта" : "Service card"} ${r.service_card_number ?? ""}`.trim()
-                              )
-                            ) : isBg ? (
-                              "Ръчно"
-                            ) : (
-                              "Manual"
-                            )}
+                            {r.source === "service_card"
+                              ? (() => {
+                                  // An advance is taken before the service card
+                                  // exists, so that row points at the offer
+                                  // instead. Once the card is issued the row
+                                  // carries its number and names the card.
+                                  const label = r.service_card_number
+                                    ? `${isBg ? "Сервизна карта" : "Service card"} ${r.service_card_number}`
+                                    : `${isBg ? "Оферта" : "Offer"} №${r.offer_number ?? ""}`.trim();
+                                  return r.offer_id ? (
+                                    <Link
+                                      href={`/${locale}/mb-admin/offers/edit?id=${r.offer_id}`}
+                                      className="text-mb-blue underline-offset-2 hover:underline"
+                                      title={
+                                        r.service_card_number
+                                          ? isBg
+                                            ? "Отвори сервизната карта"
+                                            : "Open the service card"
+                                          : isBg
+                                            ? "Отвори офертата"
+                                            : "Open the offer"
+                                      }
+                                    >
+                                      {label}
+                                    </Link>
+                                  ) : (
+                                    label
+                                  );
+                                })()
+                              : isBg
+                                ? "Ръчно"
+                                : "Manual"}
                           </td>
                           <td className="py-2 px-3 text-right font-medium text-white whitespace-nowrap">
                             {(Number(r.amount) || 0).toFixed(2)} €

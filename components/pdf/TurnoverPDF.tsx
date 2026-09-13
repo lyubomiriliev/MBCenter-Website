@@ -24,6 +24,8 @@ export interface TurnoverPDFRow {
   amount_card: number;
   amount_bank: number;
   parts_cost: number;
+  is_advance?: boolean;
+  advance_applied?: number;
   source: string;
   service_card_number: string | null;
 }
@@ -59,6 +61,7 @@ function fmtDate(iso: string) {
 
 function methodSummary(r: TurnoverPDFRow) {
   const parts: string[] = [];
+  if (r.is_advance) parts.push("Аванс:");
   if (r.amount_cash > 0) parts.push(`Брой ${r.amount_cash.toFixed(2)}`);
   if (r.amount_card > 0) parts.push(`Карта ${r.amount_card.toFixed(2)}`);
   if (r.amount_bank > 0) parts.push(`Банка ${r.amount_bank.toFixed(2)}`);
@@ -228,9 +231,14 @@ export function TurnoverPDF({
       acc.bank += Number(r.amount_bank) || 0;
       acc.all += Number(r.amount) || 0;
       acc.cost += Number(r.parts_cost) || 0;
+      // Advances carry no profit; the closing row counts the full job value.
+      if (!r.is_advance) {
+        acc.profitRevenue +=
+          (Number(r.amount) || 0) + (Number(r.advance_applied) || 0);
+      }
       return acc;
     },
-    { cash: 0, card: 0, bank: 0, all: 0, cost: 0 },
+    { cash: 0, card: 0, bank: 0, all: 0, cost: 0, profitRevenue: 0 },
   );
 
   // Group by day so each day carries its own total and Забележки.
@@ -305,7 +313,7 @@ export function TurnoverPDF({
             <View style={styles.summaryBoxAccent}>
               <Text style={styles.summaryLabel}>Печалба</Text>
               <Text style={styles.summaryValue}>
-                {fmtMoney(totals.all - totals.cost)}
+                {fmtMoney(totals.profitRevenue - totals.cost)}
               </Text>
             </View>
           </View>
