@@ -1789,11 +1789,12 @@ export default function SettingsPage() {
                   </label>
                   <div className="rounded-lg overflow-hidden border border-mb-border">
                     <div className="overflow-hidden bg-gradient-to-r from-mb-blue via-blue-600 to-mb-blue shadow-lg">
-                      <div className="flex w-max py-3.5">
+                      <div className="flex w-max py-3.5 animate-marquee-loop">
                         {[0, 1].map((track) => (
                           <div
                             key={track}
-                            className="flex shrink-0 items-center gap-10 pr-10 animate-marquee"
+                            aria-hidden={track === 1}
+                            className="flex shrink-0 items-center gap-10 pr-10"
                           >
                             {Array.from({ length: 4 }).map((_, i) => (
                               <span

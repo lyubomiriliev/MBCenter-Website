@@ -10,7 +10,7 @@ const DEFAULTS = {
 };
 
 // Each pass scrolls from right edge (100vw) to left edge (-100%). Duration per pass in ms.
-const PASS_DURATION = 18000;
+const PASS_DURATION = 48000;
 // After both passes, ease into center over this duration.
 const SETTLE_DURATION = 800;
 
@@ -41,7 +41,9 @@ export function MaintenanceBanner() {
       setMounted(true);
     };
     load();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Advance through phases: pass1 → pass2 → settled

@@ -76,10 +76,15 @@ module.exports = {
   			marquee: {
   				'0%': { transform: 'translateX(100vw)' },
   				'100%': { transform: 'translateX(-100%)' }
+  			},
+  			'marquee-loop': {
+  				'0%': { transform: 'translateX(0)' },
+  				'100%': { transform: 'translateX(-50%)' }
   			}
   		},
   		animation: {
-  			marquee: 'marquee 18s linear forwards'
+  			marquee: 'marquee 48s linear forwards',
+  			'marquee-loop': 'marquee-loop 56s linear infinite'
   		}
   	}
   },
