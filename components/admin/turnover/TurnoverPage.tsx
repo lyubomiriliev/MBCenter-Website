@@ -746,7 +746,7 @@ export function TurnoverPage() {
       )}
 
       {/* Totals */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {(["cash", "card", "bank"] as PaymentMethod[]).map((m) => (
           <div
             key={m}
@@ -760,23 +760,45 @@ export function TurnoverPage() {
             </p>
           </div>
         ))}
-        <div className="rounded-xl border border-mb-blue/40 bg-mb-blue/10 p-4">
-          <p className="text-xs uppercase tracking-wide text-mb-blue">
-            {view === "day"
-              ? isBg ? "Общо за деня" : "Day total"
-              : isBg ? "Общо за месеца" : "Month total"}
-          </p>
-          <p className="mt-1 text-xl font-semibold text-white">
-            {totals.all.toFixed(2)} €
-          </p>
+        {/* One card carrying both figures for the period in view. Profit is
+            admin-only, so the card simply shows turnover alone for приемна. */}
+        <div className="col-span-2 rounded-xl border border-mb-blue/40 bg-mb-blue/10 p-4 lg:col-span-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="whitespace-nowrap text-[0.65rem] uppercase tracking-wide text-mb-blue">
+                {view === "day"
+                  ? isBg ? "Общо за деня" : "Day total"
+                  : isBg ? "Общо за месеца" : "Month total"}
+              </p>
+              <p className="mt-1 whitespace-nowrap text-lg font-semibold text-white">
+                {totals.all.toFixed(2)} €
+              </p>
+            </div>
+
+            {canSeeProfit && (
+              <div className="min-w-0 border-l border-mb-blue/30 pl-3 text-right">
+                <p className="whitespace-nowrap text-[0.65rem] uppercase tracking-wide text-mb-blue">
+                  {view === "day"
+                    ? isBg ? "Печалба за деня" : "Day profit"
+                    : isBg ? "Печалба за месеца" : "Month profit"}
+                </p>
+                <p className="mt-1 whitespace-nowrap text-lg font-semibold text-white">
+                  {totals.profit.toFixed(2)} €
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Month-to-date, plus profit for the owner only. */}
+      {/* Month-to-date context while looking at a single day. In month view the
+          cards above already show these figures, so this row is hidden. */}
       <div
         className={cn(
           "grid gap-3",
+          view === "month" && "hidden",
           canSeeProfit ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1",
+          "max-w-4xl",
         )}
       >
         <div className="rounded-xl border border-mb-border bg-mb-anthracite p-4">
@@ -786,7 +808,7 @@ export function TurnoverPage() {
               ({monthLabelShort})
             </span>
           </p>
-          <p className="mt-1 text-2xl font-bold text-white">
+          <p className="mt-1 text-xl font-bold text-white">
             {monthTotals.all.toFixed(2)} €
           </p>
         </div>
@@ -797,7 +819,7 @@ export function TurnoverPage() {
               <p className="text-xs uppercase tracking-wide text-mb-silver">
                 {isBg ? "Себестойност (части)" : "Parts cost"}
               </p>
-              <p className="mt-1 text-2xl font-bold text-mb-silver">
+              <p className="mt-1 text-xl font-bold text-mb-silver">
                 {monthTotals.cost.toFixed(2)} €
               </p>
             </div>
@@ -807,7 +829,7 @@ export function TurnoverPage() {
               </p>
               <p
                 className={cn(
-                  "mt-1 text-2xl font-bold",
+                  "mt-1 text-xl font-bold",
                   monthTotals.profit >= 0 ? "text-green-400" : "text-red-400",
                 )}
               >
@@ -875,6 +897,19 @@ export function TurnoverPage() {
               (sum, r) => sum + (Number(r.amount) || 0),
               0,
             );
+            // Same rule as the cards above: advances carry no profit, and the
+            // closing row is credited with the job's full value.
+            const dayProfit =
+              dayRows.reduce(
+                (sum, r) =>
+                  r.is_advance
+                    ? sum
+                    : sum +
+                      (Number(r.amount) || 0) +
+                      (Number(r.advance_applied) || 0),
+                0,
+              ) -
+              dayRows.reduce((sum, r) => sum + (Number(r.parts_cost) || 0), 0);
             return (
               <div
                 key={day}
@@ -888,8 +923,29 @@ export function TurnoverPage() {
                         { day: "2-digit", month: "2-digit", year: "numeric", weekday: "short" },
                       )}
                     </span>
-                    <span className="text-sm font-semibold text-mb-blue">
-                      {dayTotal.toFixed(2)} €
+                    <span className="flex items-center gap-2 text-sm">
+                      <span className="text-mb-silver">
+                        {isBg ? "Оборот" : "Turnover"}
+                      </span>
+                      <span className="font-semibold text-mb-blue">
+                        {dayTotal.toFixed(2)} €
+                      </span>
+                      {canSeeProfit && (
+                        <>
+                          <span className="text-mb-border">|</span>
+                          <span className="text-mb-silver">
+                            {isBg ? "Печалба" : "Profit"}
+                          </span>
+                          <span
+                            className={cn(
+                              "font-semibold",
+                              dayProfit >= 0 ? "text-green-400" : "text-red-400",
+                            )}
+                          >
+                            {dayProfit.toFixed(2)} €
+                          </span>
+                        </>
+                      )}
                     </span>
                   </div>
                 )}

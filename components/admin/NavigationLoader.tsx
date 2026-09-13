@@ -23,8 +23,25 @@ export function NavigationLoader() {
     const handleClick = (e: MouseEvent) => {
       // If the event was cancelled (e.g. by an unsaved-changes guard), don't show spinner
       if (e.defaultPrevented) return;
+
+      // Opening in a new tab/window leaves this page where it is, so the
+      // overlay would hang here for its full timeout. Covers Cmd/Ctrl+click,
+      // Shift/Alt+click and the middle mouse button.
+      if (
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey ||
+        e.button !== 0
+      )
+        return;
+
       const anchor = (e.target as Element).closest("a[href]");
       if (!anchor) return;
+
+      // target="_blank" opens elsewhere too — this page does not navigate.
+      const target = anchor.getAttribute("target");
+      if (target && target !== "_self") return;
       const href = anchor.getAttribute("href");
       if (!href) return;
       if (
@@ -45,8 +62,21 @@ export function NavigationLoader() {
     };
 
     document.addEventListener("click", handleClick);
+    // Returning to this tab means navigation never happened here; drop the
+    // overlay rather than waiting out the 8s safety timeout.
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setIsLoading(false);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pageshow", handleVisibility);
+
     return () => {
       document.removeEventListener("click", handleClick);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pageshow", handleVisibility);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
