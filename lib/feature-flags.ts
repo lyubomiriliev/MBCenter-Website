@@ -22,6 +22,7 @@ export const BETA_SECTIONS_ENABLED_FOR_ALL = false;
 /** Accounts allowed to see the new sections while they are in testing. */
 const BETA_TESTER_EMAILS = [
   "oliverqueeneb@gmail.com",
+  "admin@mbcenter.bg",
   // Приемна fills in the daily turnover, so they need the section while it is
   // in testing. Role checks still apply on top of this: they get read-only
   // turnover with no profit, and no access to Отпуски at all.
