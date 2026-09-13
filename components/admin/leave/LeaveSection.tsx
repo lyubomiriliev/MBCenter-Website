@@ -251,6 +251,68 @@ export function LeaveSection() {
   const allowance = entitlement ?? DEFAULT_LEAVE_DAYS;
   const remainingDays = Math.max(0, allowance - totals.paid);
 
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
+  /** Downloads the selected worker's leave history for the year in view. */
+  const generatePDF = async () => {
+    if (!selected) return;
+    setPdfGenerating(true);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { registerPDFFonts } = await import("@/lib/pdf-fonts");
+      const { LeavePDF, setFontRegistered } = await import(
+        "@/components/pdf/LeavePDF"
+      );
+      setFontRegistered(await registerPDFFonts());
+
+      const blob = await pdf(
+        <LeavePDF
+          workerName={selected.name}
+          workerRole={
+            selected.type === "mechanic" ? "Механик" : "Приемна"
+          }
+          year={year}
+          rows={periodsInYear.map((p) => ({
+            start_date: p.start_date,
+            end_date: p.end_date,
+            working_days: p.working_days,
+            leave_type: p.leave_type,
+            note: p.note,
+            is_opening_balance: isOpeningBalance(p),
+          }))}
+          allowance={allowance}
+          usedPaid={totals.paid}
+          usedUnpaid={totals.unpaid}
+          usedSick={totals.sick}
+          generatedBy={profile?.full_name ?? null}
+        />,
+      ).toBlob();
+
+      const slug = selected.name
+        .toLowerCase()
+        .replace(/[^a-zа-я0-9]+/gi, "-")
+        .replace(/^-|-$/g, "");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `otpuski-${slug}-${year}.pdf`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (err) {
+      console.error("[leave] PDF failed:", err);
+      setError(
+        isBg ? "Грешка при генериране на PDF." : "Failed to generate the PDF.",
+      );
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
   /** Rejects a range that overlaps leave already recorded for this worker. */
   const overlaps = (from: Date, to: Date) =>
     periods.some((p) => {
@@ -666,10 +728,21 @@ export function LeaveSection() {
             </div>
 
             <div className="rounded-xl border border-mb-border bg-mb-anthracite overflow-hidden">
-              <div className="border-b border-mb-border px-4 py-3">
+              <div className="flex items-center justify-between gap-3 border-b border-mb-border px-4 py-3">
                 <h3 className="text-sm font-medium text-white">
                   {isBg ? "История" : "History"}
                 </h3>
+                <Button
+                  onClick={generatePDF}
+                  disabled={pdfGenerating || periodsInYear.length === 0}
+                  variant="outline"
+                  size="sm"
+                  className="border-mb-border bg-mb-black text-white hover:bg-mb-border hover:text-white"
+                >
+                  {pdfGenerating
+                    ? isBg ? "Генериране..." : "Generating..."
+                    : isBg ? "Разпечатай PDF" : "Print PDF"}
+                </Button>
               </div>
               {loading ? (
                 <p className="p-4 text-sm text-mb-silver">
