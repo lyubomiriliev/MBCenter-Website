@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { emptyDb, mockSupabase, seedWorkers, signIn, type Db } from "./helpers";
-const today = () => new Date().toISOString().slice(0, 10);
+import { emptyDb, mockSupabase, seedWorkers, signIn, type Db,
+  todayKey,
+} from "./helpers";
+const today = () => todayKey();
 
 function db(): Db {
   const d = seedWorkers(emptyDb());

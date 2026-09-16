@@ -33,6 +33,8 @@ import {
 import type { OfferFormData, PartItemFormData } from "@/lib/schemas/offer";
 import { QuantityPopover } from "@/components/admin/shared/QuantityPopover";
 import { supabase } from "@/lib/supabase/client";
+import { logChange } from "@/lib/activity-log";
+import { useOptionalSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 interface WarehouseSuggestion {
   id: string;
   name: string;
@@ -72,6 +74,9 @@ function AddEditPartModal({
   editIndex: number | null;
   onConfirm: (part: PartItemFormData) => void;
 }) {
+  // For attributing the warehouse entry in "Логове".
+  const auth = useOptionalSupabaseAuthContext();
+
   const t = useTranslations("admin.form");
   const tWh = useTranslations("admin.warehouse.warehouseLookup");
   const [description, setDescription] = useState("");
@@ -378,14 +383,25 @@ function AddEditPartModal({
     if (!trimmedPN) return;
     setAddingToWarehouse(true);
     try {
-      await supabase.from("warehouse_parts").insert({
+      const warehouseRow = {
         name: description.trim() || trimmedPN,
         part_number: trimmedPN,
         manufacturer: brand || "MERCEDES",
         quantity: 0,
         cost_price: deliveryPrice,
         sale_price: unitPrice,
-      } as never);
+      };
+      await supabase.from("warehouse_parts").insert(warehouseRow as never);
+      logChange({
+        table: "warehouse_parts",
+        action: "create",
+        actor: {
+          authId: auth?.user?.id ?? null,
+          name: auth?.profile?.full_name ?? null,
+          email: auth?.user?.email ?? null,
+        },
+        row: warehouseRow,
+      });
       setWhExistsState("exists");
       setWarehouseSuccess(true);
       setShowDeliveryPrompt(false);

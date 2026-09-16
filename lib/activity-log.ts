@@ -155,6 +155,238 @@ export function diffTurnover(
   return changes;
 }
 
+/** Bulgarian labels for the offer fields people recognise in the form. */
+const OFFER_LABELS: Record<string, string> = {
+  customer_name: "Клиент",
+  customer_phone: "Телефон",
+  customer_email: "Имейл",
+  car_model_text: "Модел",
+  car_model_detail: "Точен модел",
+  repair_name: "Наименование на ремонт",
+  vin_text: "VIN номер",
+  license_plate: "Регистрационен номер",
+  mileage: "Пробег",
+  created_by_name: "Създадена от",
+  performed_by: "Извършил",
+  status: "Статус",
+  total_net: "Сума без ДДС",
+  total_vat: "ДДС",
+  total_gross: "Общо с ДДС",
+  discount_percent: "Отстъпка (%)",
+  discount_parts_percent: "Отстъпка части (%)",
+  discount_services_percent: "Отстъпка труд (%)",
+  notes: "Бележка",
+  notes_internal: "Вътрешна бележка",
+  notes_service: "Бележка за сервиза",
+  service_card_number: "Сервизна карта",
+  prepayments_eur: "Авансови плащания",
+};
+
+/** Columns the database maintains itself; never a log line. */
+const OFFER_IGNORED = new Set([
+  "id",
+  "created_at",
+  "updated_at",
+  "last_edited_at",
+  "effective_at",
+  "created_by",
+  "client_id",
+  "car_id",
+  "offer_number",
+  "currency",
+]);
+
+const OFFER_STATUS_BG: Record<string, string> = {
+  draft: "Чернова",
+  sent: "Изпратена",
+  approved: "Одобрена",
+  parts_ordered: "Поръчани части",
+  finished: "Приключена",
+  cancelled: "Отказана",
+};
+
+const OFFER_MONEY = new Set(["total_net", "total_vat", "total_gross"]);
+
+function formatOfferValue(field: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (field === "status") return OFFER_STATUS_BG[String(value)] ?? String(value);
+  if (OFFER_MONEY.has(field)) return money(value);
+  if (Array.isArray(value)) {
+    return value.length ? value.map((v) => String(v)).join(", ") : "—";
+  }
+  return String(value);
+}
+
+/**
+ * Compare an offer before and after a save.
+ *
+ * Walks every column of the saved row rather than a chosen few, so a field
+ * added to the form later is logged without anyone remembering to list it
+ * here. `OFFER_IGNORED` removes only bookkeeping noise.
+ */
+export function diffOffer(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): ActivityChange[] {
+  const changes: ActivityChange[] = [];
+  for (const field of Object.keys(after)) {
+    if (OFFER_IGNORED.has(field)) continue;
+    const from = formatOfferValue(field, before?.[field]);
+    const to = formatOfferValue(field, after[field]);
+    if (from === to) continue;
+    changes.push({ field, label: OFFER_LABELS[field] ?? field, from, to });
+  }
+  return changes;
+}
+
+/** "Оферта №00123" — the handle the log shows for an offer. */
+export function offerLabel(offer: {
+  offer_number?: string | null;
+  customer_name?: string | null;
+}): string {
+  if (offer.offer_number) return `Оферта №${offer.offer_number}`;
+  return offer.customer_name || "Оферта";
+}
+
+/** Bulgarian section names, so the log reads like the menu. */
+export const SECTION_LABELS: Record<string, string> = {
+  offers: "Оферти",
+  // Entries written before the section names matched the table names.
+  offer: "Оферти",
+  daily_turnover: "Дневен оборот",
+  daily_turnover_notes: "Забележки оборот",
+  warehouse_parts: "Склад",
+  earnings_entries: "Заработки",
+  earnings_monthly_summary: "Заработки (месец)",
+  leave_periods: "Отпуски",
+  leave_entitlements: "Право на отпуск",
+  inspections: "Прегледи",
+  mechanics: "Механици",
+  receptionists: "Приемчици",
+  hourly_activities: "Дейности на час",
+  fixed_activities: "Дейности на бройка",
+};
+
+/** Labels for the fields that show up across the other sections. */
+const COMMON_LABELS: Record<string, string> = {
+  name: "Име",
+  full_name: "Име",
+  description: "Описание",
+  quantity: "Количество",
+  part_number: "Номер на част",
+  manufacturer: "Производител",
+  unit_price: "Единична цена",
+  cost_price: "Доставна цена",
+  amount: "Сума",
+  amount_eur: "Сума",
+  hours: "Часове",
+  rate: "Ставка",
+  entry_date: "Дата",
+  start_date: "От дата",
+  end_date: "До дата",
+  days: "Дни",
+  kind: "Вид",
+  note: "Бележка",
+  notes: "Бележка",
+  status: "Статус",
+  mechanic_name: "Механик",
+  worker_name: "Служител",
+  month: "Месец",
+  year: "Година",
+};
+
+const COMMON_IGNORED = new Set([
+  "id",
+  "created_at",
+  "updated_at",
+  "last_edited_at",
+  "effective_at",
+  "created_by",
+]);
+
+const COMMON_MONEY = new Set([
+  "amount",
+  "amount_eur",
+  "unit_price",
+  "cost_price",
+  "rate",
+]);
+
+function formatCommon(field: string, value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (COMMON_MONEY.has(field)) return money(value);
+  if (Array.isArray(value)) {
+    return value.length ? value.map((v) => String(v)).join(", ") : "—";
+  }
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+/**
+ * Compare any row before and after a change.
+ *
+ * Used by the sections that have no diff helper of their own. Walks the keys
+ * of the new row, so a column added later is logged without being listed here
+ * first; only bookkeeping columns are skipped.
+ */
+export function diffRow(
+  before: Record<string, unknown> | null | undefined,
+  after: Record<string, unknown>,
+): ActivityChange[] {
+  const changes: ActivityChange[] = [];
+  for (const field of Object.keys(after)) {
+    if (COMMON_IGNORED.has(field)) continue;
+    const from = formatCommon(field, before?.[field]);
+    const to = formatCommon(field, after[field]);
+    if (from === to) continue;
+    changes.push({ field, label: COMMON_LABELS[field] ?? field, from, to });
+  }
+  return changes;
+}
+
+/**
+ * Log a change in any section, in one call.
+ *
+ * `logActivity` needs an actor and a label; this fills both in from the
+ * signed-in profile and the row itself, so a screen only has to say what it
+ * did and to which row.
+ */
+export function logChange(opts: {
+  table: string;
+  action: ActivityAction;
+  actor: ActivityActor;
+  row: Record<string, unknown> | null | undefined;
+  /** Previous state, for an edit. Omit for create and delete. */
+  before?: Record<string, unknown> | null;
+}) {
+  const { table, action, actor, row, before } = opts;
+  const section = SECTION_LABELS[table] ?? table;
+
+  const name =
+    (row?.name as string) ??
+    (row?.full_name as string) ??
+    (row?.description as string) ??
+    (row?.part_number as string) ??
+    (row?.worker_name as string) ??
+    (row?.mechanic_name as string) ??
+    null;
+
+  const changes =
+    action === "edit" && row ? diffRow(before, row) : undefined;
+
+  // An edit that changed nothing real is not worth an entry.
+  if (action === "edit" && (!changes || changes.length === 0)) return;
+
+  void logActivity({
+    actor,
+    entityType: table,
+    entityId: (row?.id as string) ?? null,
+    entityLabel: name ? `${section} · ${name}` : section,
+    action,
+    changes,
+  });
+}
+
 /** "Дневен оборот" row handle: the vehicle, or the offer it came from. */
 export function turnoverLabel(row: {
   vehicle?: string | null;

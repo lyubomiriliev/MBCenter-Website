@@ -51,7 +51,7 @@ import {
   recordAdvanceTurnover,
   recordServiceCardTurnover,
 } from "@/lib/turnover";
-import { logActivity } from "@/lib/activity-log";
+import { diffOffer, logActivity, logChange, offerLabel } from "@/lib/activity-log";
 import type { PaymentMethod } from "@/types/database";
 
 /** Payment methods as the log should read them. */
@@ -316,6 +316,13 @@ export function CreateOfferFormV2({
   // shown only to the beta tester account. Everyone else keeps the old flow.
   const turnoverEnabled = canSeeBetaSections(user?.email);
   const isReceptionRole = profile?.role === "reception";
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
 
   /**
    * Load the advances recorded for this offer so they can be listed in the
@@ -910,6 +917,32 @@ export function CreateOfferFormV2({
         .eq("id", offerId);
       if (offerErr) throw new Error(offerErr.message);
 
+      // Audit trail for "Логове". This is the save the edit screen actually
+      // uses, so it is the one that has to log; best-effort, never awaited.
+      {
+        const previous = (savedOffer ?? existingOffer) as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        const changes = diffOffer(
+          previous ?? {},
+          updateData as unknown as Record<string, unknown>,
+        );
+        if (changes.length > 0) {
+          void logActivity({
+            actor: logActor(),
+            entityType: "offers",
+            entityId: offerId,
+            entityLabel: offerLabel({
+              offer_number: (previous?.offer_number as string) ?? null,
+              customer_name: data.customerName,
+            }),
+            action: "edit",
+            changes,
+          });
+        }
+      }
+
       await Promise.all([
         supabase.from("offer_items").delete().eq("offer_id", offerId),
         supabase.from("service_actions").delete().eq("offer_id", offerId),
@@ -1052,6 +1085,21 @@ export function CreateOfferFormV2({
           .from("offers")
           .update({ status: "sent" } as never)
           .eq("id", offerData.id);
+        void logActivity({
+          actor: logActor(),
+          entityType: "offers",
+          entityId: offerData.id,
+          entityLabel: offerLabel(offerData),
+          action: "edit",
+          changes: [
+            {
+              field: "status",
+              label: "Статус",
+              from: "Чернова",
+              to: "Изпратена",
+            },
+          ],
+        });
         const refreshedOffer = await fetchOfferWithRelations(offerData.id);
         if (refreshedOffer) setSavedOffer(refreshedOffer);
       }
@@ -1290,6 +1338,17 @@ export function CreateOfferFormV2({
           .from("offers")
           .update(updateData as never)
           .eq("id", savedOffer.id);
+        void logActivity({
+          actor: logActor(),
+          entityType: "offers",
+          entityId: savedOffer.id,
+          entityLabel: offerLabel(savedOffer),
+          action: "edit",
+          changes: diffOffer(
+            savedOffer as unknown as Record<string, unknown>,
+            updateData as Record<string, unknown>,
+          ),
+        });
 
         // Record the payment into Дневен оборот. Best-effort: a turnover
         // failure must never block the service card the customer is waiting on.
@@ -1356,10 +1415,27 @@ export function CreateOfferFormV2({
                       0,
                     );
                     const newQty = Math.max(0, whPart.quantity - totalDeduct);
-                    await supabase
+                    const { error: deductError } = await supabase
                       .from("warehouse_parts")
                       .update({ quantity: newQty, updated_at: whPart.updated_at } as never)
                       .eq("id", whPart.id);
+                    if (!deductError) {
+                      logChange({
+                        table: "warehouse_parts",
+                        action: "edit",
+                        actor: logActor(),
+                        row: {
+                          id: whPart.id,
+                          part_number: whPart.part_number,
+                          quantity: newQty,
+                        },
+                        before: {
+                          id: whPart.id,
+                          part_number: whPart.part_number,
+                          quantity: whPart.quantity,
+                        },
+                      });
+                    }
                   }
                 }
               }
@@ -1473,6 +1549,22 @@ export function CreateOfferFormV2({
 
       if (insertError || !newOffer) throw new Error("Failed to create clone");
 
+      void logActivity({
+        actor: logActor(),
+        entityType: "offers",
+        entityId: (newOffer as { id: string }).id,
+        entityLabel: offerLabel(newOffer as { offer_number?: string | null }),
+        action: "create",
+        changes: [
+          {
+            field: "cloned_from",
+            label: "Клонирана от",
+            from: null,
+            to: `Оферта №${savedOffer.offer_number}`,
+          },
+        ],
+      });
+
       if (savedOffer.items && savedOffer.items.length > 0) {
         await supabase.from("offer_items").insert(
           savedOffer.items.map((item, i) => ({
@@ -1555,7 +1647,7 @@ export function CreateOfferFormV2({
         if (savedOffer?.id) {
           const { data: existing } = await supabase
             .from("earnings_entries")
-            .select("id")
+            .select("*")
             .eq("offer_id", savedOffer.id)
             .eq("worker_id", workerId)
             .maybeSingle();
@@ -1565,13 +1657,32 @@ export function CreateOfferFormV2({
               .update(payload as never)
               .eq("id", (existing as any).id);
             if (error) throw error;
+            logChange({
+              table: "earnings_entries",
+              action: "edit",
+              actor: logActor(),
+              row: { ...payload, id: (existing as any).id },
+              before: existing as unknown as Record<string, unknown>,
+            });
           } else {
             const { error } = await supabase.from("earnings_entries").insert(payload as never);
             if (error) throw error;
+            logChange({
+              table: "earnings_entries",
+              action: "create",
+              actor: logActor(),
+              row: payload,
+            });
           }
         } else {
           const { error } = await supabase.from("earnings_entries").insert(payload as never);
           if (error) throw error;
+          logChange({
+            table: "earnings_entries",
+            action: "create",
+            actor: logActor(),
+            row: payload,
+          });
         }
       };
 
@@ -1632,14 +1743,16 @@ export function CreateOfferFormV2({
         created_at: now.toISOString(),
       };
       let error;
+      let previousRec: Record<string, unknown> | null = null;
       if (savedOffer?.id) {
         const { data: existing } = await supabase
           .from("earnings_entries")
-          .select("id")
+          .select("*")
           .eq("offer_id", savedOffer.id)
           .eq("worker_id", receptionistEarningsWorker)
           .maybeSingle();
         if (existing) {
+          previousRec = existing as unknown as Record<string, unknown>;
           ({ error } = await supabase
             .from("earnings_entries")
             .update(recPayload as never)
@@ -1651,6 +1764,15 @@ export function CreateOfferFormV2({
         ({ error } = await supabase.from("earnings_entries").insert(recPayload as never));
       }
       if (error) throw error;
+      logChange({
+        table: "earnings_entries",
+        action: previousRec ? "edit" : "create",
+        actor: logActor(),
+        row: previousRec
+          ? { ...recPayload, id: previousRec.id }
+          : recPayload,
+        before: previousRec,
+      });
       if (savedOffer?.id) await loadEarningsLogs(savedOffer.id);
       showSuccess(
         locale === "bg" ? "Заработката е записана" : "Earnings saved",
@@ -1782,6 +1904,28 @@ export function CreateOfferFormV2({
           throw new Error(`Failed to update offer: ${offerRes.error.message}`);
         offer = offerRes.data as Offer;
 
+        // Audit trail. Best-effort: never awaited, never blocks the save.
+        const previous = (savedOffer ?? existingOffer) as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (previous) {
+          const changes = diffOffer(
+            previous,
+            offer as unknown as Record<string, unknown>,
+          );
+          if (changes.length > 0) {
+            void logActivity({
+              actor: logActor(),
+              entityType: "offers",
+              entityId: offer.id,
+              entityLabel: offerLabel(offer),
+              action: "edit",
+              changes,
+            });
+          }
+        }
+
         // Delete existing items and service actions in parallel
         await Promise.all([
           supabase.from("offer_items").delete().eq("offer_id", offerId),
@@ -1882,6 +2026,14 @@ export function CreateOfferFormV2({
 
         offer = offerRes.data as Offer;
         if (!offer) throw new Error("Failed to create offer: No data returned");
+
+        void logActivity({
+          actor: logActor(),
+          entityType: "offers",
+          entityId: offer.id,
+          entityLabel: offerLabel(offer),
+          action: "create",
+        });
         console.log("Offer created successfully:", offer.id);
       }
 
@@ -3926,7 +4078,7 @@ export function CreateOfferFormV2({
                       name: profile?.full_name ?? null,
                       email: user?.email ?? null,
                     },
-                    entityType: "offer",
+                    entityType: "offers",
                     entityId: savedOffer.id,
                     entityLabel: `Оферта №${savedOffer.offer_number}`,
                     action: "edit",
@@ -4032,11 +4184,21 @@ export function CreateOfferFormV2({
                 disabled={isDeleting}
                 onClick={async () => {
                   setIsDeleting(true);
-                  await supabase
+                  const { error: deleteError } = await supabase
                     .from("offers")
                     .delete()
                     .eq("id", savedOffer.id);
                   setIsDeleting(false);
+
+                  if (!deleteError) {
+                    void logActivity({
+                      actor: logActor(),
+                      entityType: "offers",
+                      entityId: savedOffer.id,
+                      entityLabel: offerLabel(savedOffer),
+                      action: "delete",
+                    });
+                  }
                   setDeleteModalOpen(false);
                   const basePath = pathname.includes("/mb-admin")
                     ? pathname.split("/mb-admin")[0] + "/mb-admin"

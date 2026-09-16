@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { useNotification } from "@/hooks/useNotification";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 import { authClient, supabase } from "@/lib/supabase/client";
 import type { Mechanic, Receptionist } from "@/types/database";
 
@@ -321,7 +322,14 @@ const DEFAULT_BANNER_TEXT_EN =
 
 export default function SettingsPage() {
   const locale = useLocale();
-  const { user } = useSupabaseAuthContext();
+  const { user, profile } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
   const { notifications, dismiss, showSuccess, showError } = useNotification();
 
   const [activeTab, setActiveTab] = useState<TabId>("account");
@@ -533,6 +541,12 @@ export default function SettingsPage() {
       showError(isBg ? "Грешка при добавяне" : "Error adding mechanic");
     } else {
       setMechanics((prev) => [...prev, data as Mechanic]);
+      logChange({
+        table: "mechanics",
+        action: "create",
+        actor: logActor(),
+        row: data as unknown as Record<string, unknown>,
+      });
       setNewMechanicName("");
       showSuccess(isBg ? "Механикът е добавен" : "Mechanic added");
     }
@@ -545,6 +559,15 @@ export default function SettingsPage() {
     if (error) {
       showError(isBg ? "Грешка при изтриване" : "Error deleting mechanic");
     } else {
+      logChange({
+        table: "mechanics",
+        action: "delete",
+        actor: logActor(),
+        row: mechanics.find((m) => m.id === id) as unknown as Record<
+          string,
+          unknown
+        >,
+      });
       setMechanics((prev) => prev.filter((m) => m.id !== id));
       showSuccess(isBg ? "Механикът е изтрит" : "Mechanic deleted");
     }
@@ -568,6 +591,12 @@ export default function SettingsPage() {
       showError(isBg ? "Грешка при добавяне" : "Error adding receptionist");
     } else {
       setReceptionistsList((prev) => [...prev, data as Receptionist]);
+      logChange({
+        table: "receptionists",
+        action: "create",
+        actor: logActor(),
+        row: data as unknown as Record<string, unknown>,
+      });
       setNewReceptionistName("");
       showSuccess(isBg ? "Приемчикът е добавен" : "Receptionist added");
     }
@@ -583,6 +612,15 @@ export default function SettingsPage() {
     if (error) {
       showError(isBg ? "Грешка при изтриване" : "Error deleting receptionist");
     } else {
+      logChange({
+        table: "receptionists",
+        action: "delete",
+        actor: logActor(),
+        row: receptionistsList.find((r) => r.id === id) as unknown as Record<
+          string,
+          unknown
+        >,
+      });
       setReceptionistsList((prev) => prev.filter((r) => r.id !== id));
       showSuccess(isBg ? "Приемчикът е изтрит" : "Receptionist deleted");
     }

@@ -8,6 +8,7 @@ import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
 import { LeaveSection } from "@/components/admin/leave/LeaveSection";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 import { canSeeBetaSections } from "@/lib/feature-flags";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,7 +80,14 @@ export function EarningsPage() {
   // account for now — see lib/feature-flags.ts.
   // Отпуски is owner-level information: the true admin only, never приемна.
   // (The beta-tester account is included while the section is in testing.)
-  const { user, isSuperAdmin } = useSupabaseAuthContext();
+  const { user, profile, isSuperAdmin } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
   const showLeave =
     isSuperAdmin() && canSeeBetaSections(user?.email);
 
@@ -371,7 +379,17 @@ export function EarningsPage() {
   }, [selectedReceptionist, selectedMonth, selectedYear, loadWorkerEntries]);
 
   const deleteEntry = async (id: string, type: "mechanic" | "receptionist") => {
+    const removed =
+      type === "mechanic"
+        ? mechanicEntries.find((e) => e.id === id)
+        : receptionistEntries.find((e) => e.id === id);
     await supabase.from("earnings_entries").delete().eq("id", id);
+    logChange({
+      table: "earnings_entries",
+      action: "delete",
+      actor: logActor(),
+      row: (removed ?? { id }) as unknown as Record<string, unknown>,
+    });
     loadEarningsLog();
     // remove from local session state immediately
     if (type === "mechanic") {
@@ -390,7 +408,7 @@ export function EarningsPage() {
     const total = time * rate;
     const entryDate = mechManualDate || new Date().toISOString().slice(0, 10);
 
-    const { error } = await supabase.from("earnings_entries").insert({
+    const mechRow = {
       worker_id: selectedMechanic,
       worker_type: "mechanic",
       worker_name: mechanic?.name || "",
@@ -403,9 +421,18 @@ export function EarningsPage() {
       month: selectedMonth,
       year: selectedYear,
       is_exported: false,
-    } as never);
+    };
+    const { error } = await supabase
+      .from("earnings_entries")
+      .insert(mechRow as never);
 
     if (!error) {
+      logChange({
+        table: "earnings_entries",
+        action: "create",
+        actor: logActor(),
+        row: mechRow,
+      });
       setMechManualVehicle("");
       setMechManualRepair("");
       setMechManualTime("");
@@ -424,7 +451,7 @@ export function EarningsPage() {
     const earnings = repairTotal * (pct / 100);
     const entryDate = recManualDate || new Date().toISOString().slice(0, 10);
 
-    const { error } = await supabase.from("earnings_entries").insert({
+    const recRow = {
       worker_id: selectedReceptionist,
       worker_type: "receptionist",
       worker_name: rec?.name || "",
@@ -437,9 +464,18 @@ export function EarningsPage() {
       month: selectedMonth,
       year: selectedYear,
       is_exported: false,
-    } as never);
+    };
+    const { error } = await supabase
+      .from("earnings_entries")
+      .insert(recRow as never);
 
     if (!error) {
+      logChange({
+        table: "earnings_entries",
+        action: "create",
+        actor: logActor(),
+        row: recRow,
+      });
       setRecManualVehicle("");
       setRecManualRepair("");
       setRecManualTotal("");
@@ -458,7 +494,7 @@ export function EarningsPage() {
     ) => {
       const { data: existing } = await supabase
         .from("earnings_monthly_summary")
-        .select("id")
+        .select("*")
         .eq("worker_id", workerId)
         .eq("worker_type", workerType)
         .eq("month", selectedMonth)
@@ -466,20 +502,44 @@ export function EarningsPage() {
         .maybeSingle();
 
       if (existing) {
-        await supabase
+        const { error } = await supabase
           .from("earnings_monthly_summary")
           .update({ ...fields, updated_at: new Date().toISOString() } as never)
           .eq("id", (existing as any).id);
+        if (!error) {
+          logChange({
+            table: "earnings_monthly_summary",
+            action: "edit",
+            actor: logActor(),
+            row: { ...(existing as object), ...fields } as Record<
+              string,
+              unknown
+            >,
+            before: existing as unknown as Record<string, unknown>,
+          });
+        }
       } else {
-        await supabase.from("earnings_monthly_summary").insert({
+        const summaryRow = {
           worker_id: workerId,
           worker_type: workerType,
           month: selectedMonth,
           year: selectedYear,
           ...fields,
-        } as never);
+        };
+        const { error } = await supabase
+          .from("earnings_monthly_summary")
+          .insert(summaryRow as never);
+        if (!error) {
+          logChange({
+            table: "earnings_monthly_summary",
+            action: "create",
+            actor: logActor(),
+            row: summaryRow as Record<string, unknown>,
+          });
+        }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedMonth, selectedYear],
   );
 
@@ -568,10 +628,25 @@ export function EarningsPage() {
 
       // Mark as exported in DB
       const entryIds = entriesToUse.map((e) => e.id);
-      await supabase
+      const { error: exportError } = await supabase
         .from("earnings_entries")
         .update({ is_exported: true } as never)
         .in("id", entryIds);
+
+      if (!exportError) {
+        for (const entry of entriesToUse) {
+          logChange({
+            table: "earnings_entries",
+            action: "edit",
+            actor: logActor(),
+            row: { ...entry, is_exported: true } as unknown as Record<
+              string,
+              unknown
+            >,
+            before: entry as unknown as Record<string, unknown>,
+          });
+        }
+      }
 
       setTimeout(() => {
         document.body.removeChild(link);

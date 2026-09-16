@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { parseTimeToHours, formatHours, sumHours } from "@/lib/utils";
 import { pdf } from "@react-pdf/renderer";
 import { supabase } from "@/lib/supabase/client";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +85,15 @@ export function EarningsEditPage({
   const locale = useLocale() as "bg" | "en";
   const isBg = locale === "bg";
   const router = useRouter();
+
+  const { user, profile } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
 
   const [workerName, setWorkerName] = useState("");
   const [entries, setEntries] = useState<EarningsEntry[]>([]);
@@ -189,7 +200,7 @@ export function EarningsEditPage({
     async (fields: Partial<EarningsMonthlySummary>) => {
       const { data: existing } = await supabase
         .from("earnings_monthly_summary")
-        .select("id")
+        .select("*")
         .eq("worker_id", workerId)
         .eq("worker_type", workerType)
         .eq("month", month)
@@ -197,20 +208,44 @@ export function EarningsEditPage({
         .maybeSingle();
 
       if (existing) {
-        await supabase
+        const { error } = await supabase
           .from("earnings_monthly_summary")
           .update({ ...fields, updated_at: new Date().toISOString() } as never)
           .eq("id", (existing as any).id);
+        if (!error) {
+          logChange({
+            table: "earnings_monthly_summary",
+            action: "edit",
+            actor: logActor(),
+            row: { ...(existing as object), ...fields } as Record<
+              string,
+              unknown
+            >,
+            before: existing as unknown as Record<string, unknown>,
+          });
+        }
       } else {
-        await supabase.from("earnings_monthly_summary").insert({
+        const summaryRow = {
           worker_id: workerId,
           worker_type: workerType,
           month,
           year,
           ...fields,
-        } as never);
+        };
+        const { error } = await supabase
+          .from("earnings_monthly_summary")
+          .insert(summaryRow as never);
+        if (!error) {
+          logChange({
+            table: "earnings_monthly_summary",
+            action: "create",
+            actor: logActor(),
+            row: summaryRow as Record<string, unknown>,
+          });
+        }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [workerId, workerType, month, year],
   );
 
@@ -218,10 +253,22 @@ export function EarningsEditPage({
     if (!deleteConfirmId) return;
     setIsDeleting(true);
     try {
-      await supabase
+      const removed = entries.find((e) => e.id === deleteConfirmId);
+      const { error } = await supabase
         .from("earnings_entries")
         .delete()
         .eq("id", deleteConfirmId);
+      if (!error) {
+        logChange({
+          table: "earnings_entries",
+          action: "delete",
+          actor: logActor(),
+          row: (removed ?? { id: deleteConfirmId }) as unknown as Record<
+            string,
+            unknown
+          >,
+        });
+      }
       loadData();
     } finally {
       setIsDeleting(false);
@@ -261,36 +308,63 @@ export function EarningsEditPage({
   };
 
   const saveEdit = async (id: string) => {
+    const previous = entries.find((e) => e.id === id);
     if (workerType === "mechanic") {
       const repairTime = parseTimeToHours(editFields.repair_time);
       const hourlyRate = parseFloat(editFields.hourly_rate) || 0;
       const total = repairTime * hourlyRate;
-      await supabase
+      const patch = {
+        vehicle: editFields.vehicle || null,
+        repair_name: editFields.repair_name || null,
+        repair_time: repairTime,
+        hourly_rate: hourlyRate,
+        total,
+        entry_date: editFields.entry_date,
+      };
+      const { error } = await supabase
         .from("earnings_entries")
-        .update({
-          vehicle: editFields.vehicle || null,
-          repair_name: editFields.repair_name || null,
-          repair_time: repairTime,
-          hourly_rate: hourlyRate,
-          total,
-          entry_date: editFields.entry_date,
-        } as never)
+        .update(patch as never)
         .eq("id", id);
+      if (!error) {
+        logChange({
+          table: "earnings_entries",
+          action: "edit",
+          actor: logActor(),
+          row: { ...patch, id },
+          before: (previous ?? null) as unknown as Record<
+            string,
+            unknown
+          > | null,
+        });
+      }
     } else {
       const repairTotal = parseFloat(editFields.repair_total) || 0;
       const turnoverPct = parseFloat(editFields.turnover_pct) || 0;
       const earnings = repairTotal * (turnoverPct / 100);
-      await supabase
+      const patch = {
+        vehicle: editFields.vehicle || null,
+        repair_name: editFields.repair_name || null,
+        repair_total: repairTotal,
+        turnover_pct: turnoverPct,
+        earnings,
+        entry_date: editFields.entry_date,
+      };
+      const { error } = await supabase
         .from("earnings_entries")
-        .update({
-          vehicle: editFields.vehicle || null,
-          repair_name: editFields.repair_name || null,
-          repair_total: repairTotal,
-          turnover_pct: turnoverPct,
-          earnings,
-          entry_date: editFields.entry_date,
-        } as never)
+        .update(patch as never)
         .eq("id", id);
+      if (!error) {
+        logChange({
+          table: "earnings_entries",
+          action: "edit",
+          actor: logActor(),
+          row: { ...patch, id },
+          before: (previous ?? null) as unknown as Record<
+            string,
+            unknown
+          > | null,
+        });
+      }
     }
     setEditingId(null);
     setEditFields({});

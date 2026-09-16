@@ -713,7 +713,13 @@ export interface DailyTurnoverNote {
 // ============================================
 // Activity log (Логове)
 // ============================================
-export type ActivityEntityType = "daily_turnover" | "offer";
+/**
+ * The table a logged change was made to.
+ *
+ * A plain string: the log covers every section, and a new table must not need
+ * a type change to be loggable. The originals are kept as editor hints.
+ */
+export type ActivityEntityType = (string & {}) | "daily_turnover" | "offer";
 export type ActivityAction = "create" | "edit" | "delete";
 
 /** One field that changed, ready to render as "Сума: 300,00 € → 350,00 €". */

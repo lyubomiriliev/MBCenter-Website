@@ -7,6 +7,7 @@ import {
   signIn,
   field,
   type Db,
+  todayKey,
 } from "./helpers";
 
 
@@ -20,7 +21,7 @@ import {
  *  R5  Mixed payment stays one entry with a readable breakdown.
  */
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayKey();
 
 function turnoverRow(over: Partial<any> = {}) {
   return {

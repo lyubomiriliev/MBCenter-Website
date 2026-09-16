@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { emptyDb, mockSupabase, seedWorkers, signIn, type Db } from "./helpers";
+import { emptyDb, mockSupabase, seedWorkers, signIn, type Db,
+  todayKey,
+} from "./helpers";
 
 const ADMIN = "oliverqueeneb@gmail.com";
 const RECEPTION = "reception@mbcenter.bg";
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayKey();
 
 function dbWithRow(): Db {
   const db = seedWorkers(emptyDb());

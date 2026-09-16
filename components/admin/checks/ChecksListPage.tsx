@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase/client";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 import { pdf } from "@react-pdf/renderer";
 import { CheckPDF } from "@/components/pdf/CheckPDF";
 import type { CheckFormData } from "@/components/pdf/CheckPDF";
@@ -305,6 +307,30 @@ export function ChecksListPage({
   const locale = useLocale();
   const router = useRouter();
   const routePrefix = `/${locale}/${basePath}`;
+  const { user, profile } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
+
+  /** How one inspection reads in the log. */
+  const inspectionLogName = (row: {
+    check_number?: string | null;
+    car_model?: string | null;
+    license_plate?: string | null;
+    client_name?: string | null;
+  }) => {
+    const parts = [
+      row.check_number?.trim() ? `Преглед №${row.check_number.trim()}` : null,
+      row.car_model || null,
+      row.license_plate || null,
+      row.client_name || null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "Преглед";
+  };
 
   const PAGE_SIZE = 25;
   const [inspections, setInspections] = useState<Inspection[]>([]);
@@ -436,11 +462,27 @@ export function ChecksListPage({
     if (!pendingDeleteId) return;
     setDeletingId(pendingDeleteId);
     try {
+      // Grab the row before it goes, so the log can name what was deleted.
+      const removed = inspections.find((i) => i.id === pendingDeleteId);
       const { error } = await supabase
         .from("inspections")
         .delete()
         .eq("id", pendingDeleteId);
       if (error) throw error;
+
+      logChange({
+        table: "inspections",
+        action: "delete",
+        actor: logActor(),
+        row: {
+          ...((removed ?? { id: pendingDeleteId }) as unknown as Record<
+            string,
+            unknown
+          >),
+          name: inspectionLogName(removed ?? {}),
+        },
+      });
+
       setInspections((prev) => prev.filter((i) => i.id !== pendingDeleteId));
       setDeleteDialogOpen(false);
       setPendingDeleteId(null);
@@ -460,10 +502,26 @@ export function ChecksListPage({
         created_at: _ca,
         ...rest
       } = inspection;
-      const { error } = await supabase
+      const payload = { ...rest, check_number: "" };
+      // `.select()` only so the log can record the row the database created.
+      const { data: created, error } = await supabase
         .from("inspections")
-        .insert({ ...rest, check_number: "" } as never);
+        .insert(payload as never)
+        .select()
+        .single();
       if (error) throw error;
+
+      const createdRow = (created ?? payload) as unknown as Record<
+        string,
+        unknown
+      >;
+      logChange({
+        table: "inspections",
+        action: "create",
+        actor: logActor(),
+        row: { ...createdRow, name: inspectionLogName(createdRow as never) },
+      });
+
       await fetchInspections();
     } catch (err) {
       console.error("Clone failed:", err);

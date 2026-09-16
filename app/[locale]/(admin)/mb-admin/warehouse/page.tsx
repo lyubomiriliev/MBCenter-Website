@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toast } from "@/components/ui/toast";
 import { useNotification } from "@/hooks/useNotification";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 import {
   useWarehouseParts,
   useCreateWarehousePart,
@@ -131,6 +133,15 @@ export default function WarehousePage() {
 
   const { notifications, dismiss, showError, showSuccess } = useNotification();
 
+  const { user, profile } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
+
   const handleSort = (col: WarehouseSortColumn) => {
     if (sortBy === col) {
       setSortDir((d) => (d === "desc" ? "asc" : "desc"));
@@ -183,10 +194,26 @@ export default function WarehousePage() {
     };
     try {
       if (editingPart) {
-        await updatePart.mutateAsync({ id: editingPart.id, ...normalized });
+        const saved = await updatePart.mutateAsync({
+          id: editingPart.id,
+          ...normalized,
+        });
+        logChange({
+          table: "warehouse_parts",
+          action: "edit",
+          actor: logActor(),
+          row: saved as unknown as Record<string, unknown>,
+          before: editingPart as unknown as Record<string, unknown>,
+        });
         showSuccess("Запазено");
       } else {
-        await createPart.mutateAsync(normalized);
+        const created = await createPart.mutateAsync(normalized);
+        logChange({
+          table: "warehouse_parts",
+          action: "create",
+          actor: logActor(),
+          row: created as unknown as Record<string, unknown>,
+        });
         showSuccess("Запазено");
       }
     } catch (err) {
@@ -197,7 +224,15 @@ export default function WarehousePage() {
   // Handle inline qty update
   const handleQtyUpdate = async (id: string, quantity: number) => {
     try {
-      await updatePart.mutateAsync({ id, quantity });
+      const previous = allParts.find((p) => p.id === id);
+      const saved = await updatePart.mutateAsync({ id, quantity });
+      logChange({
+        table: "warehouse_parts",
+        action: "edit",
+        actor: logActor(),
+        row: saved as unknown as Record<string, unknown>,
+        before: (previous ?? null) as unknown as Record<string, unknown> | null,
+      });
     } catch (err) {
       showError(String(err));
     }
@@ -206,7 +241,14 @@ export default function WarehousePage() {
   // Handle delete
   const handleDelete = async (id: string) => {
     try {
+      const removed = allParts.find((p) => p.id === id);
       await deletePart.mutateAsync(id);
+      logChange({
+        table: "warehouse_parts",
+        action: "delete",
+        actor: logActor(),
+        row: (removed ?? { id }) as unknown as Record<string, unknown>,
+      });
       setDeleteConfirmId(null);
       showSuccess(t("deleteConfirm.deleteSuccess"));
     } catch (err) {
@@ -219,7 +261,16 @@ export default function WarehousePage() {
     try {
       const count = selectedIds.size;
       await Promise.all(
-        Array.from(selectedIds).map((id) => deletePart.mutateAsync(id)),
+        Array.from(selectedIds).map(async (id) => {
+          const removed = allParts.find((p) => p.id === id);
+          await deletePart.mutateAsync(id);
+          logChange({
+            table: "warehouse_parts",
+            action: "delete",
+            actor: logActor(),
+            row: (removed ?? { id }) as unknown as Record<string, unknown>,
+          });
+        }),
       );
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
@@ -340,7 +391,18 @@ export default function WarehousePage() {
   const handleImportConfirm = async () => {
     const skipped = importRows.length === 0 ? 0 : 0; // all valid rows are imported (skipped during parse)
     try {
-      await upsertParts.mutateAsync(importRows);
+      const imported = await upsertParts.mutateAsync(importRows);
+      // The import upserts by part_number, so a row may be new or an update of
+      // an existing part. The previous state is not fetched, so each imported
+      // row is logged as a create — the same rule the summary upsert follows.
+      for (const row of imported ?? []) {
+        logChange({
+          table: "warehouse_parts",
+          action: "create",
+          actor: logActor(),
+          row: row as unknown as Record<string, unknown>,
+        });
+      }
       setImportPreviewOpen(false);
       showSuccess(t("importSuccess", { imported: importRows.length, skipped }));
       setImportRows([]);

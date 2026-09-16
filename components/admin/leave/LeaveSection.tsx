@@ -6,6 +6,7 @@ import type { DateRange } from "react-day-picker";
 import { bg as bgLocale, enGB } from "date-fns/locale";
 import { supabase } from "@/lib/supabase/client";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,14 @@ function useIsNarrow(breakpoint = 768) {
 
 export function LeaveSection() {
   const isBg = useLocale() === "bg";
-  const { profile } = useSupabaseAuthContext();
+  const { profile, user } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
   const isNarrow = useIsNarrow();
 
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -348,7 +356,7 @@ export function LeaveSection() {
 
     setSaving(true);
     setError("");
-    const { error: err } = await supabase.from("leave_periods").insert({
+    const leaveRow = {
       worker_id: selected.id,
       worker_type: selected.type,
       worker_name: selected.name,
@@ -357,8 +365,20 @@ export function LeaveSection() {
       leave_type: leaveType,
       note: note.trim() || null,
       created_by_name: profile?.full_name ?? null,
-    } as never);
+    };
+    const { error: err } = await supabase
+      .from("leave_periods")
+      .insert(leaveRow as never);
     setSaving(false);
+
+    if (!err) {
+      logChange({
+        table: "leave_periods",
+        action: "create",
+        actor: logActor(),
+        row: leaveRow,
+      });
+    }
 
     if (err) {
       console.error("[leave] save failed:", err);
@@ -379,6 +399,13 @@ export function LeaveSection() {
     if (err) {
       console.error("[leave] delete failed:", err);
       setError(isBg ? "Грешка при изтриване." : "Delete failed.");
+    } else {
+      logChange({
+        table: "leave_periods",
+        action: "delete",
+        actor: logActor(),
+        row: deleteTarget as unknown as Record<string, unknown>,
+      });
     }
     setDeleteTarget(null);
     loadPeriods();

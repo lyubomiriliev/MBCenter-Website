@@ -16,7 +16,11 @@ import {
 import { DateRangeField } from "@/components/admin/DateRangeField";
 import { cn } from "@/lib/utils";
 import { localDateKey } from "@/lib/turnover";
-import { formatChanges, UNLOGGED_EMAILS } from "@/lib/activity-log";
+import {
+  formatChanges,
+  SECTION_LABELS,
+  UNLOGGED_EMAILS,
+} from "@/lib/activity-log";
 import type {
   ActivityAction,
   ActivityEntityType,
@@ -26,10 +30,24 @@ import type {
 /** How many entries one page of the log holds. */
 const PAGE_SIZE = 50;
 
-const ENTITY_LABEL: Record<ActivityEntityType, { bg: string; en: string }> = {
-  daily_turnover: { bg: "Дневен оборот", en: "Daily turnover" },
-  offer: { bg: "Оферти", en: "Offers" },
-};
+/** Sections offered in the filter, in menu order. */
+const SECTIONS = [
+  "offers",
+  "daily_turnover",
+  "daily_turnover_notes",
+  "inspections",
+  "warehouse_parts",
+  "earnings_entries",
+  "earnings_monthly_summary",
+  "leave_periods",
+  "mechanics",
+  "receptionists",
+] as const;
+
+/** The Bulgarian name of a section; falls back to the raw table name. */
+function sectionLabel(table: string): string {
+  return SECTION_LABELS[table] ?? table;
+}
 
 const ACTION_LABEL: Record<ActivityAction, { bg: string; en: string }> = {
   create: { bg: "създаване", en: "create" },
@@ -259,12 +277,11 @@ export function LogsPage() {
                 <SelectItem value="all">
                   {isBg ? "Всички" : "All"}
                 </SelectItem>
-                <SelectItem value="daily_turnover">
-                  {ENTITY_LABEL.daily_turnover[isBg ? "bg" : "en"]}
-                </SelectItem>
-                <SelectItem value="offer">
-                  {ENTITY_LABEL.offer[isBg ? "bg" : "en"]}
-                </SelectItem>
+                {SECTIONS.map((table) => (
+                  <SelectItem key={table} value={table}>
+                    {sectionLabel(table)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -374,8 +391,7 @@ export function LogsPage() {
                       {e.user_name ?? e.user_email ?? "—"}
                     </td>
                     <td className="py-2 px-3 text-mb-silver whitespace-nowrap">
-                      {ENTITY_LABEL[e.entity_type]?.[isBg ? "bg" : "en"] ??
-                        e.entity_type}
+                      {sectionLabel(e.entity_type)}
                     </td>
                     <td className="py-2 px-3 text-mb-silver">
                       {e.entity_label ?? "—"}

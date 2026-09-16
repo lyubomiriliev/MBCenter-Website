@@ -50,6 +50,8 @@ import {
   useDeleteHourlyActivity,
 } from "@/hooks/useHourlyActivities";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { logChange } from "@/lib/activity-log";
+import { useOptionalSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 
 export type FixedActivityItem = { id: string; name: string; priceEur: number };
 
@@ -88,6 +90,15 @@ function AddEditServiceActionModal({
   const addHourlyMut = useAddHourlyActivity();
   const updateHourlyMut = useUpdateHourlyActivity();
   const deleteHourlyMut = useDeleteHourlyActivity();
+
+  const auth = useOptionalSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: auth?.user?.id ?? null,
+    name: auth?.profile?.full_name ?? null,
+    email: auth?.user?.email ?? null,
+  });
 
   const [addNewModalOpen, setAddNewModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<FixedActivityItem | null>(null);
@@ -215,6 +226,17 @@ function AddEditServiceActionModal({
     if (trimmed && price > 0) {
       if (editingActivity) {
         await updateActivityMut.mutateAsync({ id: editingActivity.id, name: trimmed, priceEur: price });
+        logChange({
+          table: "fixed_activities",
+          action: "edit",
+          actor: logActor(),
+          row: { id: editingActivity.id, name: trimmed, price_eur: price },
+          before: {
+            id: editingActivity.id,
+            name: editingActivity.name,
+            price_eur: editingActivity.priceEur,
+          },
+        });
         if (selectedActivityId === editingActivity.id) {
           setActionName(trimmed);
           setFixedPriceAmount(price);
@@ -223,6 +245,12 @@ function AddEditServiceActionModal({
         setEditingActivity(null);
       } else {
         const item = await addActivityMut.mutateAsync({ name: trimmed, priceEur: price });
+        logChange({
+          table: "fixed_activities",
+          action: "create",
+          actor: logActor(),
+          row: item as unknown as Record<string, unknown>,
+        });
         setActionName(trimmed);
         setFixedPriceAmount(price);
         setFixedPriceInput(price.toString());
@@ -246,7 +274,16 @@ function AddEditServiceActionModal({
 
   const handleRemoveActivity = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    deleteActivityMut.mutate(id);
+    const removed = fixedActivities.find((a) => a.id === id);
+    deleteActivityMut.mutate(id, {
+      onSuccess: () =>
+        logChange({
+          table: "fixed_activities",
+          action: "delete",
+          actor: logActor(),
+          row: (removed ?? { id }) as unknown as Record<string, unknown>,
+        }),
+    });
     if (selectedActivityId === id) {
       setSelectedActivityId("");
       setActionName("");
@@ -270,6 +307,17 @@ function AddEditServiceActionModal({
     if (!name || price <= 0) return;
     if (editingHourly) {
       await updateHourlyMut.mutateAsync({ id: editingHourly.id, name, pricePerHourEur: price });
+      logChange({
+        table: "hourly_activities",
+        action: "edit",
+        actor: logActor(),
+        row: { id: editingHourly.id, name, price_per_hour_eur: price },
+        before: {
+          id: editingHourly.id,
+          name: editingHourly.name,
+          price_per_hour_eur: editingHourly.pricePerHour,
+        },
+      });
       if (selectedHourlyId === editingHourly.id) {
         setActionName(name);
         setPricePerHour(price);
@@ -278,6 +326,12 @@ function AddEditServiceActionModal({
       setEditingHourly(null);
     } else {
       const item = await addHourlyMut.mutateAsync({ name, pricePerHourEur: price });
+      logChange({
+        table: "hourly_activities",
+        action: "create",
+        actor: logActor(),
+        row: item as unknown as Record<string, unknown>,
+      });
       setActionName(name);
       setPricePerHour(price);
       setPriceInput(price.toString());
@@ -290,7 +344,16 @@ function AddEditServiceActionModal({
 
   const handleRemoveHourlyPreset = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    deleteHourlyMut.mutate(id);
+    const removed = hourlyActivities.find((a) => a.id === id);
+    deleteHourlyMut.mutate(id, {
+      onSuccess: () =>
+        logChange({
+          table: "hourly_activities",
+          action: "delete",
+          actor: logActor(),
+          row: (removed ?? { id }) as unknown as Record<string, unknown>,
+        }),
+    });
     if (selectedHourlyId === id) {
       setSelectedHourlyId("");
     }

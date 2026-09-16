@@ -6,6 +6,7 @@ import {
   seedWorkers,
   signIn,
   type Db,
+  todayKey,
 } from "./helpers";
 
 /**
@@ -18,7 +19,7 @@ import {
 
 const RECEPTION = "reception@mbcenter.bg";
 const ADMIN = "oliverqueeneb@gmail.com";
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayKey();
 
 function dbWithRow(): Db {
   const db = seedWorkers(emptyDb());

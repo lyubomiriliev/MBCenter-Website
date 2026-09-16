@@ -39,6 +39,8 @@ import {
 import { CheckPDF, type CheckFormData } from "@/components/pdf/CheckPDF";
 import { MERCEDES_MODELS, searchModels } from "@/lib/data/mercedes-models";
 import { supabase } from "@/lib/supabase/client";
+import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
+import { logChange } from "@/lib/activity-log";
 
 const STORAGE_KEY = "mbcenter_check_draft_v2";
 
@@ -116,6 +118,14 @@ export function CheckInspectionForm({
   const t = useTranslations("admin.checks");
   const router = useRouter();
   const pathname = usePathname();
+  const { user, profile } = useSupabaseAuthContext();
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
 
   const isEditMode = !!inspectionId;
   const [form, setForm] = useState<CheckFormData>(() => {
@@ -140,6 +150,10 @@ export function CheckInspectionForm({
     message: string;
   } | null>(null);
   const initialFormRef = useRef<string>("");
+  // The inspection exactly as it last came back from the database. The activity
+  // log diffs a save against this, so only the fields that really changed are
+  // recorded.
+  const savedRowRef = useRef<Record<string, unknown> | null>(null);
 
   const [mechanicsList, setMechanicsList] = useState<
     { id: string; name: string }[]
@@ -192,6 +206,7 @@ export function CheckInspectionForm({
         if (error) throw error;
         const row = data as unknown as InspectionRow;
         if (row) {
+          savedRowRef.current = data as Record<string, unknown>;
           setCheckNumber(row.check_number?.trim() || "");
           setForm({
             inspectionDate:
@@ -305,31 +320,73 @@ export function CheckInspectionForm({
     : pathname.split("/mb-admin")[0] + "/mb-admin";
   const checksPath = basePath + "/checks";
 
+  /**
+   * The inspection as the database stores it, built from the current form.
+   * Used both for the write itself and for the activity log, so the two can
+   * never drift apart.
+   */
+  const inspectionPayload = () => ({
+    inspection_date: form.inspectionDate,
+    mechanic: form.mechanic || null,
+    client_name: form.clientName || null,
+    client_phone: form.clientPhone || null,
+    car_model: form.carModel || null,
+    car_model_detail: form.carModelDetail || null,
+    license_plate: form.licensePlate || null,
+    vin: form.vin || null,
+    tires: form.tires,
+    brakes: form.brakes,
+    suspension: form.suspension,
+    corrosion: form.corrosion,
+    fluids: form.fluids,
+    mileage: form.mileage,
+    summary: form.summary.length > 0 ? form.summary.join("\n") : null,
+  });
+
+  /**
+   * How one inspection reads in the log: "Преглед №00123 · BMW X5 · CA1234AB".
+   * `logChange` picks the label off the row's `name`, so it is attached there.
+   */
+  const inspectionLogName = (row: {
+    check_number?: string | null;
+    car_model?: string | null;
+    license_plate?: string | null;
+    client_name?: string | null;
+  }) => {
+    const parts = [
+      row.check_number?.trim() ? `Преглед №${row.check_number.trim()}` : null,
+      row.car_model || null,
+      row.license_plate || null,
+      row.client_name || null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "Преглед";
+  };
+
   /* Save inspection */
   const handleSave = async (navUrl?: string) => {
     if (!inspectionId) return;
     setSaving(true);
     try {
+      const payload = inspectionPayload();
       const { error } = await (supabase.from("inspections") as any)
-        .update({
-          inspection_date: form.inspectionDate,
-          mechanic: form.mechanic || null,
-          client_name: form.clientName || null,
-          client_phone: form.clientPhone || null,
-          car_model: form.carModel || null,
-          car_model_detail: form.carModelDetail || null,
-          license_plate: form.licensePlate || null,
-          vin: form.vin || null,
-          tires: form.tires,
-          brakes: form.brakes,
-          suspension: form.suspension,
-          corrosion: form.corrosion,
-          fluids: form.fluids,
-          mileage: form.mileage,
-          summary: form.summary.length > 0 ? form.summary.join("\n") : null,
-        })
+        .update(payload)
         .eq("id", inspectionId);
       if (error) throw error;
+
+      // Log against the row as it was loaded, so only the edited fields show.
+      // The same label goes on both sides: it is only there for the entry's
+      // title and must not turn up as a changed field of its own.
+      const before = savedRowRef.current;
+      const label = inspectionLogName({ ...payload, check_number: checkNumber });
+      logChange({
+        table: "inspections",
+        action: "edit",
+        actor: logActor(),
+        row: { ...payload, id: inspectionId, name: label },
+        before: before ? { ...before, name: label } : null,
+      });
+      savedRowRef.current = { ...(before ?? {}), ...payload, id: inspectionId };
+
       initialFormRef.current = JSON.stringify(form);
       setHasUnsavedChanges(false);
       setToast({ type: "success", message: "Проверката е запазена успешно!" });
@@ -359,6 +416,20 @@ export function CheckInspectionForm({
         .delete()
         .eq("id", inspectionId);
       if (error) throw error;
+
+      // The loaded row gives the log a readable handle for what disappeared.
+      const removed = savedRowRef.current ?? {};
+      logChange({
+        table: "inspections",
+        action: "delete",
+        actor: logActor(),
+        row: {
+          ...removed,
+          id: inspectionId,
+          name: inspectionLogName({ ...removed, check_number: checkNumber }),
+        },
+      });
+
       setToast({ type: "success", message: "Проверката е изтрита." });
       setTimeout(() => router.push(checksPath), 500);
     } catch (err) {
@@ -371,28 +442,23 @@ export function CheckInspectionForm({
   const handleClone = async () => {
     setCloning(true);
     try {
+      const payload = { check_number: "", ...inspectionPayload() };
       const { data, error } = await (supabase.from("inspections") as any)
-        .insert({
-          check_number: "",
-          inspection_date: form.inspectionDate,
-          mechanic: form.mechanic || null,
-          client_name: form.clientName || null,
-          client_phone: form.clientPhone || null,
-          car_model: form.carModel || null,
-          car_model_detail: form.carModelDetail || null,
-          license_plate: form.licensePlate || null,
-          vin: form.vin || null,
-          tires: form.tires,
-          brakes: form.brakes,
-          suspension: form.suspension,
-          corrosion: form.corrosion,
-          fluids: form.fluids,
-          mileage: form.mileage,
-          summary: form.summary.length > 0 ? form.summary.join("\n") : null,
-        })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
+
+      // Log the row the database actually created — it carries the generated
+      // id and check_number the clone was given.
+      const created = (data ?? payload) as Record<string, unknown>;
+      logChange({
+        table: "inspections",
+        action: "create",
+        actor: logActor(),
+        row: { ...created, name: inspectionLogName(created as never) },
+      });
+
       const newId = (data as { id: string } | null)?.id;
       if (newId) {
         setToast({
@@ -413,27 +479,24 @@ export function CheckInspectionForm({
   const handleCreate = async () => {
     setGenerating(true);
     try {
-      const { error: insertError } = await (
+      const payload = { check_number: "", ...inspectionPayload() };
+      // `.select()` only so the log can record the generated id and number.
+      const { data: created, error: insertError } = await (
         supabase.from("inspections") as any
-      ).insert({
-        check_number: "",
-        inspection_date: form.inspectionDate,
-        mechanic: form.mechanic || null,
-        client_name: form.clientName || null,
-        client_phone: form.clientPhone || null,
-        car_model: form.carModel || null,
-        car_model_detail: form.carModelDetail || null,
-        license_plate: form.licensePlate || null,
-        vin: form.vin || null,
-        tires: form.tires,
-        brakes: form.brakes,
-        suspension: form.suspension,
-        corrosion: form.corrosion,
-        fluids: form.fluids,
-        mileage: form.mileage,
-        summary: form.summary.length > 0 ? form.summary.join("\n") : null,
-      });
+      )
+        .insert(payload)
+        .select()
+        .single();
       if (insertError) throw insertError;
+
+      const createdRow = (created ?? payload) as Record<string, unknown>;
+      logChange({
+        table: "inspections",
+        action: "create",
+        actor: logActor(),
+        row: { ...createdRow, name: inspectionLogName(createdRow as never) },
+      });
+
       localStorage.removeItem(STORAGE_KEY);
       router.push(checksPath);
     } catch (err) {
@@ -450,30 +513,27 @@ export function CheckInspectionForm({
     try {
       let filenameBase = checkNumber;
       if (!isEditMode || !inspectionId) {
+        const payload = { check_number: "", ...inspectionPayload() };
         const { data: inserted, error: insertError } = await (
           supabase.from("inspections") as any
         )
-          .insert({
-            check_number: "",
-            inspection_date: form.inspectionDate,
-            mechanic: form.mechanic || null,
-            client_name: form.clientName || null,
-            client_phone: form.clientPhone || null,
-            car_model: form.carModel || null,
-            car_model_detail: form.carModelDetail || null,
-            license_plate: form.licensePlate || null,
-            vin: form.vin || null,
-            tires: form.tires,
-            brakes: form.brakes,
-            suspension: form.suspension,
-            corrosion: form.corrosion,
-            fluids: form.fluids,
-            mileage: form.mileage,
-            summary: form.summary.length > 0 ? form.summary.join("\n") : null,
-          })
-          .select("check_number")
+          .insert(payload)
+          // `id` comes back too, so the log entry can point at the new row.
+          .select("id, check_number")
           .single();
         if (insertError) throw insertError;
+
+        const createdRow = {
+          ...payload,
+          ...((inserted ?? {}) as Record<string, unknown>),
+        };
+        logChange({
+          table: "inspections",
+          action: "create",
+          actor: logActor(),
+          row: { ...createdRow, name: inspectionLogName(createdRow as never) },
+        });
+
         filenameBase =
           (
             inserted as { check_number: string | null } | null

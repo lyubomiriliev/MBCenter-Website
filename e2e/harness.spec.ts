@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { ADMIN_EMAIL, emptyDb, mockSupabase, seedWorkers, signIn } from "./helpers";
+import { ADMIN_EMAIL, emptyDb, mockSupabase, seedWorkers, signIn,
+  todayKey,
+} from "./helpers";
 
 test("harness: turnover page loads as admin with mocked data", async ({ page }) => {
   const db = seedWorkers(emptyDb());
@@ -7,7 +9,7 @@ test("harness: turnover page loads as admin with mocked data", async ({ page }) 
     {
       id: "t1",
       source: "manual",
-      entry_date: new Date().toISOString().slice(0, 10),
+      entry_date: todayKey(),
       vehicle: "S500 W222",
       repair_name: "Смяна на масло",
       client_name: "Тест Клиент",

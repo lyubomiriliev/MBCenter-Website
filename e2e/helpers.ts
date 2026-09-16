@@ -342,3 +342,16 @@ export function field(dialog: Locator, label: string | RegExp): Locator {
     .locator("input")
     .first();
 }
+
+/**
+ * Today as YYYY-MM-DD in LOCAL time.
+ *
+ * `toISOString()` is UTC, so between midnight and the UTC offset it returns
+ * yesterday - the app renders the local day, the seeded rows land on the
+ * previous one, and every turnover test fails for a few hours each night.
+ */
+export function todayKey(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}

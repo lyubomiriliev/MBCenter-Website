@@ -24,6 +24,7 @@ import {
   type ActivityActor,
 } from "@/lib/activity-log";
 import { canSeeBetaSections } from "@/lib/feature-flags";
+import { logChange } from "@/lib/activity-log";
 import { TurnoverReportsDialog } from "./TurnoverReportsDialog";
 import type {
   DailyTurnover,
@@ -260,6 +261,13 @@ export function TurnoverPage() {
   // section is in testing. It must never widen access on its own - an "||"
   // here would hand profit to any role using the beta account.
   const canSeeProfit = isSuperAdmin() && canSeeBetaSections(user?.email);
+
+  /** Who the activity log attributes a change to. */
+  const logActor = () => ({
+    authId: user?.id ?? null,
+    name: profile?.full_name ?? null,
+    email: user?.email ?? null,
+  });
 
   // Who the activity log attributes a change to. auth_id is the durable
   // identity; name and email are snapshotted so the entry still reads well
@@ -535,6 +543,16 @@ export function TurnoverPage() {
       );
       return;
     }
+    logChange({
+      table: "daily_turnover_notes",
+      action: existing ? "edit" : "create",
+      actor: logActor(),
+      row: { note_date: noteDate, note: dayNote, name: noteDate },
+      before: existing
+        ? { note_date: noteDate, note: periodNotes[noteDate] }
+        : null,
+    });
+
     setSavedDayNote(dayNote);
     setPeriodNotes((prev) => ({ ...prev, [noteDate]: dayNote }));
   };
