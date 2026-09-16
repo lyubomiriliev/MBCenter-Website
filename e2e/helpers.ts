@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import type { Locator, Page, Route } from "@playwright/test";
 
 /**
  * Test harness for the admin sections.
@@ -78,38 +78,57 @@ const json = (route: Route, body: unknown, status = 200) =>
   });
 
 /** Applies PostgREST-style `eq.`/`gte.`/`lte.` filters from the query string. */
+/** One `column.op.value` condition, as PostgREST spells it. */
+function matchesCondition(row: any, condition: string): boolean {
+  const [key, op, ...rest] = condition.split(".");
+  const value = rest.join(".");
+  return compare(row[key], op, value);
+}
+
+function compare(actual: any, op: string, value: string): boolean {
+  switch (op) {
+    case "eq":
+      return String(actual) === value;
+    case "neq":
+      return String(actual) !== value;
+    case "gte":
+      return String(actual) >= value;
+    case "lte":
+      return String(actual) <= value;
+    case "gt":
+      return String(actual) > value;
+    case "lt":
+      return String(actual) < value;
+    case "is":
+      return value === "null" ? actual == null : actual === value;
+    case "in": {
+      const set = value.replace(/^\(|\)$/g, "").split(",");
+      return set.includes(String(actual));
+    }
+    default:
+      return true;
+  }
+}
+
 function applyFilters(rows: any[], url: URL): any[] {
   let out = [...rows];
   const entries: [string, string][] = [];
   url.searchParams.forEach((v, k) => entries.push([k, v]));
   for (const [key, raw] of entries) {
     if (["select", "order", "limit", "offset"].includes(key)) continue;
+
+    // or=(a.eq.1,b.is.null) — the row passes if ANY condition holds. Several
+    // `or` params combine with AND, matching PostgREST.
+    if (key === "or") {
+      const conditions = raw.replace(/^\(|\)$/g, "").split(",");
+      out = out.filter((r) => conditions.some((c) => matchesCondition(r, c)));
+      continue;
+    }
+
     const [op, ...rest] = raw.split(".");
     const value = rest.join(".");
     out = out.filter((r) => {
-      const actual = r[key];
-      switch (op) {
-        case "eq":
-          return String(actual) === value;
-        case "neq":
-          return String(actual) !== value;
-        case "gte":
-          return String(actual) >= value;
-        case "lte":
-          return String(actual) <= value;
-        case "gt":
-          return String(actual) > value;
-        case "lt":
-          return String(actual) < value;
-        case "is":
-          return value === "null" ? actual == null : actual === value;
-        case "in": {
-          const set = value.replace(/^\(|\)$/g, "").split(",");
-          return set.includes(String(actual));
-        }
-        default:
-          return true;
-      }
+      return compare(r[key], op, value);
     });
   }
   return out;
@@ -139,6 +158,12 @@ export interface MockOptions {
   readOnly?: string[];
   /** Force a failure on the next write to this table. */
   failWrite?: string | null;
+  /**
+   * Extra profiles the signed-in user can read, on top of their own.
+   * Mirrors what an admin sees once migration_profiles_admin_read.sql is in
+   * place; without it RLS returns only the caller's own row.
+   */
+  otherProfiles?: { full_name: string | null; role?: Role }[];
 }
 
 /**
@@ -194,15 +219,21 @@ export async function mockSupabase(
 
     // profiles drives role checks
     if (table === "profiles") {
-      return json(route, [
-        {
-          id: "p1",
-          auth_id: "test-user-id",
-          role: profile.role,
-          full_name: profile.full_name ?? "Test User",
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      const own = {
+        id: "p1",
+        auth_id: "test-user-id",
+        role: profile.role,
+        full_name: profile.full_name ?? "Test User",
+        created_at: new Date().toISOString(),
+      };
+      const others = (options.otherProfiles ?? []).map((p, i) => ({
+        id: `p${i + 2}`,
+        auth_id: `other-user-${i + 1}`,
+        role: p.role ?? "admin",
+        full_name: p.full_name,
+        created_at: new Date().toISOString(),
+      }));
+      return json(route, applyFilters([own, ...others], url));
     }
 
     const rows: any[] = (db as any)[table] ?? [];
@@ -294,3 +325,20 @@ export function seedWorkers(db: Db) {
 }
 
 export const ADMIN_EMAIL = "oliverqueeneb@gmail.com";
+
+/**
+ * The input sitting under a given label inside a dialog.
+ *
+ * The dialogs' labels are not tied to their inputs with htmlFor/id, so this
+ * walks up to the field wrapper and takes the input inside it. Anchoring on
+ * the label keeps tests working when the field ORDER changes — which it did
+ * when the turnover modal was rearranged to the client's mockup.
+ */
+export function field(dialog: Locator, label: string | RegExp): Locator {
+  return dialog
+    .locator("div")
+    .filter({ has: dialog.page().getByText(label, { exact: false }) })
+    .last()
+    .locator("input")
+    .first();
+}

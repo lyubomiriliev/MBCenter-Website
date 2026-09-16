@@ -1229,7 +1229,8 @@
       "turnover": "Дневен оборот",
       "warehouse": "Склад",
       "backToSite": "Към сайта",
-      "logout": "Изход"
+      "logout": "Изход",
+      "logs": "Логове"
     },
     "roles": {
       "admin": "Администратор",

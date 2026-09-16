@@ -1,5 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { emptyDb, mockSupabase, seedWorkers, signIn, type Db } from "./helpers";
+import {
+  emptyDb,
+  field,
+  mockSupabase,
+  seedWorkers,
+  signIn,
+  type Db,
+} from "./helpers";
 
 /**
  * Access rules per account, as specified:
@@ -111,11 +118,8 @@ test.describe("приемна", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: "Добави запис" }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.locator('input[type="number"]').first().fill("250");
-    await dialog
-      .locator('input[type="text"], input:not([type])')
-      .first()
-      .fill("VW Golf");
+    await field(dialog, "Сума (€)").fill("250");
+    await field(dialog, "Автомобил").fill("VW Golf");
     await page.getByRole("button", { name: "Запази" }).click();
 
     await expect

@@ -711,6 +711,37 @@ export interface DailyTurnoverNote {
 }
 
 // ============================================
+// Activity log (Логове)
+// ============================================
+export type ActivityEntityType = "daily_turnover" | "offer";
+export type ActivityAction = "create" | "edit" | "delete";
+
+/** One field that changed, ready to render as "Сума: 300,00 € → 350,00 €". */
+export interface ActivityChange {
+  /** Column name, for filtering and debugging. */
+  field: string;
+  /** Bulgarian label as the user sees it in the form. */
+  label: string;
+  from: string | null;
+  to: string | null;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  auth_id: string | null;
+  user_name: string | null;
+  user_email: string | null;
+  entity_type: ActivityEntityType;
+  entity_id: string | null;
+  /** Readable handle: offer number, service card number, or the vehicle. */
+  entity_label: string | null;
+  action: ActivityAction;
+  changes: ActivityChange[];
+  created_at: string;
+}
+export type ActivityLogInsert = Omit<ActivityLogEntry, "id" | "created_at">;
+
+// ============================================
 // Leave periods (Отпуски)
 // ============================================
 export type WorkerType = "mechanic" | "receptionist";

@@ -1229,7 +1229,8 @@
       "turnover": "Daily Turnover",
       "warehouse": "Warehouse",
       "backToSite": "Back to Site",
-      "logout": "Logout"
+      "logout": "Logout",
+      "logs": "Logs"
     },
     "roles": {
       "admin": "Admin",

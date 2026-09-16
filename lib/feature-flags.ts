@@ -27,6 +27,11 @@ const BETA_TESTER_EMAILS = [
   // in testing. Role checks still apply on top of this: they get read-only
   // turnover with no profit, and no access to Отпуски at all.
   "reception@mbcenter.bg",
+  // The owner's and Християн's own admin accounts. They replace the shared
+  // admin@mbcenter.bg for day-to-day work, so every action in Логове is
+  // attributed to a person rather than to "Админ".
+  "ivaylo@mbcenter.bg",
+  "christian@mbcenter.bg",
 ];
 
 /**

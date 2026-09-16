@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations, useLocale } from "next-intl";
@@ -51,7 +51,15 @@ import {
   recordAdvanceTurnover,
   recordServiceCardTurnover,
 } from "@/lib/turnover";
+import { logActivity } from "@/lib/activity-log";
 import type { PaymentMethod } from "@/types/database";
+
+/** Payment methods as the log should read them. */
+const METHOD_LABEL_BG: Record<string, string> = {
+  cash: "Брой",
+  card: "Карта",
+  bank: "Банка",
+};
 import { canSeeBetaSections } from "@/lib/feature-flags";
 import type {
   OfferWithRelations,
@@ -220,6 +228,15 @@ export function CreateOfferFormV2({
   const [isLoadingOffer, setIsLoadingOffer] = useState(false);
   const [prepayments, setPrepayments] = useState<number[]>([]);
   const [prepaymentModalOpen, setPrepaymentModalOpen] = useState(false);
+  /**
+   * Advances taken on this offer, for the activity box under the buttons.
+   * Read from the turnover rows rather than the offer: the offer stores only
+   * the amounts, so the turnover row is the only place carrying WHEN each
+   * advance was actually taken.
+   */
+  const [advanceEntries, setAdvanceEntries] = useState<
+    { id: string; amount: number; at: string; by: string | null }[]
+  >([]);
   const [prepaymentAmount, setPrepaymentAmount] = useState("");
   const [prepaymentError, setPrepaymentError] = useState("");
   // An advance is still paid in cash/card/bank - the method is recorded so the
@@ -299,6 +316,51 @@ export function CreateOfferFormV2({
   // shown only to the beta tester account. Everyone else keeps the old flow.
   const turnoverEnabled = canSeeBetaSections(user?.email);
   const isReceptionRole = profile?.role === "reception";
+
+  /**
+   * Load the advances recorded for this offer so they can be listed in the
+   * activity box. Best-effort: the box simply shows fewer lines if the lookup
+   * fails or the turnover migrations have not been run.
+   */
+  const loadAdvanceEntries = useCallback(async (id: string | undefined) => {
+    if (!id || id === "temp") {
+      setAdvanceEntries([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("daily_turnover")
+      .select("id, amount, created_at, entry_date, created_by_name")
+      .eq("offer_id", id)
+      .eq("is_advance", true)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("[offer] advance entries lookup failed:", error.message);
+      setAdvanceEntries([]);
+      return;
+    }
+    setAdvanceEntries(
+      (data ?? []).map(
+        (r: {
+          id: string;
+          amount: number | null;
+          created_at: string;
+          entry_date: string;
+          created_by_name: string | null;
+        }) => ({
+          id: r.id,
+          amount: Number(r.amount) || 0,
+          at: r.created_at ?? r.entry_date,
+          by: r.created_by_name,
+        }),
+      ),
+    );
+  }, []);
+
+  useEffect(() => {
+    const id = savedOffer?.id ?? offerId;
+    void loadAdvanceEntries(id);
+  }, [savedOffer?.id, offerId, loadAdvanceEntries]);
 
   const updateOfferMutation = useUpdateOffer();
 
@@ -3670,6 +3732,29 @@ export function CreateOfferFormV2({
                             })}
                           </div>
                         )}
+                        {/* One line per advance taken on this offer, stacked
+                            with the update entry above. The amount and the
+                            account that recorded it are included so the box
+                            answers "how much, when and by whom" on its own. */}
+                        {advanceEntries.map((a) => (
+                          <div key={a.id}>
+                            <span className="font-medium">
+                              {locale === "bg"
+                                ? "Авансово плащане на"
+                                : "Advance payment on"}
+                              :
+                            </span>{" "}
+                            {new Date(a.at).toLocaleDateString("bg-BG", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}{" "}
+                            ({a.amount.toFixed(2).replace(".", ",")} €
+                            {a.by ? `, ${a.by}` : ""})
+                          </div>
+                        ))}
                         {metaOffer.performed_by && (
                           <div>
                             <span className="font-medium">
@@ -3825,8 +3910,36 @@ export function CreateOfferFormV2({
                     amount: n,
                     method: methodForRow,
                     createdByName: profile?.full_name ?? null,
-                  }).catch((error) => {
-                    console.error("[turnover] advance not recorded:", error);
+                  })
+                    .then(() => {
+                      // Show the new "Авансово плащане на: ..." line straight
+                      // away, without waiting for a page reload.
+                      void loadAdvanceEntries(savedOffer.id);
+                    })
+                    .catch((error) => {
+                      console.error("[turnover] advance not recorded:", error);
+                    });
+
+                  void logActivity({
+                    actor: {
+                      authId: user?.id ?? null,
+                      name: profile?.full_name ?? null,
+                      email: user?.email ?? null,
+                    },
+                    entityType: "offer",
+                    entityId: savedOffer.id,
+                    entityLabel: `Оферта №${savedOffer.offer_number}`,
+                    action: "edit",
+                    changes: [
+                      {
+                        field: "prepayments_eur",
+                        label: "Авансово плащане",
+                        from: null,
+                        to: `${n.toFixed(2).replace(".", ",")} € (${
+                          METHOD_LABEL_BG[methodForRow] ?? methodForRow
+                        })`,
+                      },
+                    ],
                   });
                 }
                 setPrepaymentMethod("cash");

@@ -39,7 +39,12 @@ const COLUMN_LABELS: Record<ColumnKey, { bg: string; en: string }> = {
   actions: { bg: "Действия", en: "Actions" },
 };
 
-type AccountKey = "admin" | "reception" | "mechanic";
+type AccountKey =
+  | "admin"
+  | "ivaylo"
+  | "christian"
+  | "reception"
+  | "mechanic";
 
 function PasswordField({
   label,
@@ -321,8 +326,15 @@ export default function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>("account");
 
+  // Every account is named explicitly. The one you are signed in with is
+  // edited directly through your own session; the rest go through the
+  // update-user Edge Function, which takes the target email.
   const ACCOUNT_EMAILS: Record<AccountKey, string | null> = {
-    admin: null,
+    admin: "admin@mbcenter.bg",
+    // The two personal admin accounts. The shared admin@mbcenter.bg above is
+    // deliberately left as it is, as a fallback.
+    ivaylo: "ivaylo@mbcenter.bg",
+    christian: "christian@mbcenter.bg",
     reception: "reception@mbcenter.bg",
     mechanic: "service@mbcenter.bg",
   };
@@ -402,9 +414,24 @@ export default function SettingsPage() {
 
   const isBg = locale === "bg";
 
+  /**
+   * Whether the selected account is the one currently signed in.
+   *
+   * This decides HOW an edit is applied, and it must be based on the email
+   * rather than on the key "admin": several people are admins now, so the
+   * "Админ" slot is not necessarily your own account.
+   */
+  const isOwnAccount =
+    !!user?.email &&
+    user.email.trim().toLowerCase() ===
+      (ACCOUNT_EMAILS[selectedAccount] ?? "").toLowerCase();
+
+  // Show the selected account's address, so the field never claims to be
+  // editing one account while holding another one's email.
   useEffect(() => {
-    if (user?.email) setMyEmail(user.email);
-  }, [user]);
+    setMyEmail(ACCOUNT_EMAILS[selectedAccount] ?? user?.email ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccount, user?.email]);
 
   useEffect(() => {
     const key = getColumnsKey(selectedAccountForColumns);
@@ -914,6 +941,8 @@ export default function SettingsPage() {
 
   const accountOptions: { value: AccountKey; label: string }[] = [
     { value: "admin", label: isBg ? "Админ" : "Admin" },
+    { value: "ivaylo", label: "Ивайло" },
+    { value: "christian", label: "Християн" },
     { value: "reception", label: isBg ? "Приемчик" : "Receptionist" },
     { value: "mechanic", label: isBg ? "Механик" : "Mechanic" },
   ];
@@ -1096,8 +1125,9 @@ export default function SettingsPage() {
               </SubSection>
             </div>
 
-            {/* Admin-only fields */}
-            {selectedAccount === "admin" && (
+            {/* Your own account: edited directly through your session, which
+                is the only way to change your own password. */}
+            {isOwnAccount && (
               <>
                 <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
                   <SubSection title={isBg ? "Смяна на имейл" : "Change Email"}>
@@ -1173,8 +1203,9 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* Email & password change for non-admin accounts */}
-            {selectedAccount !== "admin" && (
+            {/* Another account: applied through the update-user Edge
+                Function, which takes the target email explicitly. */}
+            {!isOwnAccount && (
               <>
                 <div className="bg-mb-anthracite border border-mb-border rounded-xl p-5 space-y-4">
                   <SubSection title={isBg ? "Смяна на имейл" : "Change Email"}>

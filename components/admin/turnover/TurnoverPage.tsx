@@ -16,8 +16,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { localDateKey } from "@/lib/turnover";
+import { advancesRecorded, localDateKey } from "@/lib/turnover";
+import {
+  diffTurnover,
+  logActivity,
+  turnoverLabel,
+  type ActivityActor,
+} from "@/lib/activity-log";
 import { canSeeBetaSections } from "@/lib/feature-flags";
+import { TurnoverReportsDialog } from "./TurnoverReportsDialog";
 import type {
   DailyTurnover,
   DailyTurnoverNote,
@@ -55,6 +62,13 @@ interface ManualForm {
   client_name: string;
   amount: string;
   payment_method: PaymentMethod;
+  /**
+   * Advance already taken on the linked offer, in €. Auto-filled from the
+   * offer's advance rows when the record has one, and editable so an admin
+   * can correct it. Kept separate from `amount` (what was paid in THIS
+   * record) so the two can be shown as separate payment badges.
+   */
+  advance: string;
   /** What the parts cost us; drives the profit figure. Optional. */
   parts_cost: string;
   notes: string;
@@ -64,9 +78,27 @@ interface ManualForm {
 }
 
 /**
- * The methods a row actually used. A single-method row yields one badge with
- * no amount (the Сума column already shows it); a mixed row yields one badge
- * per method, each labelled with its part.
+ * When the row was entered, as "DD.MM.YYYY HH:MM".
+ *
+ * Reads `created_at`, not `entry_date`: only the timestamp carries the hour,
+ * and a back-dated manual entry should still show when it was actually typed.
+ */
+function formatEnteredAt(value: string | null | undefined) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * The methods a row actually used, one entry per method.
+ *
+ * `showAmount` is decided by the caller, not here: whether a figure belongs on
+ * a badge depends on how many badges the row ends up with in total, and the
+ * "Аванс" badge is added outside this function.
  */
 function methodParts(r: DailyTurnover) {
   const parts = (
@@ -77,15 +109,72 @@ function methodParts(r: DailyTurnover) {
     ] as [PaymentMethod, number][]
   )
     .filter(([, amount]) => amount > 0)
-    .map(([method, amount]) => ({ method, amount, showAmount: true }));
+    .map(([method, amount]) => ({ method, amount }));
 
-  if (parts.length > 1) return parts;
+  if (parts.length > 0) return parts;
 
-  // Single method (or a legacy row with no breakdown yet).
-  const only =
-    parts[0]?.method ??
-    (r.payment_method === "mixed" ? "cash" : r.payment_method);
-  return [{ method: only, amount: Number(r.amount) || 0, showAmount: false }];
+  // Legacy row with no per-method breakdown yet: fall back to the row total.
+  const only = r.payment_method === "mixed" ? "cash" : r.payment_method;
+  return [{ method: only, amount: Number(r.amount) || 0 }];
+}
+
+/**
+ * The badges for one row: the advance (if any) followed by each method used.
+ *
+ * When a row carries more than one badge, every badge shows its own amount so
+ * it is clear how much was paid which way - this is what the client asked for
+ * ("Аванс 200,00 € Брой 350,00 €"). With a single badge the amount is left
+ * off, because the Сума column right beside it already states it.
+ */
+function rowBadges(r: DailyTurnover, isBg: boolean) {
+  const advance = Number(r.advance_applied) || 0;
+  const badges: {
+    key: string;
+    label: string;
+    amount: number;
+    style: string;
+  }[] = [];
+
+  const AMBER =
+    "bg-amber-500/15 text-amber-400 border-amber-500/40 font-medium";
+
+  // The row IS an advance: its own amount is the advance.
+  if (r.is_advance) {
+    badges.push({
+      key: "advance",
+      label: isBg ? "Аванс" : "Advance",
+      amount: Number(r.amount) || 0,
+      style: AMBER,
+    });
+  } else if (advance > 0) {
+    // A closing row an advance was applied to: show what came in earlier.
+    badges.push({
+      key: "advance",
+      label: isBg ? "Аванс" : "Advance",
+      amount: advance,
+      style: AMBER,
+    });
+  }
+
+  for (const part of methodParts(r)) {
+    badges.push({
+      key: part.method,
+      label: isBg ? METHOD_LABEL[part.method].bg : METHOD_LABEL[part.method].en,
+      amount: part.amount,
+      style: METHOD_STYLE[part.method],
+    });
+  }
+
+  // An advance row would otherwise print its amount twice - once on the amber
+  // badge and once on the method beside it. Keep it on the amber one only.
+  const showAmount = badges.length > 1;
+  const suppressMethodAmount = r.is_advance && badges.length === 2;
+
+  return badges.map((b, i) => ({
+    ...b,
+    showAmount:
+      showAmount && !(suppressMethodAmount && i > 0),
+  }));
 }
 
 /**
@@ -153,6 +242,7 @@ const emptyForm = (): ManualForm => ({
   client_name: "",
   amount: "",
   payment_method: "cash",
+  advance: "",
   parts_cost: "",
   notes: "",
   splitMode: false,
@@ -170,6 +260,18 @@ export function TurnoverPage() {
   // section is in testing. It must never widen access on its own - an "||"
   // here would hand profit to any role using the beta account.
   const canSeeProfit = isSuperAdmin() && canSeeBetaSections(user?.email);
+
+  // Who the activity log attributes a change to. auth_id is the durable
+  // identity; name and email are snapshotted so the entry still reads well
+  // after a rename.
+  const actor: ActivityActor = useMemo(
+    () => ({
+      authId: user?.id ?? null,
+      name: profile?.full_name ?? null,
+      email: user?.email ?? null,
+    }),
+    [user?.id, user?.email, profile?.full_name],
+  );
 
   const [view, setView] = useState<ViewMode>("day");
   const [cursor, setCursor] = useState(() => new Date());
@@ -192,6 +294,7 @@ export function TurnoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [reportsOpen, setReportsOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<DailyTurnover | null>(null);
   const [form, setForm] = useState<ManualForm>(emptyForm);
@@ -217,8 +320,12 @@ export function TurnoverPage() {
       .select("*")
       .gte("entry_date", range.from)
       .lte("entry_date", range.to)
+      // Rows read in the order they were entered: the first record of a day
+      // sits on top, every later one below it. `created_at` (not `entry_date`)
+      // decides, so entries made on the same day keep their true entry order.
+      // Day groups themselves stay newest-first — see `grouped` below.
       .order("entry_date", { ascending: false })
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (err) {
       console.error("[turnover] load failed:", err);
@@ -511,6 +618,22 @@ export function TurnoverPage() {
 
   const openEdit = (row: DailyTurnover) => {
     setEditing(row);
+    // "Аванс" comes from the offer: sum the advance rows recorded against it.
+    // A closing row written before the advance existed therefore still shows
+    // the right figure. Best-effort — a lookup failure just leaves the seeded
+    // value from `advance_applied` in place.
+    if (row.offer_id && !row.is_advance) {
+      const offerId = row.offer_id;
+      void advancesRecorded(offerId)
+        .then((total) => {
+          if (total > 0) {
+            setForm((prev) => ({ ...prev, advance: String(round2(total)) }));
+          }
+        })
+        .catch((err) => {
+          console.warn("[turnover] advance auto-fill failed:", err);
+        });
+    }
     setForm({
       entry_date: row.entry_date,
       vehicle: row.vehicle ?? "",
@@ -520,6 +643,10 @@ export function TurnoverPage() {
       amount: String(row.amount ?? ""),
       payment_method:
         row.payment_method === "mixed" ? "cash" : row.payment_method,
+      // Seeded from the row; refreshed from the linked offer just below, so
+      // an advance taken after this row was written still shows up.
+      advance:
+        Number(row.advance_applied) > 0 ? String(row.advance_applied) : "",
       parts_cost: Number(row.parts_cost) > 0 ? String(row.parts_cost) : "",
       notes: row.notes ?? "",
       // A mixed row opens straight into split mode with its parts filled in.
@@ -586,6 +713,10 @@ export function TurnoverPage() {
       amount_card: parts.card,
       amount_bank: parts.bank,
       payment_method: used.length > 1 ? "mixed" : used[0],
+      // The advance taken on the linked offer. Stored on the closing row so
+      // profit can be computed on the job's full value, and so the badge can
+      // show it beside what was paid in this record.
+      advance_applied: round2(parseAmount(form.advance)),
     };
 
     const { error: err } = editing
@@ -623,6 +754,32 @@ export function TurnoverPage() {
       );
       return;
     }
+    // Best-effort audit trail; never awaited, never blocks the save.
+    if (editing) {
+      const changes = diffTurnover(
+        editing as unknown as Record<string, unknown>,
+        payload as unknown as Record<string, unknown>,
+      );
+      if (changes.length > 0) {
+        void logActivity({
+          actor,
+          entityType: "daily_turnover",
+          entityId: editing.id,
+          entityLabel: turnoverLabel(editing),
+          action: "edit",
+          changes,
+        });
+      }
+    } else {
+      void logActivity({
+        actor,
+        entityType: "daily_turnover",
+        entityId: null,
+        entityLabel: turnoverLabel(payload),
+        action: "create",
+      });
+    }
+
     clearDraft();
     setFormOpen(false);
 
@@ -654,6 +811,14 @@ export function TurnoverPage() {
           ? "Грешка при изтриване. Проверете правата си."
           : "Delete failed. Check your permissions.",
       );
+    } else {
+      void logActivity({
+        actor,
+        entityType: "daily_turnover",
+        entityId: deleteTarget.id,
+        entityLabel: turnoverLabel(deleteTarget),
+        action: "delete",
+      });
     }
     setDeleteTarget(null);
     load();
@@ -721,6 +886,14 @@ export function TurnoverPage() {
               </svg>
             </button>
           </div>
+
+          <Button
+            onClick={() => setReportsOpen(true)}
+            variant="outline"
+            className="border-mb-border bg-mb-black text-white hover:bg-mb-border hover:text-white"
+          >
+            {isBg ? "Справки" : "Reports"}
+          </Button>
 
           <Button
             onClick={generatePDF}
@@ -965,6 +1138,9 @@ export function TurnoverPage() {
                         <th className="py-2 px-3 font-medium">
                           {isBg ? "Източник" : "Source"}
                         </th>
+                        <th className="py-2 px-3 font-medium whitespace-nowrap">
+                          {isBg ? "Дата и час" : "Date and time"}
+                        </th>
                         <th className="py-2 px-3 font-medium text-right">
                           {isBg ? "Сума" : "Amount"}
                         </th>
@@ -987,31 +1163,22 @@ export function TurnoverPage() {
                             {r.client_name || "-"}
                           </td>
                           <td className="py-2 px-3">
-                            {/* One badge per method actually used, each with
-                                its own amount, so a mixed payment reads at a
-                                glance without leaving the row. */}
+                            {/* Аванс first, then each method used. When there
+                                is more than one badge each carries its own
+                                amount, so "Аванс 200,00 € · Брой 350,00 €"
+                                reads at a glance. */}
                             <div className="flex flex-wrap items-center gap-1">
-                              {/* An advance is shown as "Аванс" next to the
-                                  method it was paid by, so the row reads
-                                  "Аванс · Карта 400.00". */}
-                              {r.is_advance ? (
-                                <span className="inline-block whitespace-nowrap rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-400">
-                                  {isBg ? "Аванс" : "Advance"}
-                                </span>
-                              ) : null}
-                              {methodParts(r).map((part) => (
+                              {rowBadges(r, isBg).map((b) => (
                                 <span
-                                  key={part.method}
+                                  key={b.key}
                                   className={cn(
                                     "inline-block whitespace-nowrap rounded-md border px-2 py-0.5 text-xs",
-                                    METHOD_STYLE[part.method],
+                                    b.style,
                                   )}
                                 >
-                                  {isBg
-                                    ? METHOD_LABEL[part.method].bg
-                                    : METHOD_LABEL[part.method].en}
-                                  {part.showAmount
-                                    ? ` ${part.amount.toFixed(2)} €`
+                                  {b.label}
+                                  {b.showAmount
+                                    ? ` ${b.amount.toFixed(2)} €`
                                     : ""}
                                 </span>
                               ))}
@@ -1050,6 +1217,9 @@ export function TurnoverPage() {
                               : isBg
                                 ? "Ръчно"
                                 : "Manual"}
+                          </td>
+                          <td className="py-2 px-3 text-xs text-mb-silver whitespace-nowrap">
+                            {formatEnteredAt(r.created_at)}
                           </td>
                           <td className="py-2 px-3 text-right font-medium text-white whitespace-nowrap">
                             {(Number(r.amount) || 0).toFixed(2)} €
@@ -1102,8 +1272,11 @@ export function TurnoverPage() {
             </DialogTitle>
           </DialogHeader>
 
+          {/* Field order follows the client's mockup: date/client, car/plate,
+              repair, then advance/amount side by side above the payment
+              method. */}
           <div className="grid gap-3 py-2 sm:grid-cols-2">
-            <div className={cn("space-y-1", form.splitMode && "sm:col-span-2")}>
+            <div className="space-y-1">
               <Label className="text-gray-200">{isBg ? "Дата" : "Date"} *</Label>
               <Input
                 type="date"
@@ -1112,25 +1285,14 @@ export function TurnoverPage() {
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
             </div>
-            {!form.splitMode && (
-              <div className="space-y-1">
-                <Label className="text-gray-200">
-                  {isBg ? "Сума (€)" : "Amount (€)"} *
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  inputMode="decimal"
-                  value={form.amount}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, amount: e.target.value }))
-                  }
-                  placeholder="0.00"
-                  className="bg-gray-100 text-gray-900 border-mb-border"
-                />
-              </div>
-            )}
+            <div className="space-y-1">
+              <Label className="text-gray-200">{isBg ? "Клиент" : "Client"}</Label>
+              <Input
+                value={form.client_name}
+                onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))}
+                className="bg-gray-100 text-gray-900 border-mb-border"
+              />
+            </div>
             <div className="space-y-1">
               <Label className="text-gray-200">{isBg ? "Автомобил" : "Vehicle"}</Label>
               <Input
@@ -1157,14 +1319,45 @@ export function TurnoverPage() {
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
             </div>
-            <div className="space-y-1 sm:col-span-2">
-              <Label className="text-gray-200">{isBg ? "Клиент" : "Client"}</Label>
+            {/* Аванс sits beside Сума, as in the mockup. It is filled in from
+                the linked offer when one exists, and stays editable so an
+                admin can correct it; the change is picked up by the log. */}
+            <div className={cn("space-y-1", form.splitMode && "sm:col-span-2")}>
+              <Label className="text-gray-200">
+                {isBg ? "Аванс (€)" : "Advance (€)"}
+              </Label>
               <Input
-                value={form.client_name}
-                onChange={(e) => setForm((f) => ({ ...f, client_name: e.target.value }))}
+                type="number"
+                step="0.01"
+                min={0}
+                inputMode="decimal"
+                value={form.advance}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, advance: e.target.value }))
+                }
+                placeholder="0.00"
                 className="bg-gray-100 text-gray-900 border-mb-border"
               />
             </div>
+            {!form.splitMode && (
+              <div className="space-y-1">
+                <Label className="text-gray-200">
+                  {isBg ? "Сума (€)" : "Amount (€)"} *
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  inputMode="decimal"
+                  value={form.amount}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, amount: e.target.value }))
+                  }
+                  placeholder="0.00"
+                  className="bg-gray-100 text-gray-900 border-mb-border"
+                />
+              </div>
+            )}
             <div className="space-y-2 sm:col-span-2">
               <div className="flex items-center justify-between">
                 <Label className="text-gray-200">
@@ -1359,6 +1552,14 @@ export function TurnoverPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Справки: turnover for any date range. */}
+      <TurnoverReportsDialog
+        open={reportsOpen}
+        onOpenChange={setReportsOpen}
+        canSeeProfit={canSeeProfit}
+        generatedBy={profile?.full_name ?? null}
+      />
     </div>
   );
 }

@@ -5,8 +5,10 @@ import {
   mockSupabase,
   seedWorkers,
   signIn,
+  field,
   type Db,
 } from "./helpers";
+
 
 /**
  * Дневен оборот — tests mapped directly to the assignment:
@@ -68,12 +70,11 @@ test.describe("R1 — manual entry", () => {
     await page.getByRole("button", { name: "Добави запис" }).click();
 
     const dialog = page.getByRole("dialog");
-    await dialog.locator('input[type="number"]').first().fill("350");
-    const texts = dialog.locator('input[type="text"], input:not([type])');
-    await texts.nth(0).fill("BMW X5");
-    await texts.nth(1).fill("CA1234XX");
-    await texts.nth(2).fill("Смяна на накладки");
-    await texts.nth(3).fill("Иван Петров");
+    await field(dialog, "Сума (€)").fill("350");
+    await field(dialog, "Автомобил").fill("BMW X5");
+    await field(dialog, "Рег. номер").fill("CA1234XX");
+    await field(dialog, "Ремонт").fill("Смяна на накладки");
+    await field(dialog, "Клиент").fill("Иван Петров");
     await page.getByRole("button", { name: "Карта", exact: true }).click();
     await page.getByRole("button", { name: "Запази" }).click();
 
@@ -132,8 +133,8 @@ test.describe("R2 — reception cannot correct entries", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: "Добави запис" }).click();
     const dialog2 = page.getByRole("dialog");
-    await dialog2.locator('input[type="number"]').first().fill("120");
-    await dialog2.locator('input[type="text"], input:not([type])').first().fill("Audi A6");
+    await field(dialog2, "Сума (€)").fill("120");
+    await field(dialog2, "Автомобил").fill("Audi A6");
     await page.getByRole("button", { name: "Запази" }).click();
 
     await expect
@@ -221,12 +222,13 @@ test.describe("R5 — mixed payment stays one entry", () => {
     ).toBeVisible();
     await page.getByRole("button", { name: "Добави запис" }).click();
     const dlg = page.getByRole("dialog");
-    await dlg.locator('input[type="text"], input:not([type])').first().fill("S500 W222");
+    await field(dlg, "Автомобил").fill("S500 W222");
     await page.getByRole("button", { name: /Раздели по няколко начина/ }).click();
 
-    const amounts = page.locator('input[type="number"]');
-    await amounts.nth(0).fill("300");
-    await amounts.nth(1).fill("200");
+    // Target the split panel's own inputs by their method label, so the
+    // separate "Аванс" field above them cannot shift these by one.
+    await field(dlg, "Брой").fill("300");
+    await field(dlg, "Карта").fill("200");
     await page.getByRole("button", { name: "Запази" }).click();
 
     await expect
@@ -240,6 +242,73 @@ test.describe("R5 — mixed payment stays one entry", () => {
     expect(row.amount_cash).toBe(300);
     expect(row.amount_card).toBe(200);
     expect(row.payment_method).toBe("mixed");
+  });
+
+  test("an advance row shows its amount on the Аванс badge", async ({
+    page,
+  }) => {
+    // Regression: the advance row used to render "Аванс" and "Брой" with no
+    // figures at all, because a single-method row suppressed its amount.
+    const db = dbWith([
+      turnoverRow({
+        amount: 200,
+        amount_cash: 200,
+        amount_card: 0,
+        payment_method: "cash",
+        is_advance: true,
+      }),
+    ]);
+    await signIn(page, { email: ADMIN_EMAIL, role: "admin" });
+    await mockSupabase(page, db, { role: "admin", full_name: "Admin" });
+
+    await page.goto("/bg/mb-admin/turnover/");
+
+    const row = page.getByRole("row", { name: /S500 W222/ });
+    await expect(row).toContainText("Аванс 200.00 €");
+  });
+
+  test("a closing row shows the advance applied to it", async ({ page }) => {
+    const db = dbWith([
+      turnoverRow({
+        amount: 350,
+        amount_cash: 350,
+        amount_card: 0,
+        payment_method: "cash",
+        is_advance: false,
+        advance_applied: 200,
+      }),
+    ]);
+    await signIn(page, { email: ADMIN_EMAIL, role: "admin" });
+    await mockSupabase(page, db, { role: "admin", full_name: "Admin" });
+
+    await page.goto("/bg/mb-admin/turnover/");
+
+    // The client's example: "Аванс 200,00 € Брой 350,00 €".
+    const row = page.getByRole("row", { name: /S500 W222/ });
+    await expect(row).toContainText("Аванс 200.00 €");
+    await expect(row).toContainText("Брой 350.00 €");
+  });
+
+  test("a single-method row keeps the amount off the badge", async ({
+    page,
+  }) => {
+    // The Сума column already states it; repeating it would be noise.
+    const db = dbWith([
+      turnoverRow({
+        amount: 400,
+        amount_cash: 0,
+        amount_card: 400,
+        payment_method: "card",
+      }),
+    ]);
+    await signIn(page, { email: ADMIN_EMAIL, role: "admin" });
+    await mockSupabase(page, db, { role: "admin", full_name: "Admin" });
+
+    await page.goto("/bg/mb-admin/turnover/");
+
+    const row = page.getByRole("row", { name: /S500 W222/ });
+    await expect(row).toContainText("Карта");
+    await expect(row).not.toContainText("Карта 400.00 €");
   });
 
   test("a mixed row shows both parts on one line", async ({ page }) => {
