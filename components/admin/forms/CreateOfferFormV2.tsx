@@ -411,7 +411,21 @@ export function CreateOfferFormV2({
   const localSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const formLoadedRef = useRef(false);
   const changedAfterLastCardRef = useRef(true);
+  // Render-visible mirror of changedAfterLastCardRef: a ref alone cannot flip
+  // the service card button between "create" and "download" labels.
+  const [changedAfterLastCard, setChangedAfterLastCard] = useState(true);
   const prepaymentsRef = useRef(prepayments);
+  /**
+   * True when the service card has already been issued for this offer and
+   * nothing PDF-relevant has changed since. In that state the button is a
+   * plain re-download: same document, same creation date, no payment dialog
+   * (the payment was already recorded when the card was first created).
+   *
+   * Unsaved edits are excluded so a pending change cannot be silently
+   * re-issued under the old date — those fall back to normal generation.
+   */
+  const isServiceCardIssued =
+    !!serviceCardGeneratedAt && !changedAfterLastCard && !hasUnsavedChanges;
   // Snapshot of the form values exactly as loaded/last-saved, used to detect
   // which fields actually changed on save. Captured via methods.getValues()
   // right after reset() so it's guaranteed to match the shape/types that
@@ -733,6 +747,7 @@ export function CreateOfferFormV2({
   useEffect(() => {
     if (savedOffer?.service_card_generated_at) {
       changedAfterLastCardRef.current = false;
+      setChangedAfterLastCard(false);
     }
   }, [savedOffer?.service_card_generated_at]);
 
@@ -995,6 +1010,7 @@ export function CreateOfferFormV2({
       // instead of react-hook-form dirtyFields.
       if (otherFieldsChanged) {
         changedAfterLastCardRef.current = true;
+        setChangedAfterLastCard(true);
       }
 
       methods.reset(methods.getValues());
@@ -1119,8 +1135,9 @@ export function CreateOfferFormV2({
    *
    * Asks how the customer paid so the amount lands in Дневен оборот, then runs
    * the actual generation. The dialog is skipped when there is nothing to
-   * record against: an unsaved draft (no offer id yet) or an offer that already
-   * has turnover rows from an earlier generation.
+   * record against: an unsaved draft (no offer id yet), an offer that already
+   * has turnover rows from an earlier generation, or a card that was already
+   * issued and has not changed since (a plain re-download).
    */
   const generateServiceCardPDF = async () => {
     const formValues = methods.getValues();
@@ -1130,6 +1147,14 @@ export function CreateOfferFormV2({
       formValues.serviceActions.length === 0
     ) {
       showError(t("errors.noItemsForServiceCard"));
+      return;
+    }
+
+    // The card was already issued and nothing PDF-relevant changed since:
+    // this is a re-download of an existing document, not a new sale. Skip the
+    // payment dialog and keep the original creation date.
+    if (isServiceCardIssued) {
+      await runServiceCardGeneration();
       return;
     }
 
@@ -1259,7 +1284,11 @@ export function CreateOfferFormV2({
       // - First generation (no date in DB yet): always write a new one.
       // - Re-generation with no PDF-relevant changes: keep the existing date.
       // - Re-generation after PDF-relevant changes were saved: write a new one.
-      const existingTimestamp = savedOffer?.service_card_generated_at ?? null;
+      // Fall back to the dedicated state, which never moves backward, so a
+      // stale refetch that briefly nulls savedOffer cannot restamp the card
+      // with today's date on a plain re-download.
+      const existingTimestamp =
+        savedOffer?.service_card_generated_at ?? serviceCardGeneratedAt ?? null;
       const needsNewTimestamp =
         !existingTimestamp || changedAfterLastCardRef.current;
       const generationTimestamp = needsNewTimestamp
@@ -1333,6 +1362,7 @@ export function CreateOfferFormV2({
           }),
         };
         changedAfterLastCardRef.current = false;
+        setChangedAfterLastCard(false);
 
         await supabase
           .from("offers")
@@ -3614,7 +3644,8 @@ export function CreateOfferFormV2({
                   </Button>
                 )}
 
-                {/* Service Card Button (always enabled for preview) */}
+                {/* Service Card Button — "create" until the card is issued,
+                    then a plain re-download of the same document. */}
                 <Button
                   type="button"
                   variant="outline"
@@ -3643,7 +3674,7 @@ export function CreateOfferFormV2({
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                       </svg>
-                      Създаване…
+                      {isServiceCardIssued ? "Изтегляне…" : "Създаване…"}
                     </>
                   ) : (
                     <>
@@ -3657,10 +3688,16 @@ export function CreateOfferFormV2({
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          d={
+                            isServiceCardIssued
+                              ? "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              : "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          }
                         />
                       </svg>
-                      {t("generateServiceCard")}
+                      {isServiceCardIssued
+                        ? t("downloadServiceCard")
+                        : t("generateServiceCard")}
                     </>
                   )}
                 </Button>

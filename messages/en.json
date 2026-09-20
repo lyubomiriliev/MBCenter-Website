@@ -1398,6 +1398,7 @@
       "createOffer": "Create Offer",
       "updateOffer": "Update Offer",
       "generateServiceCard": "Generate Service Card",
+      "downloadServiceCard": "Download Service Card",
       "saving": "Saving...",
       "saved": "Saved",
       "cancel": "Cancel",
