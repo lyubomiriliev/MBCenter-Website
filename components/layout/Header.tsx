@@ -170,8 +170,12 @@ export function Header() {
         </nav>
         </header>
 
-        {/* Maintenance banner — attached just below the header, shows/hides with it */}
-        <MaintenanceBanner />
+        {/* Maintenance banner — attached just below the header, shows/hides with it.
+            Hidden (not unmounted) while the mobile menu is open: it would sit
+            on top of the menu's first item. */}
+        <div className={isMobileMenuOpen ? "hidden" : undefined}>
+          <MaintenanceBanner />
+        </div>
       </div>
 
       {/* Mobile Menu - Full Screen Overlay */}
