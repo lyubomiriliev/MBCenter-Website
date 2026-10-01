@@ -1,0 +1,56 @@
+# MB Center
+
+> MB Center is an independent service center in Sofia, Bulgaria, specialized exclusively in Mercedes-Benz: maintenance, Xentry/Star diagnostics, repairs, SCN online coding and feature activation, transmission service and EQ electric-vehicle service. Work follows Mercedes-Benz WIS (Workshop Information System) procedures and uses OEM parts.
+
+- Address: ул. Райовец 16 (16 Rayovets St.), 1151 Sofia, Bulgaria
+- Phone / Viber: +359 883 788 873
+- Email: contact@mbcenter.bg
+- Hours: Monday–Friday 09:30–18:00; Saturday and Sunday closed
+- Languages: Bulgarian, English
+- Customers: private owners and business fleets
+- Booking: online, by phone, Viber or email — https://mbcenter.bg/en/booking/
+
+## Services
+
+- [Periodic maintenance](https://mbcenter.bg/en/services/): oil and filters, spark plugs, fluids, brakes, A/C, seasonal checks; based on the dashboard service code and mileage, per Mercedes-Benz WIS. Entries recorded in the official Digital Service Booklet (DSB).
+- [Xentry Star diagnostics](https://mbcenter.bg/en/services/): full system scan, live data, fault codes, service history verification. XENTRY Remote Diagnosis for telematics-equipped models (mostly 2020+ with Mercedes me).
+- [SCN online coding and programming](https://mbcenter.bg/en/services/): direct connection to Mercedes-Benz servers; module coding, software updates, feature activation (AMG/Maybach cluster graphics, CarPlay/Android Auto, Digital Light animations, drive modes, assist systems) for W206, S223, EQS, EQE, GLC X254, MBUX 2018+ models, W213, C257, W463, W205 and more.
+- [Transmission service](https://mbcenter.bg/en/services/): 7G-Tronic, 9G-Tronic, 7G-DCT and 8G-DCT oil and filter service, control unit (plate) replacement, programming and adaptation, ISM/DSM selector programming.
+- [Repairs](https://mbcenter.bg/en/services/): AIRMATIC and suspension, steering, brakes/ABS/ESP, ECU and electrical faults, partial engine work (gaskets, fuel system, EGR/DPF, cooling, wiring, chain drive/variator gears), mechatronic and hydraulic block repair, OEM windshield replacement.
+- [EQ / electric vehicles](https://mbcenter.bg/en/services/): high-voltage system diagnostics, battery health report, electric drivetrain and charging system repair.
+- [Pre-purchase inspection](https://mbcenter.bg/en/about/): condition, history (DSB) and technical check of a Mercedes-Benz before you buy it.
+- OEM parts and accessories: genuine Mercedes-Benz parts supplied and fitted.
+
+## Not offered
+
+- Body work: panel beating, dent removal, painting
+- Complete engine overhauls (engine opening, timing chain replacement)
+- Complete transmission rebuilds
+
+## Pages
+
+- [Home](https://mbcenter.bg/en/)
+- [Services](https://mbcenter.bg/en/services/)
+- [About](https://mbcenter.bg/en/about/)
+- [Gallery](https://mbcenter.bg/en/gallery/)
+- [Contacts and map](https://mbcenter.bg/en/contacts/)
+- [Booking](https://mbcenter.bg/en/booking/)
+- [Terms and conditions](https://mbcenter.bg/en/terms/)
+
+## На български
+
+MB Center е независим специализиран сервиз за Mercedes-Benz в София: обслужване, Xentry Star диагностика, ремонт, SCN онлайн кодиране, скоростни кутии и електромобили EQ. Адрес: ул. Райовец 16, 1151 София. Тел./Viber: +359 883 788 873. Работно време: понеделник–петък 9:30–18:00.
+
+- [Начало](https://mbcenter.bg/bg/)
+- [Услуги](https://mbcenter.bg/bg/services/)
+- [За нас](https://mbcenter.bg/bg/about/)
+- [Контакти](https://mbcenter.bg/bg/contacts/)
+- [Запази час](https://mbcenter.bg/bg/booking/)
+
+## Optional
+
+- [Sitemap](https://mbcenter.bg/sitemap.xml)
+- [Facebook](https://www.facebook.com/mbcenterbg)
+- [Instagram](https://www.instagram.com/mbcenter.bg/)
+- [YouTube](https://www.youtube.com/@MBCenterBG)
+- [TikTok](https://www.tiktok.com/@mbcenter.bg)

@@ -36,7 +36,7 @@ const SITE_CONFIG_BG: SiteConfig = {
   phone: "+359 883 788 873",
   email: "contact@mbcenter.bg",
   address: {
-    label: "MB Center - гр. София",
+    label: "гр. София, 1151",
     street: "ул. Райовец 16",
     city: "София",
     country: "България",
@@ -69,7 +69,7 @@ const SITE_CONFIG_EN: SiteConfig = {
   phone: "+359 883 788 873",
   email: "contact@mbcenter.bg",
   address: {
-    label: "MB Center - Sofia",
+    label: "Sofia, 1151",
     street: "16 Rayovets St.",
     city: "Sofia",
     country: "Bulgaria",

@@ -1,7 +1,11 @@
-# Force HTTPS - prevents "Connection Not Private" errors
+# Force HTTPS - any http:// URL (with path and query) 301s to its https:// twin
 RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Block scrapers that ignore robots.txt (no search/AI-answer visibility in return)
+RewriteCond %{HTTP_USER_AGENT} (Bytespider|ImagesiftBot|img2dataset|Scrapy|PetalBot|MJ12bot|DotBot|BLEXBot|DataForSeoBot|serpstatbot|SemrushBot|AhrefsBot) [NC]
+RewriteRule .* - [F,L]
 
 # Force non-www (canonical domain)
 RewriteCond %{HTTP_HOST} ^www\.mbcenter\.bg [NC]
@@ -9,6 +13,9 @@ RewriteRule ^(.*)$ https://mbcenter.bg/$1 [L,R=301]
 
 # Custom 404 page (Next.js static export generates /404.html)
 ErrorDocument 404 /404.html
+
+# robots.txt / llms.txt contain Bulgarian text
+AddCharset UTF-8 .txt
 
 # Ensure OG image is served with correct MIME type (Facebook/Open Graph)
 <Files "og-image.jpg">
@@ -26,25 +33,25 @@ ErrorDocument 404 /404.html
 # 301 redirects: old WordPress URLs → new Next.js paths
 RewriteBase /
 RewriteCond %{QUERY_STRING} ^page_id=3122$ [NC]
-RewriteRule ^$ /bg/contacts? [R=301,L]
-RewriteRule ^home/?$ /bg [R=301,L]
-RewriteRule ^about-us/?$ /bg/about [R=301,L]
-RewriteRule ^contact-us/?$ /bg/contacts [R=301,L]
-RewriteRule ^terms/?$ /bg/terms [R=301,L]
-RewriteRule ^$ /bg [R=301,L]
+RewriteRule ^$ /bg/contacts/? [R=301,L]
+RewriteRule ^home/?$ /bg/ [R=301,L]
+RewriteRule ^about-us/?$ /bg/about/ [R=301,L]
+RewriteRule ^contact-us/?$ /bg/contacts/ [R=301,L]
+RewriteRule ^terms/?$ /bg/terms/ [R=301,L]
+RewriteRule ^$ /bg/ [R=301,L]
 
 # 301 redirects: known old WordPress URL patterns → homepage
 # Only matches recognizable WordPress paths, everything else shows the custom 404
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^wp-(admin|content|includes|login|json|cron|signup|activate|mail|trackback|comments)(/.*)?$ /bg [R=301,L]
-RewriteRule ^feed(/.*)?$ /bg [R=301,L]
-RewriteRule ^xmlrpc\.php$ /bg [R=301,L]
-RewriteRule ^author/(.*)$ /bg [R=301,L]
-RewriteRule ^tag/(.*)$ /bg [R=301,L]
-RewriteRule ^category/(.*)$ /bg [R=301,L]
-RewriteRule ^product-category/(.*)$ /bg [R=301,L]
-RewriteRule ^product/(.*)$ /bg [R=301,L]
-RewriteRule ^shop(/.*)?$ /bg [R=301,L]
-RewriteRule ^\?p=[0-9]+$ /bg [R=301,L]
-RewriteRule ^\?page_id=[0-9]+$ /bg [R=301,L]
+RewriteRule ^wp-(admin|content|includes|login|json|cron|signup|activate|mail|trackback|comments)(/.*)?$ /bg/ [R=301,L]
+RewriteRule ^feed(/.*)?$ /bg/ [R=301,L]
+RewriteRule ^xmlrpc\.php$ /bg/ [R=301,L]
+RewriteRule ^author/(.*)$ /bg/ [R=301,L]
+RewriteRule ^tag/(.*)$ /bg/ [R=301,L]
+RewriteRule ^category/(.*)$ /bg/ [R=301,L]
+RewriteRule ^product-category/(.*)$ /bg/ [R=301,L]
+RewriteRule ^product/(.*)$ /bg/ [R=301,L]
+RewriteRule ^shop(/.*)?$ /bg/ [R=301,L]
+RewriteRule ^\?p=[0-9]+$ /bg/ [R=301,L]
+RewriteRule ^\?page_id=[0-9]+$ /bg/ [R=301,L]

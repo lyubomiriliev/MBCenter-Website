@@ -68,13 +68,10 @@ export function WhereToFindUs() {
                 </div>
                 <div className="text-mb-silver leading-relaxed text-center space-y-0.5">
                   <p className="text-sm sm:text-base">
+                    {config.name} - {config.address.street}
+                  </p>
+                  <p className="text-sm sm:text-base">
                     {config.address.label}
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    {config.address.street}
-                  </p>
-                  <p className="text-sm sm:text-base">
-                    {config.address.postalCode} {config.address.city}
                   </p>
                 </div>
 

@@ -132,10 +132,10 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm flex items-center gap-2">
+            <h2 className="text-white font-bold mb-6 uppercase tracking-wider text-sm flex items-center gap-2">
               <span className="w-1 h-4 bg-mb-blue"></span>
               {t("footer.quickLinks")}
-            </h4>
+            </h2>
             <ul className="space-y-3">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href}>
@@ -153,10 +153,10 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm flex items-center gap-2">
+            <h2 className="text-white font-bold mb-6 uppercase tracking-wider text-sm flex items-center gap-2">
               <span className="w-1 h-4 bg-mb-blue"></span>
               {t("footer.contact")}
-            </h4>
+            </h2>
             <ul className="space-y-4 text-mb-silver text-sm">
               <li className="group">
                 <a
@@ -217,11 +217,8 @@ export function Footer() {
                     </svg>
                   </div>
                   <div>
+                    <p>{config.name} - {config.address.street}</p>
                     <p>{config.address.label}</p>
-                    <p>{config.address.street}</p>
-                    <p>
-                      {config.address.postalCode} {config.address.city}
-                    </p>
                   </div>
                 </div>
               </li>

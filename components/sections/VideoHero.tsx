@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 
@@ -22,6 +22,15 @@ export function VideoHero({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  // Phones and data-saver connections get the poster only: the background
+  // video is several MB and throttled mobile connections drop it mid-download.
+  const [loadVideo, setLoadVideo] = useState(false);
+
+  useEffect(() => {
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } })
+      .connection?.saveData;
+    setLoadVideo(!saveData && window.matchMedia("(min-width: 768px)").matches);
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -80,7 +89,7 @@ export function VideoHero({
             });
           }}
         >
-          <source src={videoSrc} type="video/mp4" />
+          {loadVideo && <source src={videoSrc} type="video/mp4" />}
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80"></div>
       </div>

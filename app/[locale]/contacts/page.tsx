@@ -86,11 +86,8 @@ export default function ContactsPage({ params: { locale } }: Props) {
                   <p className="text-white font-semibold text-lg mb-2">
                     {t("info.address")}
                   </p>
-                  <p className="text-mb-blue mb-1">{config.address.label}</p>
-                  <p className="text-mb-blue mb-1">{config.address.street}</p>
-                  <p className="text-mb-blue">
-                    {config.address.postalCode} {config.address.city}
-                  </p>
+                  <p className="text-mb-blue mb-1">{config.name} - {config.address.street}</p>
+                  <p className="text-mb-blue">{config.address.label}</p>
                 </div>
               </div>
 

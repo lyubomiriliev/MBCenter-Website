@@ -241,12 +241,9 @@ export function Header() {
                       </svg>
                       <div>
                         <p className="text-white text-sm font-medium mb-1">
+                          {siteConfig.name} - {siteConfig.address.street}
+                          <br />
                           {siteConfig.address.label}
-                          <br />
-                          {siteConfig.address.street}
-                          <br />
-                          {siteConfig.address.postalCode}{" "}
-                          {siteConfig.address.city}
                         </p>
                         <p className="text-mb-blue text-xs font-semibold group-hover:text-white transition-colors">
                           {t("nav.viewOnMap")} →

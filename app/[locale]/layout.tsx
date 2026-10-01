@@ -106,7 +106,19 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   const messages = await getMessages();
-  const jsonLd = generateLocalBusinessSchema(locale);
+  const tSeo = await getTranslations({ locale, namespace: "seo.home" });
+  const tServices = await getTranslations({ locale, namespace: "services" });
+  const jsonLd = generateLocalBusinessSchema(locale, {
+    description: tSeo("description"),
+    services: [
+      ...["maintenance", "diagnostics", "coding", "multimedia", "parts", "inspection"].map(
+        (key) => tServices(`${key}.title`)
+      ),
+      ...["xentry", "coding", "transmission"].map((key) =>
+        tServices(`specialized.${key}.title`)
+      ),
+    ],
+  });
 
   const ogImageUrl = `${SITE_CONFIG.baseUrl}/og-image.jpg`;
 
