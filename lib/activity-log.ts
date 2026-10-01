@@ -401,7 +401,13 @@ export function turnoverLabel(row: {
   return "Запис";
 }
 
-/** Render one entry's diff as "Сума: 300,00 € → 350,00 €; ...". */
+/**
+ * Render one entry's diff as "Сума: 300,00 € → 350,00 €; ...".
+ *
+ * The log page renders the changes as a list instead, so a row with many of
+ * them stays readable. Kept for anywhere a diff has to be one line — an
+ * export, a tooltip, a PDF cell.
+ */
 export function formatChanges(entry: ActivityLogEntry): string {
   if (!entry.changes?.length) return "";
   return entry.changes

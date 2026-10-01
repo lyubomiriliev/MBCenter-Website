@@ -13,7 +13,7 @@ export function GoogleMap({ embedUrl, fallbackUrl }: GoogleMapProps) {
 
   // Construct embed URL for MB Center Sofia location
   const address = encodeURIComponent(
-    `${SITE_CONFIG.address.street}, ${SITE_CONFIG.address.city}, ${SITE_CONFIG.address.country}`
+    `${SITE_CONFIG.address.street}, ${SITE_CONFIG.address.postalCode} ${SITE_CONFIG.address.city}, ${SITE_CONFIG.address.country}`
   );
   // Using standard Google Maps embed format (no API key required)
   const defaultEmbedUrl =

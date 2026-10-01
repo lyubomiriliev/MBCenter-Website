@@ -621,7 +621,7 @@
       "phone": "Phone",
       "email": "Email",
       "workingHours": "Working Hours",
-      "hours": "Monday - Friday 10:30 - 19:00h",
+      "hours": "Monday - Friday 9:30 - 18:00h",
       "hoursWeekend": "Saturday and Sunday - Closed"
     },
     "form": {
@@ -651,7 +651,7 @@
     "hours": {
       "title": "Working Hours",
       "description": "Our team will confirm your appointment and provide any additional information you may need.",
-      "hours": "Monday - Friday 10:30 - 19:00h",
+      "hours": "Monday - Friday 9:30 - 18:00h",
       "hoursWeekend": "Saturday and Sunday - Closed"
     }
   },

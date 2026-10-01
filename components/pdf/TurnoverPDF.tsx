@@ -268,7 +268,7 @@ export function TurnoverPDF({
             />
             <Text style={styles.companyName}>ЕМ БИ ЦЕНТЪР ООД</Text>
             <Text style={styles.companyInfo}>
-              ул. Околовръстен път 155, 1700 София
+              ул. Райовец 16, 1151 София
             </Text>
             <Text style={styles.companyInfo}>Булстат: 207901533</Text>
             <Text style={styles.companyInfo}>Тел. +359883788873</Text>

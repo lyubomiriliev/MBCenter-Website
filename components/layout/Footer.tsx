@@ -52,7 +52,7 @@ export function Footer() {
                 draggable={false}
               />
             </div>
-            <p className="text-mb-silver text-sm leading-relaxed max-w-md mb-6">
+            <p className="text-mb-silver text-sm leading-relaxed max-w-md mb-6 whitespace-pre-line">
               {t("footer.about")}
             </p>
 
@@ -217,6 +217,7 @@ export function Footer() {
                     </svg>
                   </div>
                   <div>
+                    <p>{config.address.label}</p>
                     <p>{config.address.street}</p>
                     <p>
                       {config.address.postalCode} {config.address.city}
@@ -244,7 +245,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-mb-blue/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-mb-blue/10 pt-8 mb-10 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col md:flex-row items-center gap-4">
             <p className="text-mb-silver text-sm">
               © {currentYear} {config.name}. {t("footer.rights")}.
@@ -256,7 +257,7 @@ export function Footer() {
               {t("footer.terms")}
             </Link>
           </div>
-          <div className="flex items-center gap-2 mb-5 text-mb-silver text-xs">
+          <div className="flex items-center gap-2 text-mb-silver text-xs">
             <p>
               Website created by{" "}
               <a

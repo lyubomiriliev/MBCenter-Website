@@ -4,6 +4,7 @@ type SiteConfig = {
   phone: string;
   email: string;
   address: {
+    label: string;
     street: string;
     city: string;
     country: string;
@@ -35,13 +36,14 @@ const SITE_CONFIG_BG: SiteConfig = {
   phone: "+359 883 788 873",
   email: "contact@mbcenter.bg",
   address: {
-    street: "MB Center - гр. София ул. Околовръстен път 155",
+    label: "MB Center - гр. София",
+    street: "ул. Райовец 16",
     city: "София",
     country: "България",
-    postalCode: "1700",
+    postalCode: "1151",
   },
   hours: {
-    weekdays: "Понеделник - Петък 10:30 - 19:00ч.",
+    weekdays: "Понеделник - Петък 9:30 - 18:00ч.",
     weekend: "Събота и Неделя - Почивни дни",
   },
   viberUrl: "viber://chat?number=%2B359883788873",
@@ -67,13 +69,14 @@ const SITE_CONFIG_EN: SiteConfig = {
   phone: "+359 883 788 873",
   email: "contact@mbcenter.bg",
   address: {
-    street: "MB Center - Sofia, 155 Ring Road",
+    label: "MB Center - Sofia",
+    street: "16 Rayovets St.",
     city: "Sofia",
     country: "Bulgaria",
-    postalCode: "1700",
+    postalCode: "1151",
   },
   hours: {
-    weekdays: "Monday - Friday 10:30 - 19:00h",
+    weekdays: "Monday - Friday 9:30 - 18:00h",
     weekend: "Saturday and Sunday - Closed",
   },
   viberUrl: "viber://chat?number=%2B359883788873",

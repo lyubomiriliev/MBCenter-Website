@@ -68,10 +68,13 @@ export function WhereToFindUs() {
                 </div>
                 <div className="text-mb-silver leading-relaxed text-center space-y-0.5">
                   <p className="text-sm sm:text-base">
+                    {config.address.label}
+                  </p>
+                  <p className="text-sm sm:text-base">
                     {config.address.street}
                   </p>
                   <p className="text-sm sm:text-base">
-                    {config.address.city}, {config.address.country}
+                    {config.address.postalCode} {config.address.city}
                   </p>
                 </div>
 
@@ -79,7 +82,7 @@ export function WhereToFindUs() {
                 <div className="mt-4 text-center">
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      `${config.address.street}, ${config.address.city}, ${config.address.country}`
+                      `${config.address.street}, ${config.address.postalCode} ${config.address.city}, ${config.address.country}`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"

@@ -220,7 +220,9 @@ export function Header() {
 
                     {/* Address */}
                     <a
-                      href="https://www.google.com/maps?sca_esv=1db8b9ddc237ac31&sxsrf=AE3TifNxHXl6TElWovZvLv2HrEmJmKpsdw:1767359204511&iflsig=AOw8s4IAAAAAaVfQ9J49qnv6f7qn6nLx-tM2oQJm2Cuf&uact=5&gs_lp=Egdnd3Mtd2l6GgIYAiIIbWJjZW50ZXIyBBAjGCcyDhAuGIAEGMsBGMcBGK8BMgoQABiABBjLARgKMggQABiABBjLATIEEAAYHjIEEAAYHjIEEAAYHjIEEAAYHjICECYyCBAAGIAEGKIESNsJUABYjwlwAHgAkAEAmAFmoAGLBaoBAzQuM7gBA8gBAPgBAZgCB6ACnwXCAgoQIxjwBRjJAhgnwgILEAAYgAQYsQMYgwHCAggQABiABBixA8ICEBAuGIAEGIoFGEMYxwEY0QPCAhkQLhiABBiKBRhDGMcBGNEDGIsDGNIDGKgDwgIIEC4YgAQYsQPCAgUQABiABMICCxAuGMcBGNEDGIAEwgILEC4YgAQYxwEYrwHCAg0QLhiABBjHARivARgKmAMAkgcDNC4zoAehQ7IHAzQuM7gHnwXCBwUxLjUuMcgHDYAIAQ&um=1&ie=UTF-8&fb=1&gl=bg&sa=X&geocode=KdtDD89Lm6pAMSy6FejRWsV_&daddr=%D0%A1%D0%BE%D1%84%D0%B8%D0%B9%D1%81%D0%BA%D0%B8+%D0%BE%D0%BA%D0%BE%D0%BB%D0%BE%D0%B2%D1%80%D1%8A%D1%81%D1%82%D0%B5%D0%BD+%D0%BF%D1%8A%D1%82,+1700+%D0%A1%D0%BE%D1%84%D0%B8%D1%8F"
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        `${siteConfig.address.street}, ${siteConfig.address.postalCode} ${siteConfig.address.city}`
+                      )}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-start gap-3 p-3 rounded-lg hover:bg-mb-anthracite/30 transition-all duration-300 group mb-3"
@@ -239,7 +241,12 @@ export function Header() {
                       </svg>
                       <div>
                         <p className="text-white text-sm font-medium mb-1">
+                          {siteConfig.address.label}
+                          <br />
                           {siteConfig.address.street}
+                          <br />
+                          {siteConfig.address.postalCode}{" "}
+                          {siteConfig.address.city}
                         </p>
                         <p className="text-mb-blue text-xs font-semibold group-hover:text-white transition-colors">
                           {t("nav.viewOnMap")} →

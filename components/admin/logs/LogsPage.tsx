@@ -16,11 +16,7 @@ import {
 import { DateRangeField } from "@/components/admin/DateRangeField";
 import { cn } from "@/lib/utils";
 import { localDateKey } from "@/lib/turnover";
-import {
-  formatChanges,
-  SECTION_LABELS,
-  UNLOGGED_EMAILS,
-} from "@/lib/activity-log";
+import { SECTION_LABELS, UNLOGGED_EMAILS } from "@/lib/activity-log";
 import type {
   ActivityAction,
   ActivityEntityType,
@@ -30,7 +26,14 @@ import type {
 /** How many entries one page of the log holds. */
 const PAGE_SIZE = 50;
 
-/** Sections offered in the filter, in menu order. */
+/**
+ * Sections offered in the filter, in menu order.
+ *
+ * Every section that can be logged has to appear here, or its entries are in
+ * the table but unreachable by the filter. `offer` is left out on purpose: it
+ * is the old name for `offers` and `sectionLabel` already maps both to
+ * "Оферти", so listing it would put the same label in the menu twice.
+ */
 const SECTIONS = [
   "offers",
   "daily_turnover",
@@ -40,6 +43,9 @@ const SECTIONS = [
   "earnings_entries",
   "earnings_monthly_summary",
   "leave_periods",
+  "leave_entitlements",
+  "hourly_activities",
+  "fixed_activities",
   "mechanics",
   "receptionists",
 ] as const;
@@ -72,6 +78,25 @@ function isHiddenAccount(nameOrEmail: string): boolean {
   return UNLOGGED_EMAILS.includes(nameOrEmail.trim().toLowerCase());
 }
 
+/**
+ * A chosen day's first or last instant, as an absolute timestamp.
+ *
+ * `created_at` is a timestamptz, so a bare "2026-09-20T00:00:00" would be read
+ * in the server's zone (UTC) while the table shows the stamp in the user's
+ * zone. In Sofia that shifts the boundary by three hours: the first entries of
+ * the day fall outside the range and the previous evening's fall inside it.
+ * Building the Date from local parts and sending its ISO form keeps the day
+ * the user picked the day they get.
+ */
+function dayBound(key: string, end: boolean): string | null {
+  const [y, m, d] = key.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const date = end
+    ? new Date(y, m - 1, d, 23, 59, 59, 999)
+    : new Date(y, m - 1, d, 0, 0, 0, 0);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 /** "16.09.2026 10:24" */
 function formatStamp(value: string) {
   const d = new Date(value);
@@ -97,8 +122,11 @@ export function LogsPage() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  /** Total matching the current filters, for "Страница 2 от 7". */
+  const [total, setTotal] = useState<number | null>(null);
 
-  // Filters
+  // Filters. Each one resets the page through `setFilter` below, so the view
+  // never asks for a page number the new filter does not have.
   const [entityFilter, setEntityFilter] = useState<ActivityEntityType | "all">(
     "all",
   );
@@ -119,6 +147,8 @@ export function LogsPage() {
    * found in the loaded entries.
    */
   const [accounts, setAccounts] = useState<string[]>([]);
+  /** The profile read failed, so the filter lists only names seen in entries. */
+  const [accountsError, setAccountsError] = useState(false);
 
   useEffect(() => {
     if (!allowed) return;
@@ -131,9 +161,14 @@ export function LogsPage() {
 
       if (cancelled) return;
       if (err) {
+        // Not fatal: `users` still offers every name found in the loaded
+        // entries. Surfaced so an admin who cannot find a colleague in the
+        // filter knows why, instead of assuming that person changed nothing.
         console.warn("[logs] account list failed:", err.message);
+        setAccountsError(true);
         return;
       }
+      setAccountsError(false);
       // Only names: the log stores `user_name`, so a profile without one
       // could never be matched by the filter anyway. The developer account is
       // left out, matching the entries it never writes.
@@ -158,23 +193,31 @@ export function LogsPage() {
 
     let query = supabase
       .from("activity_log")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE); // +1 row probes for a next page
 
     // Hide the developer account's own entries. logActivity already skips
     // writing them, but anything recorded before that was in place is still
     // in the table, so the page filters them out on the way in too.
-    for (const email of UNLOGGED_EMAILS) {
-      query = query.or(`user_email.is.null,user_email.neq.${email}`);
+    //
+    // One `.or()` for the whole list: repeated calls would AND together, and
+    // "not.in" reads the same for one address as for ten. The values are
+    // quoted because PostgREST treats an unquoted comma or dot as syntax.
+    if (UNLOGGED_EMAILS.length > 0) {
+      const list = UNLOGGED_EMAILS.map((e) => `"${e}"`).join(",");
+      query = query.or(`user_email.is.null,user_email.not.in.(${list})`);
     }
 
     if (entityFilter !== "all") query = query.eq("entity_type", entityFilter);
     if (userFilter !== "all") query = query.eq("user_name", userFilter);
-    if (fromDate) query = query.gte("created_at", `${fromDate}T00:00:00`);
-    if (toDate) query = query.lte("created_at", `${toDate}T23:59:59`);
 
-    const { data, error: err } = await query;
+    const from = fromDate ? dayBound(fromDate, false) : null;
+    const to = toDate ? dayBound(toDate, true) : null;
+    if (from) query = query.gte("created_at", from);
+    if (to) query = query.lte("created_at", to);
+
+    const { data, error: err, count } = await query;
 
     setLoading(false);
     if (err) {
@@ -189,23 +232,35 @@ export function LogsPage() {
             : "Failed to load the logs.",
       );
       setEntries([]);
+      setTotal(null);
       return;
     }
 
     const rows = (data ?? []) as ActivityLogEntry[];
     setHasMore(rows.length > PAGE_SIZE);
     setEntries(rows.slice(0, PAGE_SIZE));
+    setTotal(count ?? null);
   }, [allowed, page, entityFilter, userFilter, fromDate, toDate, isBg]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // Reset to the first page whenever a filter changes, so the view never lands
-  // on a page number that no longer exists.
-  useEffect(() => {
-    setPage(0);
-  }, [entityFilter, userFilter, fromDate, toDate]);
+  /**
+   * Change a filter and go back to the first page, in one render.
+   *
+   * Resetting the page from an effect instead would fire two loads on every
+   * filter change — one for the new filter on the old page, then another once
+   * the page reset landed — and briefly show the wrong rows in between.
+   */
+  const setFilter = useCallback(
+    <T,>(set: (value: T) => void) =>
+      (value: T) => {
+        set(value);
+        setPage(0);
+      },
+    [],
+  );
 
   /**
    * Options for the "who" filter: every known account, plus any name that
@@ -220,6 +275,10 @@ export function LogsPage() {
     return Array.from(all).sort((a, b) => a.localeCompare(b, "bg"));
   }, [accounts, entries]);
 
+  /** Pages the current filters span, or null while the count is unknown. */
+  const totalPages =
+    total === null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE));
+
   /** Whether anything is filtered, so "Изчисти" is only live when it does something. */
   const hasFilters =
     entityFilter !== "all" || userFilter !== "all" || !!fromDate || !!toDate;
@@ -229,6 +288,7 @@ export function LogsPage() {
     setUserFilter("all");
     setFromDate("");
     setToDate("");
+    setPage(0);
   };
 
   if (!allowed) {
@@ -266,9 +326,9 @@ export function LogsPage() {
             </label>
             <Select
               value={entityFilter}
-              onValueChange={(v) =>
-                setEntityFilter(v as ActivityEntityType | "all")
-              }
+              onValueChange={setFilter((v: string) =>
+                setEntityFilter(v as ActivityEntityType | "all"),
+              )}
             >
               <SelectTrigger className="bg-gray-100 text-gray-900 border-mb-border">
                 <SelectValue />
@@ -290,7 +350,7 @@ export function LogsPage() {
             <label className="text-xs text-mb-silver mb-1.5 block">
               {isBg ? "Потребител" : "User"}
             </label>
-            <Select value={userFilter} onValueChange={setUserFilter}>
+            <Select value={userFilter} onValueChange={setFilter(setUserFilter)}>
               <SelectTrigger className="bg-gray-100 text-gray-900 border-mb-border">
                 <SelectValue />
               </SelectTrigger>
@@ -305,13 +365,20 @@ export function LogsPage() {
                 ))}
               </SelectContent>
             </Select>
+            {accountsError && (
+              <p className="mt-1 text-[11px] leading-tight text-amber-400">
+                {isBg
+                  ? "Само имена от заредените записи."
+                  : "Only names from the loaded entries."}
+              </p>
+            )}
           </div>
 
           <DateRangeField
             className="w-44"
             label={isBg ? "Дата от" : "Date from"}
             value={fromDate}
-            onChange={setFromDate}
+            onChange={setFilter(setFromDate)}
             placeholder={isBg ? "Изберете дата" : "Select date"}
             max={toDate || localDateKey(new Date())}
           />
@@ -320,7 +387,7 @@ export function LogsPage() {
             className="w-44"
             label={isBg ? "Дата до" : "Date to"}
             value={toDate}
-            onChange={setToDate}
+            onChange={setFilter(setToDate)}
             placeholder={isBg ? "Изберете дата" : "Select date"}
             min={fromDate}
           />
@@ -403,12 +470,22 @@ export function LogsPage() {
                           ACTION_STYLE[e.action],
                         )}
                       >
-                        {ACTION_LABEL[e.action]?.[isBg ? "bg" : "en"] ??
-                          e.action}
+                        {ACTION_LABEL[e.action][isBg ? "bg" : "en"]}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-mb-silver">
-                      {formatChanges(e) || "—"}
+                    <td className="py-2 px-3 text-mb-silver min-w-[20rem]">
+                      {e.changes?.length ? (
+                        <ul className="space-y-0.5">
+                          {e.changes.map((c, i) => (
+                            <li key={`${c.field}-${i}`}>
+                              <span className="text-white">{c.label}:</span>{" "}
+                              {c.from} → {c.to}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                   </tr>
                 ))
@@ -422,6 +499,9 @@ export function LogsPage() {
       <div className="flex items-center justify-between">
         <span className="text-sm text-mb-silver">
           {isBg ? "Страница" : "Page"} {page + 1}
+          {totalPages !== null && ` ${isBg ? "от" : "of"} ${totalPages}`}
+          {total !== null &&
+            ` · ${total} ${isBg ? "записа" : total === 1 ? "entry" : "entries"}`}
         </span>
         <div className="flex gap-2">
           <Button

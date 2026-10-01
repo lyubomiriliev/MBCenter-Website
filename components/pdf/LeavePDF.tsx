@@ -209,7 +209,7 @@ export function LeavePDF({
             />
             <Text style={styles.companyName}>ЕМ БИ ЦЕНТЪР ООД</Text>
             <Text style={styles.companyInfo}>
-              ул. Околовръстен път 155, 1700 София
+              ул. Райовец 16, 1151 София
             </Text>
             <Text style={styles.companyInfo}>Булстат: 207901533</Text>
           </View>

@@ -463,7 +463,7 @@ export function OfferPDFv3({ offer, prepayments = [] }: OfferPDFv3Props) {
             />
             <Text style={styles.companyName}>ЕМ БИ ЦЕНТЪР ООД</Text>
             <Text style={styles.companyInfo}>
-              ул. Околовръстен път 155, 1700 София
+              ул. Райовец 16, 1151 София
             </Text>
             <Text style={styles.companyInfo}>Булстат: 207901533</Text>
             <Text style={styles.companyInfo}>ДДС номер: BG207901533</Text>
