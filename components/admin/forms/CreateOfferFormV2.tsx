@@ -38,6 +38,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useSupabaseAuthContext } from "@/components/admin/SupabaseAuthContext";
 import { OfferPDFv3 } from "@/components/pdf/OfferPDFv3";
 import { ServiceCardPDFv3 } from "@/components/pdf/ServiceCardPDFv3";
+import { WorkOrderPDF } from "@/components/pdf/WorkOrderPDF";
 import { useOffer, useUpdateOffer } from "@/hooks/useOffers";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { TransferDataModal } from "@/components/admin/warehouse/TransferDataModal";
@@ -220,6 +221,7 @@ export function CreateOfferFormV2({
   const [summaryResetKey, setSummaryResetKey] = useState(0);
   const [offerPdfGenerating, setOfferPdfGenerating] = useState(false);
   const [serviceCardGenerating, setServiceCardGenerating] = useState(false);
+  const [workOrderGenerating, setWorkOrderGenerating] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -316,6 +318,9 @@ export function CreateOfferFormV2({
   // shown only to the beta tester account. Everyone else keeps the old flow.
   const turnoverEnabled = canSeeBetaSections(user?.email);
   const isReceptionRole = profile?.role === "reception";
+  const canPrintWorkOrder = profile?.role === "admin" || isReceptionRole;
+  const serviceOrderLabel = t("downloadServiceOrder");
+  const serviceOrderBreak = serviceOrderLabel.lastIndexOf(" ");
 
   /** Who the activity log attributes a change to. */
   const logActor = () => ({
@@ -1127,6 +1132,54 @@ export function CreateOfferFormV2({
       throw error;
     } finally {
       setOfferPdfGenerating(false);
+    }
+  };
+
+  /**
+   * Downloads the Сервизна поръчка — the printed sheet handed to the mechanic
+   * with the car key. Read-only: it changes nothing on the offer.
+   *
+   * Prints exactly what is saved (what the mechanics see in their view):
+   * unsaved edits block printing, and the offer is re-read from the DB so a
+   * click right after "Запази" cannot catch the not-yet-refetched copy.
+   */
+  const generateWorkOrderPDF = async (offerId: string) => {
+    if (hasUnsavedChanges) {
+      showError(
+        locale === "bg"
+          ? "Има незапазени промени. Натиснете „Запази“ преди да изтеглите сервизната поръчка."
+          : "There are unsaved changes. Save the offer before downloading the service order.",
+      );
+      return;
+    }
+    setWorkOrderGenerating(true);
+    try {
+      const offerData = await fetchOfferWithRelations(offerId);
+      if (!offerData) throw new Error("Offer not found");
+
+      const { registerPDFFonts } = await import("@/lib/pdf-fonts");
+      const { setFontRegistered } =
+        await import("@/components/pdf/WorkOrderPDF");
+      setFontRegistered(await registerPDFFonts());
+
+      const blob = await pdf(<WorkOrderPDF offer={offerData} />).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `service-order-${offerData.offer_number}.pdf`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error("Error generating work order PDF:", error);
+      showError(t("errors.pdfFailed"));
+    } finally {
+      setWorkOrderGenerating(false);
     }
   };
 
@@ -3591,57 +3644,101 @@ export function CreateOfferFormV2({
                   </Button>
                 )}
 
-                {/* Download Offer PDF (only when editing existing offer) */}
+                {/* Download Offer PDF + Service Order (only when editing existing offer) */}
                 {isEditing && savedOffer && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-mb-border bg-green-600 hover:bg-green-700 text-white"
-                    disabled={offerPdfGenerating || serviceCardGenerating}
-                    onClick={() => generateOfferPDF(savedOffer)}
-                  >
-                    {offerPdfGenerating ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={`w-full h-auto min-h-9 whitespace-normal px-2 leading-tight border-mb-border bg-green-600 hover:bg-green-700 text-white ${canPrintWorkOrder ? "" : "col-span-2"}`}
+                      disabled={offerPdfGenerating || serviceCardGenerating}
+                      onClick={() => generateOfferPDF(savedOffer)}
+                    >
+                      {offerPdfGenerating ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Създаване…
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
                             stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        Създаване…
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-4 h-4 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        {t("downloadOfferPdf")}
-                      </>
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          {t("downloadOfferPdf")}
+                        </>
+                      )}
+                    </Button>
+                    {canPrintWorkOrder && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-auto min-h-9 whitespace-normal px-2 leading-tight border-mb-border bg-green-600 hover:bg-green-700 text-white [container-type:inline-size]"
+                        disabled={workOrderGenerating}
+                        onClick={() => generateWorkOrderPDF(savedOffer.id)}
+                      >
+                        {workOrderGenerating ? (
+                          "Създаване…"
+                        ) : (
+                          <>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                              />
+                            </svg>
+                            {/* One line when the button is wide enough.
+                                When it is not, break before the last word:
+                                a forced break keeps the text block as narrow
+                                as its longest line, so the icon stays next to
+                                it (a natural wrap would push it to the edge).
+                                Sizes are the button's own width (container
+                                queries); 13px keeps "Изтегли сервизна" on one
+                                line in the narrowest sidebar. */}
+                            <span className="text-left [@container(max-width:150px)]:text-[13px]">
+                              {serviceOrderLabel.slice(0, serviceOrderBreak)}
+                              <br className="[@container(min-width:212px)]:hidden" />{" "}
+                              {serviceOrderLabel.slice(serviceOrderBreak + 1)}
+                            </span>
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 )}
 
                 {/* Service Card Button — "create" until the card is issued,

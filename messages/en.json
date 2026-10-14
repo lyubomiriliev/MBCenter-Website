@@ -1404,6 +1404,7 @@
       "cancel": "Cancel",
       "addPrePayment": "Add Advance Payment",
       "prepayment": "Advance Payment",
+      "downloadServiceOrder": "Download Service Order",
       "downloadOfferPdf": "Download Offer",
       "deleteOffer": "Delete",
       "offerCreatedAt": "Offer created at",
