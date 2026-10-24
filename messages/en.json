@@ -787,7 +787,7 @@
       "title": "SERVICE TERMS AND CONDITIONS",
       "subtitle": "of \"MB Center\" Ltd.",
       "uic": "UIC: BG207901533",
-      "address": "Registered office and management address: Sofia, Lozenets District,\nOkolovrasten Pat (Ring Road) No. 155"
+      "address": "Registered office and management address: Sofia,\n16 Rayovets St."
     },
     "chapters": {
       "i": {
@@ -1222,6 +1222,8 @@
       "settings": "Settings",
       "offers": "Offers",
       "createOffer": "Create Offer",
+      "mechanicOffers": "Service Orders",
+      "mechanicCreateOffer": "New Service Order",
       "clients": "Clients",
       "checks": "Reviews",
       "createCheck": "New Review",
@@ -1239,6 +1241,7 @@
     },
     "offers": {
       "title": "Offers",
+      "mechanicTitle": "Service Orders",
       "subtitle": "Manage service offers and quotes",
       "mechanicSubtitle": "View and create service offers",
       "newOffer": "New Offer",

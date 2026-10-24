@@ -26,7 +26,7 @@ export default function MechanicsOffersPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <AdminHeader
-        title={t('offers.title')}
+        title={t('offers.mechanicTitle')}
         subtitle={t('offers.mechanicSubtitle')}
       />
       <div className="flex-1 min-w-0 overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
