@@ -1220,10 +1220,8 @@
     "sidebar": {
       "dashboard": "Dashboard",
       "settings": "Settings",
-      "offers": "Offers",
-      "createOffer": "Create Offer",
-      "mechanicOffers": "Service Orders",
-      "mechanicCreateOffer": "New Service Order",
+      "offers": "Service Orders",
+      "createOffer": "New Service Order",
       "clients": "Clients",
       "checks": "Reviews",
       "createCheck": "New Review",
@@ -1240,8 +1238,7 @@
       "mechanic": "Mechanic"
     },
     "offers": {
-      "title": "Offers",
-      "mechanicTitle": "Service Orders",
+      "title": "Service Orders",
       "subtitle": "Manage service offers and quotes",
       "mechanicSubtitle": "View and create service offers",
       "newOffer": "New Offer",

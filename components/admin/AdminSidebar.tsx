@@ -15,7 +15,6 @@ import { canSeeBetaSections } from "@/lib/feature-flags";
 interface NavItem {
   href: string;
   labelKey: string;
-  mechanicLabelKey?: string; // overrides labelKey for the mechanic role
   icon: React.ReactNode;
   adminOnly?: boolean;      // hidden from mechanics
   superAdminOnly?: boolean; // hidden from reception too (e.g. Settings)
@@ -52,7 +51,6 @@ const navItems: NavItem[] = [
   {
     href: "/offers",
     labelKey: "admin.sidebar.offers",
-    mechanicLabelKey: "admin.sidebar.mechanicOffers",
     icon: (
       <svg
         className="w-5 h-5"
@@ -72,7 +70,6 @@ const navItems: NavItem[] = [
   {
     href: "/create-offer",
     labelKey: "admin.sidebar.createOffer",
-    mechanicLabelKey: "admin.sidebar.mechanicCreateOffer",
     icon: (
       <svg
         className="w-5 h-5"
@@ -319,7 +316,7 @@ export function AdminSidebar({ basePath }: AdminSidebarProps) {
                 )}
               >
                 {item.icon}
-                <span className="text-sm font-medium">{t(profile?.role === "mechanic" && item.mechanicLabelKey ? item.mechanicLabelKey : item.labelKey)}</span>
+                <span className="text-sm font-medium">{t(item.labelKey)}</span>
               </Link>
             );
           })}
