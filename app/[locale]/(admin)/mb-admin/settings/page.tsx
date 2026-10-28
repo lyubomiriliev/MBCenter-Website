@@ -30,7 +30,7 @@ const DEFAULT_COLUMNS = {
 type ColumnKey = keyof typeof DEFAULT_COLUMNS;
 
 const COLUMN_LABELS: Record<ColumnKey, { bg: string; en: string }> = {
-  offerNumber: { bg: "Номер на оферта", en: "Offer Number" },
+  offerNumber: { bg: "Номер на сервизна поръчка", en: "Offer Number" },
   vehicleInfo: { bg: "Автомобил", en: "Vehicle" },
   clientInfo: { bg: "Клиент", en: "Client" },
   repairName: { bg: "Наименование на ремонт", en: "Repair Name" },
@@ -885,7 +885,7 @@ export default function SettingsPage() {
     } else {
       showSuccess(
         isBg
-          ? "Настройките на офертата са запазени"
+          ? "Настройките на сервизната поръчка са запазени"
           : "Offer settings saved",
       );
     }
@@ -1064,7 +1064,7 @@ export default function SettingsPage() {
     },
     {
       id: "offers",
-      label: isBg ? "Оферти" : "Offers",
+      label: isBg ? "Сервизни поръчки" : "Offers",
       icon: (
         <svg
           className="w-4 h-4"
@@ -1325,7 +1325,7 @@ export default function SettingsPage() {
               >
                 <p className="text-sm text-mb-silver/60">
                   {isBg
-                    ? 'Появяват се в полето "Създадена от" при нова оферта.'
+                    ? 'Появяват се в полето "Създадена от" при нова сервизна поръчка.'
                     : 'Appear in the "Created by" field when creating a new offer.'}
                 </p>
                 <AddPersonRow
@@ -1381,7 +1381,7 @@ export default function SettingsPage() {
               <SubSection title={isBg ? "Механици" : "Mechanics"}>
                 <p className="text-sm text-mb-silver/60">
                   {isBg
-                    ? 'Появяват се в менюто "Изпълнено от" при редакция на оферта.'
+                    ? 'Появяват се в менюто "Изпълнено от" при редакция на сервизна поръчка.'
                     : 'Appear in the "Performed by" dropdown when editing an offer.'}
                 </p>
                 <AddPersonRow
@@ -1448,7 +1448,7 @@ export default function SettingsPage() {
             <SubSection title={isBg ? "Колони в таблицата" : "Table Columns"}>
               <p className="text-sm text-mb-silver/60">
                 {isBg
-                  ? "Изберете кои колони да се показват в списъка с оферти за всеки акаунт."
+                  ? "Изберете кои колони да се показват в списъка с сервизни поръчки за всеки акаунт."
                   : "Choose which columns to display in the offers list per account."}
               </p>
 
@@ -1668,7 +1668,7 @@ export default function SettingsPage() {
               <SubSection title={isBg ? "Отстъпки" : "Discounts"}>
                 <p className="text-sm text-mb-silver/60">
                   {isBg
-                    ? "Процент отстъпка, приложен автоматично при нова оферта."
+                    ? "Процент отстъпка, приложен автоматично при нова сервизна поръчка."
                     : "Discount percentages automatically applied on new offers."}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1763,7 +1763,7 @@ export default function SettingsPage() {
               <SubSection title={isBg ? "Бележки по подразбиране" : "Default Notes"}>
                 <p className="text-sm text-mb-silver/60">
                   {isBg
-                    ? "Текст, попълван автоматично в полето за бележки при нова оферта."
+                    ? "Текст, попълван автоматично в полето за бележки при нова сервизна поръчка."
                     : "Text pre-filled in the notes field when creating a new offer."}
                 </p>
                 <div className="space-y-1.5">

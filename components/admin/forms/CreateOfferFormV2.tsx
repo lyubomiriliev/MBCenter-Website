@@ -1643,7 +1643,7 @@ export function CreateOfferFormV2({
             field: "cloned_from",
             label: "Клонирана от",
             from: null,
-            to: `Оферта №${savedOffer.offer_number}`,
+            to: `Поръчка №${savedOffer.offer_number}`,
           },
         ],
       });
@@ -1688,7 +1688,7 @@ export function CreateOfferFormV2({
       console.error("Error cloning offer:", error);
       showError(
         locale === "bg"
-          ? "Грешка при клониране на офертата"
+          ? "Грешка при клониране на сервизната поръчка"
           : "Error cloning offer",
       );
     } finally {
@@ -2039,7 +2039,7 @@ export function CreateOfferFormV2({
               offerNumberError.code === "42883"
             ) {
               throw new Error(
-                "Функцията за генериране на номер на оферта не съществува в базата данни.\n\n" +
+                "Функцията за генериране на номер на сервизна поръчка не съществува в базата данни.\n\n" +
                   "Моля изпълнете SQL скрипта от supabase/schema.sql в Supabase SQL Editor.",
               );
             }
@@ -2051,7 +2051,7 @@ export function CreateOfferFormV2({
 
           if (!rpcResult) {
             throw new Error(
-              "Не беше генериран номер на оферта. Моля опитайте отново.",
+              "Не беше генериран номер на сервизна поръчка. Моля опитайте отново.",
             );
           }
 
@@ -2061,7 +2061,7 @@ export function CreateOfferFormV2({
           if (rpcError instanceof Error) {
             throw rpcError;
           }
-          throw new Error("Неуспешно генериране на номер на оферта");
+          throw new Error("Неуспешно генериране на номер на сервизна поръчка");
         }
 
         // Insert new offer
@@ -4075,7 +4075,7 @@ export function CreateOfferFormV2({
             0,
           );
           const base = savedOffer
-            ? `${locale === "bg" ? "Оферта" : "Offer"} №${savedOffer.offer_number}`
+            ? `${locale === "bg" ? "Сервизна поръчка" : "Offer"} №${savedOffer.offer_number}`
             : "";
           if (advances <= 0) return base || undefined;
           const gross = offerCalculations.grossTotal;
@@ -4214,7 +4214,7 @@ export function CreateOfferFormV2({
                     },
                     entityType: "offers",
                     entityId: savedOffer.id,
-                    entityLabel: `Оферта №${savedOffer.offer_number}`,
+                    entityLabel: `Поръчка №${savedOffer.offer_number}`,
                     action: "edit",
                     changes: [
                       {
@@ -4297,12 +4297,12 @@ export function CreateOfferFormV2({
           <DialogContent className="bg-mb-anthracite border-mb-border text-white sm:max-w-sm">
             <DialogHeader>
               <DialogTitle className="text-white">
-                {locale === "bg" ? "Изтриване на оферта" : "Delete Offer"}
+                {locale === "bg" ? "Изтриване на сервизна поръчка" : "Delete Offer"}
               </DialogTitle>
             </DialogHeader>
             <p className="text-gray-300 text-sm py-2">
               {locale === "bg"
-                ? `Сигурни ли сте, че искате да изтриете оферта #${savedOffer.offer_number}? Това действие е необратимо.`
+                ? `Сигурни ли сте, че искате да изтриете сервизна поръчка #${savedOffer.offer_number}? Това действие е необратимо.`
                 : `Are you sure you want to delete offer #${savedOffer.offer_number}? This action cannot be undone.`}
             </p>
             <DialogFooter className="flex gap-2 flex-col sm:flex-row">

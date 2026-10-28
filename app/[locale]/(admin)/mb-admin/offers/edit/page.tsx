@@ -66,7 +66,7 @@ function EditOfferContent() {
               <span>{t("offers.editOffer")}</span>
               {offerNumber && (
                 <span className="text-mb-blue">
-                  <span className="text-mb-silver text-sm font-normal">Оферта</span>{" "}
+                  <span className="text-mb-silver text-sm font-normal">Сервизна поръчка</span>{" "}
                   <span className="font-semibold">№<button
                     type="button"
                     title="Копирай номера"

@@ -244,15 +244,15 @@ export function offerLabel(offer: {
   offer_number?: string | null;
   customer_name?: string | null;
 }): string {
-  if (offer.offer_number) return `Оферта №${offer.offer_number}`;
-  return offer.customer_name || "Оферта";
+  if (offer.offer_number) return `Поръчка №${offer.offer_number}`;
+  return offer.customer_name || "Сервизна поръчка";
 }
 
 /** Bulgarian section names, so the log reads like the menu. */
 export const SECTION_LABELS: Record<string, string> = {
-  offers: "Оферти",
+  offers: "Сервизни поръчки",
   // Entries written before the section names matched the table names.
-  offer: "Оферти",
+  offer: "Сервизни поръчки",
   daily_turnover: "Дневен оборот",
   daily_turnover_notes: "Забележки оборот",
   warehouse_parts: "Склад",
@@ -397,7 +397,7 @@ export function turnoverLabel(row: {
   const car = [row.vehicle, row.license_plate].filter(Boolean).join(" · ");
   if (car) return car;
   if (row.service_card_number) return `Сервизна карта ${row.service_card_number}`;
-  if (row.offer_number) return `Оферта №${row.offer_number}`;
+  if (row.offer_number) return `Поръчка №${row.offer_number}`;
   return "Запис";
 }
 

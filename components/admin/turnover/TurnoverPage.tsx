@@ -1211,7 +1211,7 @@ export function TurnoverPage() {
                                   // carries its number and names the card.
                                   const label = r.service_card_number
                                     ? `${isBg ? "Сервизна карта" : "Service card"} ${r.service_card_number}`
-                                    : `${isBg ? "Оферта" : "Offer"} №${r.offer_number ?? ""}`.trim();
+                                    : `${isBg ? "Сервизна поръчка" : "Offer"} №${r.offer_number ?? ""}`.trim();
                                   return r.offer_id ? (
                                     <Link
                                       href={`/${locale}/mb-admin/offers/edit?id=${r.offer_id}`}
@@ -1222,7 +1222,7 @@ export function TurnoverPage() {
                                             ? "Отвори сервизната карта"
                                             : "Open the service card"
                                           : isBg
-                                            ? "Отвори офертата"
+                                            ? "Отвори сервизната поръчка"
                                             : "Open the offer"
                                       }
                                     >

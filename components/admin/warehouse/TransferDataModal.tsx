@@ -254,7 +254,7 @@ export function TransferDataModal({
                 >
                   {filtered.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-gray-400">
-                      {query ? "Няма намерени оферти" : "Няма оферти"}
+                      {query ? "Няма намерени сервизни поръчки" : "Няма сервизни поръчки"}
                     </div>
                   ) : (
                     filtered.map((o) => (
@@ -283,7 +283,7 @@ export function TransferDataModal({
 
           {selectedOffer && (
             <div className="rounded-lg bg-mb-black/50 border border-mb-border px-4 py-2 text-sm">
-              <span className="text-mb-silver">Оферта #</span>
+              <span className="text-mb-silver">Поръчка #</span>
               <span className="text-white font-mono">{selectedOffer.offer_number}</span>
               {selectedOffer.car_model_text && (
                 <span className="text-mb-silver"> — {selectedOffer.car_model_text}</span>

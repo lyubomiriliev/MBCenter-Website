@@ -312,7 +312,7 @@ export function LogsPage() {
         title={isBg ? "Логове" : "Logs"}
         subtitle={
           isBg
-            ? "Кой какво е променил в дневния оборот и офертите."
+            ? "Кой какво е променил в дневния оборот и сервизните поръчки."
             : "Who changed what in the daily turnover and the offers."
         }
       />
